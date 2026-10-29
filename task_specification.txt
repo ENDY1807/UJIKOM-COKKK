@@ -1,0 +1,70 @@
+UJI KOMPETENSI KEAHLIANTAHUN PELAJARAN 2026/2027SOAL PRAKTIK KEJURUANSatuan Pendidikan	:	Sekolah Menengah KejuruanKompetensi Keahlian	:	Rekayasa Perangkat Lunak Kode				:	2134Alokasi Waktu		:	14 JamBentuk Soal		:	Penugasan PeroranganJudul Tugas		:	Aplikasi Kasir Restoran (Table Service)I. 	PETUNJUK UMUMPeriksalah dengan teliti dokumen soal ujian praktik.Baca dan pahami maksud soal agar tidak terjadi kesalahan pekerjaan.Bekerjalah dengan memperhatikan jadwal dengan alur pengerjaan.Peralatan utama dan bahan telah disediakan sesuai dengan kebutuhan.Dalam bekerja selalu memperhatikan keselamatan kerja.II.	DAFTAR PERALATANNo.NamaAlat/Komponen/BahanSpesifikasi Minimal123Alat1.Komputer (PC/Laptop) yang difungsikan sebagai serverProsesor : Dual Core 2,4 GHz (2,93GHz untuk yang memilih platform mobile)RAM : 2 GB (4GB untuk yang memilih platform mobile)KeyboardMouseMonitor2.Komputer (PC/Laptop) yang difungsikan sebagai clientProsesor : Dual Core 2,4 GHz (2,93GHz untuk yang memilih platform mobile)RAM : 2 GB (4GB untuk yang memilih platform mobile)KeyboardMouseMonitor3.Mobile DeviceMendukung Android4.Jaringan KomputerMenghubungkan komputer server-client dan/atau mobile deviceKomponen1.Sistem OperasiOS (Propietary/Linux)2.Aplikasi tools pemrogramanIDE/Text Editor (Notepad++/Eclipse/ Netbeans/Propietary/Android Studio)3.Bahasa pemrogramanC++/C#/VB.Net/Java/PHP/Javascript4.Aplikasi server basis dataDatabase Server (MySQL/PostgreSQL/Propietary)5.Aplikasi PendukungWeb Server (Apache/Tomcat/Propietary)Image Editor (Propietary/GIMP/ Inkscape)Reporting Application (Jasper Report/Propietary)Aplikasi pengolah kata (Wordprocessor)Bahan1.Data-data referensiUserDaftar makanan di restoranRekaan sendiri2ATK dan CDSesuai KebutuhanSOAL/TUGASJudul Tugas : Aplikasi Kasir Restoran (Table Service)Tugas Praktik :Sebagai seorang Pemrogram pada sebuah Perusahaan Software Developer, anda ditugaskan sebagai programmer, anda diminta untuk membuat sebuah Aplikasi Kasir Restoran (Table Service).Tugas Anda adalah membuat sebuah Aplikasi Kasir Restoran (Table Service) dengan menggunakan pembagian privilege dengan tingkatan (administrator, water, kasir, owner, dan pelanggan).Langkah Kerja :Lakukan Instalasi dan Pengaturan Software Tools PemrogramanInterpretasikan Spesifikasi Program yang diberikanAplikasi berbasis sistem client-serverAplikasi dapat dibuat berbasis desktop, web, atau perangkat bergerakAplikasi menggunakan pembagian privilege dengan tingkatan (administrator, water, kasir, owner, dan pelanggan)Buatlah Desain User Interface / wireframe (Menu, Form Modifikasi Data, dan Pelaporan)Fitur minimal dan pembagian privilege dalam aplikasiFituradministratorwaiterkasirownerpelangganLoginVVVVVLogoutVVVVVRegistrasiVVVXXEntri referensiVXXXXEntri orderVVXXVEntri transaksiVXVXXGenerate laporanVVVVXDesain dibuat dengan memperhatikan estetika dan user-friendlinessForm pelaporan dibuat sekomunikatif mungkinTerapkan pemrograman berbasis obyek (object oriented programming)Hubungkan Aplikasi dengan Basis DataPilih dan instal aplikasi server basis data yang diinginkanBuat basis data dengan PDM sebagai berikut:Keterangan :Desain basis data diatas adalah basis data dasar, peserta ujian dapat menambah tabel / field sesuai kebutuhan berdasarkan kreativitas agar Aplikasi yang dibuat dapat berfungsi secara maksimal.Terapkan stored procedureHubungkan aplikasi dengan basis dataLakukan DebuggingLakukan ujicoba real-timePastikan langkah-langkah dalam pendeteksian kesalahan dilakukan dengan benarPastikan seluruh fitur berfungsi dengan baikBuatlah Dokumentasi dan Manual Singkat Penggunaan AplikasiBuatlah dokumentasi fitur-fitur dalam aplikasi (user manual)Buatlah dokumentasi pengembangan aplikasiHasil yang diharapkan dari rangkaian kerja di atas adalah terbuatnya Aplikasi Kasir Restoran (Table Service) sesuai dengan ketentuan fitur, dibuktikan dengan pengumpulan :1.	Folder Proyek Aplikasi (kode program lengkap)2.	Database dengan ekstensi .sql3.	Dokumentasi :a.	ERDb.	Deskripsi Programc.	Dokumentasi fungsi/prosedurd.	Debuginge.	Pengujian dan Tangkapan Layar hasil uji4.	Laporan evaluasi singkatCatatan 	: 	efisiensi baris program, kreativitas, atau inovasi akan dinilai lebih oleh pengujiSELAMAT & SUKSESLEMBAR KERJADesain User Interface / wireframe :Dokumentasi Aplikasi (modul, fungsi, prosedur atau method program):Manual Penggunaan Aplikasi :	Keterangan : dapat dikerjakan di lembar kertas tersendiri2134-P1-26/27                                                Hak Cipta pada KemdikbudSPK- PAGE 1/ NUMPAGES 5Paket 1DOKUMEN NEGARA+-0234IJK]^xy§¨©°±³·¸ÉóïëïëïäÖÊÁ´¤´´¤zj¤´¤]MEh>cOJQJhDh>c5OJQJmH!sH!ht¥5OJQJmH!sH!hDh>cOJQJ\mH!sH!hvTúh>cOJQJaJh&ØOJQJ\mH!sH!h¿G-h>cOJQJ\mH!sH!hpzJh>cOJQJ\mHsHh>cOJQJ\mHsHh«5OJQJh%h«5OJQJh%h«5CJOJQJhòJúh«h6O(hòJújhvTúCJUaJ4JKy©¸Ðô+	,	.	/	A	B	ñéÝÔÔÔÈÈÈ¼¼¨£$Æ7nØa$gd«gd%$Æ7nØ7^7a$gd«$^a$gd«$¥^¥a$gd>c¥^¥gd>c$,^,a$gd«$a$gd%ÆnØ^gd«ÉÊËÏÐÛÜÝßô			)	*	+	,	-	.	/	;	@	øìÝÎÂ³Â³Â§§yq`qWL=h%hd¨OJQJmH!sH!h%h«OJQJh«;OJQJ jh;bñh;bñUmHnHuh«OJQJhæth>cOJQJmH!sH!hy$Khy$K6OJQJmH!sH!hy$Khy$KOJQJmH!sH!h>cOJQJmH!sH!hpzJh>cOJQJmHsHh>cOJQJmHsHhA/h>cOJQJmH!sH!hÌõhy$KOJQJmH!sH!hÌõOJQJmH!sH!hIOJQJ@	A	B	V	v	w	®	º	»	Ù	ù	ú	
+>
+t
+u
+w
+
+
+
+
+¨
+³
+»
+¼
+½
+¿
+Á
+Ã
+Ä
+Å
+ïæ×Ë××Ë××Ë××××Àµª¢|xddd]UhþjËOJQJh±>òhþjË'h±>òhþjË5CJOJQJaJmH!sH!hþjËhþjËhþjË5OJQJmH!sH!hþjË5OJQJmH!sH!hþjË5OJQJh«OJQJh%h«OJQJh%hg;ôOJQJhDh.GOJQJhQ{pOJQJmH!sH!hQ{phQ{pOJQJmH!sH!h«5OJQJhd¨h«5OJQJmH!sH!B	w	»	ú	>
+t
+u
+
+
+
+
+¨
+¼
+èèèèèÜÓÁ©©$Æ7nØ$Ifa$gd?KY$Æ7nØ¤x$Ifa$gd?KY$Æ7nØa$gd«Æ7gd%$n^na$gdM%t$
+&FÆ8nÉý^n`Éýa$gdQ{p¼
+½
+¿
+Á
+Ã
+I333$Æ7nØ$Ifa$gd?KY¶kd$$Ifl44ÖÖFÿÅfp#1¡
+	ÖÖÿÿÿÿÿÿÿÿÿÖ0ÿÿÿÿÿÿöÜ#ööÖÿÿÿÖÿÿÿÖÿÿÿÖÿÿÿ4Ö4Ö
+laöf4pÖÿÿÿÿÿÿÿÿÿytþjËÃ
+Ä
+Å
+Ê
+Ë
+I3*3		$Ifgd?KY$Æ7nØ$Ifa$gd?KY¶kdá$$Ifl44ÖÖFÿÅfp#1¡
+	ÖÖÿÿÿÿÿÿÿÿÿÖ0ÿÿÿÿÿÿöÜ#ööÖÿÿÿÖÿÿÿÖÿÿÿÖÿÿÿ4Ö4Ö
+laöf4pÖÿÿÿÿÿÿÿÿÿytþjËÅ
+É
+Ê
+Ë
+Ì
+Ï
+ã
+ =LMNXqÑÒî&?NOPY^øíåáÙË½½¹­¡¡­­¡¡­­­Ù­Ù¹½xxkxxkxhU=	6OJQJmH	8sH	8hU=	OJQJmH	8sH	8hU=	hU=	OJQJmH!sH!hJÆ6OJQJmH	8sH	8hJÆOJQJmH	8sH	8hJÆOJQJmH!sH!hJÆhU=	OJQJaJmH!sH!hJÆOJQJaJmH!sH!hJÆOJQJhþjËhþjËOJQJh*ãhþjËmH!sH!hÁmH!sH!)Ë
+Ì
+Ï
+NnXB--
+&F=Ãþ$If^=`ÃþgdU=	$Æ7nØ$Ifa$gdJÆ$Æ7nØ$Ifa$gdJÆkdÂ$$Ifl4ÖÖFÿÅfp#1¡
+Ö0ÿÿÿÿÿÿöÜ#ööÖÿÿÿÖÿÿÿÖÿÿÿÖÿÿÿ4Ö4Ö
+laöf4ytþjËêêêYC$Æ7nØ$Ifa$gdU=	kdY$$Ifl4ÖÖFÿÅfp#1¡
+Ö0ÿÿÿÿÿÿöÜ#ööÖÿÿÿÖÿÿÿÖÿÿÿÖÿÿÿ4Ö4Ö
+laöf4ytþjË
+&F=Ãþ$If^=`ÃþgdU=	ÒPY_ghéÔÔÔÔÔCkdð$$Ifl4ÖÖFÿÅfp#1¡
+Ö0ÿÿÿÿÿÿöÜ#ööÖÿÿÿÖÿÿÿÖÿÿÿÖÿÿÿ4Ö4Ö
+laöf4ytþjË
+&F=Ãþ$If^=`ÃþgdU=	$Æ7nØ$Ifa$gdU=	^_fghky ¡ÜÝÞßçèéêíûüÿ
+01@]^hwxyz}±²³µøìøèìììèìÜÍÜÁèø¹®øèøì£ìøìøèøìÍøìøxøìÁèøììøèìh{lhU=	6OJQJhJÆhU=	OJQJmH!sH!h{lhU=	6OJQJmH	8sH	8hJÆhU=	mH!sH!h*ãhU=	mH!sH!hU=	mH!sH!hJÆhU=	6OJQJhþjËhU=	OJQJmH!sH!hYnOJQJmH!sH!hU=	hU=	OJQJmH!sH!hU=	OJQJ.hkyéÖÁ0ékd$$Ifl4ÖÖFÿÅfp#1¡
+Ö0ÿÿÿÿÿÿöÜ#ööÖÿÿÿÖÿÿÿÖÿÿÿÖÿÿÿ4Ö4Ö
+laöf4ytþjË
+&F=Ãþ$If^=`ÃþgdU=	Æ7nØ$IfgdU=	$Æ7nØ$Ifa$gdU=	¡ÝÞßéÔC-$Æ7nØ$Ifa$gdU=	kd$$Ifl4ÖÖFÿÅfp#1¡
+Ö0ÿÿÿÿÿÿöÜ#ööÖÿÿÿÖÿÿÿÖÿÿÿÖÿÿÿ4Ö4Ö
+laöf4ytþjË
+&F=Ãþ$If^=`ÃþgdU=	$Æ7nØ$Ifa$gdU=	ßèéêíüöàOà<Æ7nØ$If
