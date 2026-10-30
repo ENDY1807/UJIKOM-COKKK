@@ -212,15 +212,14 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                     ),
                                   ],
                                 ),
-                                TextField(
+                                TextFormField(
+                                  initialValue: item.catatan,
                                   decoration: const InputDecoration(
                                     hintText: 'Catatan (contoh: pedas, es dipisah)',
                                     isDense: true,
                                     contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                   ),
                                   style: const TextStyle(fontSize: 12),
-                                  controller: TextEditingController(text: item.catatan)
-                                    ..selection = TextSelection.collapsed(offset: item.catatan.length),
                                   onChanged: (val) {
                                     item.catatan = val;
                                   },

@@ -1,7 +1,7 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
+
 import '../models/user_model.dart';
 import '../services/database_service.dart';
 import '../services/desktop_oauth_service.dart';
@@ -43,10 +43,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   late AnimationController _slideController;
   late AnimationController _fadeController;
-  late AnimationController _floatController;
   late Animation<double> _slideAnimation;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _floatAnimation;
 
   @override
   void initState() {
@@ -59,11 +57,6 @@ class _LoginScreenState extends State<LoginScreen>
       vsync: this,
       duration: const Duration(milliseconds: 350),
     );
-    _floatController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
-
     _slideAnimation = CurvedAnimation(
       parent: _slideController,
       curve: Curves.easeInOutCubic,
@@ -71,10 +64,6 @@ class _LoginScreenState extends State<LoginScreen>
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
       curve: Curves.easeOut,
-    );
-    _floatAnimation = CurvedAnimation(
-      parent: _floatController,
-      curve: Curves.easeInOut,
     );
 
     _fadeController.forward();
@@ -90,7 +79,6 @@ class _LoginScreenState extends State<LoginScreen>
     _regConfirmPasswordController.dispose();
     _slideController.dispose();
     _fadeController.dispose();
-    _floatController.dispose();
     DesktopOAuthServer.stop();
     super.dispose();
   }
@@ -145,8 +133,9 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _errorMessage = 'Konfirmasi password tidak cocok');
       return;
     }
-    final exists = widget.db.users
-        .any((u) => u.username.toLowerCase() == username.toLowerCase());
+    final exists = widget.db.users.any(
+      (u) => u.username.toLowerCase() == username.toLowerCase(),
+    );
     if (exists) {
       setState(() => _errorMessage = 'Username sudah dipakai');
       return;
@@ -193,7 +182,8 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (account != null) {
         final email = account.email;
-        final name = account.displayName ??
+        final name =
+            account.displayName ??
             (email.isNotEmpty ? email.split('@').first : 'Pengguna Google');
         final photo = account.photoUrl;
         final uid = account.id;
@@ -219,7 +209,9 @@ class _LoginScreenState extends State<LoginScreen>
       // 2. Browser OAuth resmi Supabase
       if (!kIsWeb) {
         // Pada Desktop: mulai server loopback di http://localhost:3000 untuk menangkap callback otomatis
-        final callbackFuture = DesktopOAuthServer.listenForOAuthCallback(port: 3000);
+        final callbackFuture = DesktopOAuthServer.listenForOAuthCallback(
+          port: 3000,
+        );
 
         try {
           final initiated = await widget.db.signInWithGoogleOAuth(
@@ -228,13 +220,14 @@ class _LoginScreenState extends State<LoginScreen>
           if (initiated && mounted) {
             setState(() {
               _isGoogleLoading = true;
-              _successMessage =
-                  'Browser Google OAuth telah dibuka. Silakan selesaikan login di browser.';
+              _successMessage = 'Browser Google OAuth telah dibuka. Silakan selesaikan login di browser.';
             });
           }
         } catch (oauthErr) {
           await DesktopOAuthServer.stop();
-          debugPrint('[GoogleOAuth] Supabase signInWithGoogleOAuth error: $oauthErr');
+          debugPrint(
+            '[GoogleOAuth] Supabase signInWithGoogleOAuth error: $oauthErr',
+          );
           final errStr = oauthErr.toString();
           if (errStr.contains('provider is not enabled') ||
               errStr.contains('not enabled')) {
@@ -250,10 +243,13 @@ class _LoginScreenState extends State<LoginScreen>
           final user = authRes.session.user;
           final email = user.email ?? '';
           final meta = user.userMetadata ?? {};
-          final name = (meta['full_name'] ??
-                  meta['name'] ??
-                  (email.isNotEmpty ? email.split('@').first : 'Pengguna Google'))
-              .toString();
+          final name =
+              (meta['full_name'] ??
+                      meta['name'] ??
+                      (email.isNotEmpty
+                          ? email.split('@').first
+                          : 'Pengguna Google'))
+                  .toString();
           final photo = (meta['avatar_url'] ?? meta['picture'])?.toString();
 
           final appUser = await widget.db.loginWithGoogleSupabase(
@@ -323,9 +319,7 @@ class _LoginScreenState extends State<LoginScreen>
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isDesktop = constraints.maxWidth >= 900;
-            return isDesktop
-                ? _buildDesktop()
-                : _buildMobile();
+            return isDesktop ? _buildDesktop() : _buildMobile();
           },
         ),
       ),
@@ -443,16 +437,7 @@ class _LoginScreenState extends State<LoginScreen>
                     Positioned(
                       top: 120,
                       right: 40,
-                      child: AnimatedBuilder(
-                        animation: _floatAnimation,
-                        builder: (context, _) {
-                          final y = math.sin(_floatAnimation.value * math.pi) * 10;
-                          return Transform.translate(
-                            offset: Offset(0, y),
-                            child: _buildDecorCircle(80, Colors.white, 0.1),
-                          );
-                        },
-                      ),
+                      child: _buildDecorCircle(80, Colors.white, 0.1),
                     ),
 
                     // Content inside orange panel with smooth cross-fade during sliding
@@ -461,9 +446,15 @@ class _LoginScreenState extends State<LoginScreen>
                         animation: _slideAnimation,
                         builder: (context, _) {
                           final loginOpacity =
-                              (1.0 - _slideAnimation.value * 2.0).clamp(0.0, 1.0);
+                              (1.0 - _slideAnimation.value * 2.0).clamp(
+                                0.0,
+                                1.0,
+                              );
                           final registerOpacity =
-                              ((_slideAnimation.value - 0.5) * 2.0).clamp(0.0, 1.0);
+                              ((_slideAnimation.value - 0.5) * 2.0).clamp(
+                                0.0,
+                                1.0,
+                              );
 
                           return Stack(
                             children: [
@@ -472,7 +463,10 @@ class _LoginScreenState extends State<LoginScreen>
                                   child: Opacity(
                                     opacity: loginOpacity,
                                     child: Transform.translate(
-                                      offset: Offset(-20 * _slideAnimation.value, 0),
+                                      offset: Offset(
+                                        -20 * _slideAnimation.value,
+                                        0,
+                                      ),
                                       child: IgnorePointer(
                                         ignoring: _slideAnimation.value > 0.3,
                                         child: _buildOrangePanelInfo(
@@ -488,8 +482,10 @@ class _LoginScreenState extends State<LoginScreen>
                                   child: Opacity(
                                     opacity: registerOpacity,
                                     child: Transform.translate(
-                                      offset:
-                                          Offset(20 * (1.0 - _slideAnimation.value), 0),
+                                      offset: Offset(
+                                        20 * (1.0 - _slideAnimation.value),
+                                        0,
+                                      ),
                                       child: IgnorePointer(
                                         ignoring: _slideAnimation.value < 0.7,
                                         child: _buildOrangePanelInfo(
@@ -544,11 +540,15 @@ class _LoginScreenState extends State<LoginScreen>
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.restaurant, color: Colors.white, size: 24),
+                child: const Icon(
+                  Icons.restaurant,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 12),
               const Text(
-                'Restoran\nNusantara',
+                'Rasantara',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -575,7 +575,7 @@ class _LoginScreenState extends State<LoginScreen>
           Text(
             isRegisterSide
                 ? 'Buat akun baru untuk memesan\nmenu restoran kami dengan mudah.'
-                : 'Sistem Kasir & Layanan Meja\nRestoran Nusantara — UJIKOM RPL 2026.',
+                : 'Sistem Kasir & Layanan Meja\nRestoran Nusantara: UJIKOM RPL 2026.',
             style: TextStyle(
               fontSize: 14,
               color: Colors.white.withValues(alpha: 0.85),
@@ -585,39 +585,45 @@ class _LoginScreenState extends State<LoginScreen>
           const SizedBox(height: 40),
 
           // CTA button
-          GestureDetector(
-            onTap: () => _toggleMode(!isRegisterSide),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(50),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    isRegisterSide ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _toggleMode(!isRegisterSide),
+              borderRadius: BorderRadius.circular(50),
+              child: Ink(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(50),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isRegisterSide
+                          ? 'Sudah punya akun? Masuk'
+                          : 'Belum punya akun? Daftar',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.orangePrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      isRegisterSide ? Icons.login : Icons.person_add,
+                      size: 18,
                       color: AppTheme.orangePrimary,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    isRegisterSide ? Icons.login : Icons.person_add,
-                    size: 18,
-                    color: AppTheme.orangePrimary,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -764,9 +770,7 @@ class _LoginScreenState extends State<LoginScreen>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: isSuccess
-            ? AppTheme.statusGreenBg
-            : AppTheme.statusRedBg,
+        color: isSuccess ? AppTheme.statusGreenBg : AppTheme.statusRedBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isSuccess
@@ -822,7 +826,9 @@ class _LoginScreenState extends State<LoginScreen>
         suffixIcon: isPassword
             ? IconButton(
                 icon: Icon(
-                  obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   size: 20,
                   color: Colors.grey[400],
                 ),
@@ -843,7 +849,10 @@ class _LoginScreenState extends State<LoginScreen>
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: AppTheme.orangePrimary, width: 1.8),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -984,9 +993,7 @@ class _LoginScreenState extends State<LoginScreen>
       children: [
         Row(
           children: [
-            Expanded(
-              child: Divider(color: Colors.grey[200], thickness: 1),
-            ),
+            Expanded(child: Divider(color: Colors.grey[200], thickness: 1)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
@@ -998,9 +1005,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
             ),
-            Expanded(
-              child: Divider(color: Colors.grey[200], thickness: 1),
-            ),
+            Expanded(child: Divider(color: Colors.grey[200], thickness: 1)),
           ],
         ),
         const SizedBox(height: 12),
@@ -1009,37 +1014,52 @@ class _LoginScreenState extends State<LoginScreen>
           runSpacing: 8,
           children: UserRole.values.map((role) {
             final isCurrent = _loginUsernameController.text == role.name;
-            return GestureDetector(
-              onTap: () => _quickFill(role),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isCurrent ? AppTheme.orangeLight : const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(50),
-                  border: Border.all(
-                    color: isCurrent ? AppTheme.orangeBorder : Colors.transparent,
-                    width: 1.5,
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _quickFill(role),
+                borderRadius: BorderRadius.circular(50),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _roleIcon(role),
-                      size: 14,
-                      color: isCurrent ? AppTheme.orangePrimary : Colors.grey[500],
+                  decoration: BoxDecoration(
+                    color: isCurrent
+                        ? AppTheme.orangeLight
+                        : const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(
+                      color: isCurrent
+                          ? AppTheme.orangeBorder
+                          : Colors.transparent,
+                      width: 1.5,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      role.label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isCurrent ? AppTheme.orangePrimary : Colors.grey[600],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _roleIcon(role),
+                        size: 14,
+                        color: isCurrent
+                            ? AppTheme.orangePrimary
+                            : Colors.grey[500],
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Text(
+                        role.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isCurrent
+                              ? AppTheme.orangePrimary
+                              : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -1116,11 +1136,15 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.restaurant, color: Colors.white, size: 36),
+                  child: const Icon(
+                    Icons.restaurant,
+                    color: Colors.white,
+                    size: 36,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Restoran Nusantara',
+                  'Rasantara',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
@@ -1157,8 +1181,16 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                         child: Row(
                           children: [
-                            _mobileTab('Masuk', !_isRegisterMode, () => _toggleMode(false)),
-                            _mobileTab('Daftar', _isRegisterMode, () => _toggleMode(true)),
+                            _mobileTab(
+                              'Masuk',
+                              !_isRegisterMode,
+                              () => _toggleMode(false),
+                            ),
+                            _mobileTab(
+                              'Daftar',
+                              _isRegisterMode,
+                              () => _toggleMode(true),
+                            ),
                           ],
                         ),
                       ),
@@ -1191,11 +1223,20 @@ class _LoginScreenState extends State<LoginScreen>
                               ? Column(
                                   key: const ValueKey('m_reg'),
                                   children: [
-                                    if (_errorMessage != null && _isRegisterMode)
+                                    if (_errorMessage != null &&
+                                        _isRegisterMode)
                                       _feedbackBanner(_errorMessage!, false),
-                                    _inputField(controller: _regNameController, label: 'Nama Lengkap', icon: Icons.badge_outlined),
+                                    _inputField(
+                                      controller: _regNameController,
+                                      label: 'Nama Lengkap',
+                                      icon: Icons.badge_outlined,
+                                    ),
                                     const SizedBox(height: 12),
-                                    _inputField(controller: _regUsernameController, label: 'Username', icon: Icons.alternate_email),
+                                    _inputField(
+                                      controller: _regUsernameController,
+                                      label: 'Username',
+                                      icon: Icons.alternate_email,
+                                    ),
                                     const SizedBox(height: 12),
                                     _inputField(
                                       controller: _regPasswordController,
@@ -1203,7 +1244,9 @@ class _LoginScreenState extends State<LoginScreen>
                                       icon: Icons.lock_outline,
                                       isPassword: true,
                                       obscure: _regObscure,
-                                      onToggle: () => setState(() => _regObscure = !_regObscure),
+                                      onToggle: () => setState(
+                                        () => _regObscure = !_regObscure,
+                                      ),
                                     ),
                                     const SizedBox(height: 12),
                                     _inputField(
@@ -1212,10 +1255,16 @@ class _LoginScreenState extends State<LoginScreen>
                                       icon: Icons.lock_reset,
                                       isPassword: true,
                                       obscure: _regObscure,
-                                      onToggle: () => setState(() => _regObscure = !_regObscure),
+                                      onToggle: () => setState(
+                                        () => _regObscure = !_regObscure,
+                                      ),
                                     ),
                                     const SizedBox(height: 22),
-                                    _primaryButton('Buat Akun', Icons.person_add, _handleRegister),
+                                    _primaryButton(
+                                      'Buat Akun',
+                                      Icons.person_add,
+                                      _handleRegister,
+                                    ),
                                     const SizedBox(height: 16),
                                     _orDivider(),
                                     const SizedBox(height: 16),
@@ -1225,9 +1274,16 @@ class _LoginScreenState extends State<LoginScreen>
                               : Column(
                                   key: const ValueKey('m_login'),
                                   children: [
-                                    if (_successMessage != null) _feedbackBanner(_successMessage!, true),
-                                    if (_errorMessage != null && !_isRegisterMode) _feedbackBanner(_errorMessage!, false),
-                                    _inputField(controller: _loginUsernameController, label: 'Username', icon: Icons.person_outline),
+                                    if (_successMessage != null)
+                                      _feedbackBanner(_successMessage!, true),
+                                    if (_errorMessage != null &&
+                                        !_isRegisterMode)
+                                      _feedbackBanner(_errorMessage!, false),
+                                    _inputField(
+                                      controller: _loginUsernameController,
+                                      label: 'Username',
+                                      icon: Icons.person_outline,
+                                    ),
                                     const SizedBox(height: 12),
                                     _inputField(
                                       controller: _loginPasswordController,
@@ -1235,11 +1291,17 @@ class _LoginScreenState extends State<LoginScreen>
                                       icon: Icons.lock_outline,
                                       isPassword: true,
                                       obscure: _loginObscure,
-                                      onToggle: () => setState(() => _loginObscure = !_loginObscure),
+                                      onToggle: () => setState(
+                                        () => _loginObscure = !_loginObscure,
+                                      ),
                                       onSubmit: (_) => _handleLogin(),
                                     ),
                                     const SizedBox(height: 22),
-                                    _primaryButton('Masuk Sekarang', Icons.login, _handleLogin),
+                                    _primaryButton(
+                                      'Masuk Sekarang',
+                                      Icons.login,
+                                      _handleLogin,
+                                    ),
                                     const SizedBox(height: 16),
                                     _orDivider(),
                                     const SizedBox(height: 16),
@@ -1256,7 +1318,7 @@ class _LoginScreenState extends State<LoginScreen>
 
                 const SizedBox(height: 24),
                 Text(
-                  'UJIKOM RPL — Paket 1',
+                  'UJIKOM RPL: Paket 1',
                   style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                 ),
               ],
@@ -1269,32 +1331,36 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _mobileTab(String label, bool isActive, VoidCallback onTap) {
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.all(4),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: isActive ? AppTheme.orangePrimary : Colors.grey[400],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: const EdgeInsets.all(4),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: isActive ? Colors.white : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: isActive ? AppTheme.orangePrimary : Colors.grey[400],
+              ),
             ),
           ),
         ),
@@ -1318,7 +1384,10 @@ class _GoogleLogoPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      -0.6, 1.8, true, bluePaint,
+      -0.6,
+      1.8,
+      true,
+      bluePaint,
     );
 
     // Green arc (bottom-right)
@@ -1327,7 +1396,10 @@ class _GoogleLogoPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      1.2, 1.2, true, greenPaint,
+      1.2,
+      1.2,
+      true,
+      greenPaint,
     );
 
     // Yellow arc (bottom-left)
@@ -1336,7 +1408,10 @@ class _GoogleLogoPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      2.4, 1.0, true, yellowPaint,
+      2.4,
+      1.0,
+      true,
+      yellowPaint,
     );
 
     // Red arc (top-left)
@@ -1345,7 +1420,10 @@ class _GoogleLogoPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      3.4, 1.0, true, redPaint,
+      3.4,
+      1.0,
+      true,
+      redPaint,
     );
 
     // White inner circle to create the 'G' shape

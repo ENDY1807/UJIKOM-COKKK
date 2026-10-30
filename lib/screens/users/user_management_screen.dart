@@ -96,10 +96,28 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     final password = passwordController.text;
 
                     if (name.isEmpty || (existing == null && (username.isEmpty || password.isEmpty))) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Mohon lengkapi semua data wajib'),
+                          backgroundColor: AppTheme.statusRed,
+                        ),
+                      );
                       return;
                     }
 
                     if (existing == null) {
+                      final exists = widget.db.users.any(
+                        (u) => u.username.toLowerCase() == username.toLowerCase(),
+                      );
+                      if (exists) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Username sudah terdaftar, gunakan yang lain'),
+                            backgroundColor: AppTheme.statusRed,
+                          ),
+                        );
+                        return;
+                      }
                       widget.db.addUser(username, password, name, selectedRole);
                     } else {
                       widget.db.updateUser(existing.idUser, name, password, selectedRole);
@@ -205,9 +223,32 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.statusRed),
+                      tooltip: 'Hapus Pengguna',
                       onPressed: () {
-                        widget.db.deleteUser(user.idUser);
-                        setState(() {});
+                        showDialog(
+                          context: context,
+                          builder: (delCtx) => AlertDialog(
+                            backgroundColor: AppTheme.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: const Text('Konfirmasi Hapus', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            content: Text('Yakin ingin menghapus pengguna "${user.namaUser}"?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(delCtx).pop(),
+                                child: const Text('Batal'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.statusRed),
+                                onPressed: () {
+                                  widget.db.deleteUser(user.idUser);
+                                  Navigator.of(delCtx).pop();
+                                  setState(() {});
+                                },
+                                child: const Text('Hapus'),
+                              ),
+                            ],
+                          ),
+                        );
                       },
                     ),
                   ],

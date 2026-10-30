@@ -1,16 +1,21 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DesktopOAuthServer {
   static HttpServer? _server;
 
-  static Future<AuthSessionUrlResponse?> listenForOAuthCallback({int port = 3000}) async {
+  static Future<AuthSessionUrlResponse?> listenForOAuthCallback({
+    int port = 3000,
+  }) async {
     try {
       await stop();
       _server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
-      debugPrint('[DesktopOAuthServer] Listening on http://localhost:$port for OAuth callback...');
+      debugPrint(
+        '[DesktopOAuthServer] Listening on http://localhost:$port for OAuth callback...',
+      );
     } catch (e) {
       debugPrint('[DesktopOAuthServer] Bind port $port failed: $e');
       return null;
@@ -67,8 +72,9 @@ class DesktopOAuthServer {
           ''');
         await request.response.close();
 
-        // Ambil session dari URL callback
-        final authRes = await Supabase.instance.client.auth.getSessionFromUrl(uri);
+        final authRes = await Supabase.instance.client.auth.getSessionFromUrl(
+          uri,
+        );
         return authRes;
       }
     } finally {
@@ -84,4 +90,3 @@ class DesktopOAuthServer {
     } catch (_) {}
   }
 }
-

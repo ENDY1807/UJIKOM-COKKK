@@ -106,7 +106,15 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                   onPressed: () {
                     final name = nameController.text.trim();
                     final price = int.tryParse(priceController.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-                    if (name.isEmpty || price <= 0) return;
+                    if (name.isEmpty || price <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Nama menu dan harga yang valid wajib diisi'),
+                          backgroundColor: AppTheme.statusRed,
+                        ),
+                      );
+                      return;
+                    }
 
                     if (existing == null) {
                       widget.db.addMenu(name, selectedCat, price, descController.text.trim());
@@ -167,8 +175,28 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
             ElevatedButton(
               onPressed: () {
                 final no = tableNoController.text.trim();
-                final cap = int.tryParse(capacityController.text.trim()) ?? 4;
-                if (no.isEmpty) return;
+                final cap = int.tryParse(capacityController.text.trim()) ?? 0;
+                if (no.isEmpty || cap <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Nomor meja dan kapasitas valid wajib diisi'),
+                      backgroundColor: AppTheme.statusRed,
+                    ),
+                  );
+                  return;
+                }
+                final exists = widget.db.tables.any(
+                  (t) => t.nomorMeja.toLowerCase() == no.toLowerCase(),
+                );
+                if (exists) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Nomor meja sudah terdaftar'),
+                      backgroundColor: AppTheme.statusRed,
+                    ),
+                  );
+                  return;
+                }
                 widget.db.addTable(no, cap);
                 Navigator.of(ctx).pop();
                 setState(() {});
@@ -311,9 +339,32 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.statusRed),
+                          tooltip: 'Hapus Menu',
                           onPressed: () {
-                            widget.db.deleteMenu(menu.idMasakan);
-                            setState(() {});
+                            showDialog(
+                              context: context,
+                              builder: (delCtx) => AlertDialog(
+                                backgroundColor: AppTheme.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                title: const Text('Konfirmasi Hapus', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                content: Text('Yakin ingin menghapus menu "${menu.namaMasakan}"?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(delCtx).pop(),
+                                    child: const Text('Batal'),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.statusRed),
+                                    onPressed: () {
+                                      widget.db.deleteMenu(menu.idMasakan);
+                                      Navigator.of(delCtx).pop();
+                                      setState(() {});
+                                    },
+                                    child: const Text('Hapus'),
+                                  ),
+                                ],
+                              ),
+                            );
                           },
                         ),
                       ],

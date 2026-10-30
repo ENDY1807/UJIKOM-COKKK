@@ -25,7 +25,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
   late AnimationController _entryController;
-  late AnimationController _pulseController;
   late List<Animation<double>> _cardAnimations;
 
   @override
@@ -35,11 +34,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..forward();
-
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
 
     _cardAnimations = List.generate(4, (i) {
       return CurvedAnimation(
@@ -52,7 +46,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void dispose() {
     _entryController.dispose();
-    _pulseController.dispose();
     super.dispose();
   }
 
@@ -377,36 +370,36 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                   ),
 
-                  // Live indicator
-                  AnimatedBuilder(
-                    animation: _pulseController,
-                    builder: (context, _) {
-                      final scale = 0.85 + _pulseController.value * 0.3;
-                      return Column(
-                        children: [
-                          Transform.scale(
-                            scale: scale,
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF4ADE80),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
+                  // Live status badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF4ADE80),
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'LIVE',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                        ),
+                        const SizedBox(width: 5),
+                        const Text(
+                          'LIVE',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
                           ),
-                        ],
-                      );
-                    },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

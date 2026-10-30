@@ -35,6 +35,7 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
 
   void _navigateToTab(int index) {
@@ -120,6 +121,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         final isDesktop = constraints.maxWidth >= 900;
 
         return Scaffold(
+          key: _scaffoldKey,
+          drawer: !isDesktop ? _buildDrawer(currentUser, role, destinations) : null,
           appBar: AppBar(
             title: Row(
               mainAxisSize: MainAxisSize.min,
@@ -321,23 +324,142 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   decoration: const BoxDecoration(
                     border: Border(top: BorderSide(color: AppTheme.borderSubtle, width: 1)),
                   ),
-                  child: NavigationBar(
-                    backgroundColor: AppTheme.white,
-                    indicatorColor: AppTheme.orangeLight,
-                    selectedIndex: _currentIndex,
-                    onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-                    destinations: destinations.map((item) {
-                      return NavigationDestination(
-                        icon: Icon(item.icon, color: AppTheme.textMuted),
-                        selectedIcon: Icon(item.icon, color: AppTheme.orangePrimary),
-                        label: item.label,
-                      );
-                    }).toList(),
-                  ),
+                  child: destinations.length > 5
+                      ? NavigationBar(
+                          backgroundColor: AppTheme.white,
+                          indicatorColor: AppTheme.orangeLight,
+                          selectedIndex: _currentIndex < 4 ? _currentIndex : 4,
+                          onDestinationSelected: (idx) {
+                            if (idx == 4) {
+                              _scaffoldKey.currentState?.openDrawer();
+                            } else {
+                              setState(() => _currentIndex = idx);
+                            }
+                          },
+                          destinations: [
+                            ...destinations.take(4).map((item) {
+                              return NavigationDestination(
+                                icon: Icon(item.icon, color: AppTheme.textMuted),
+                                selectedIcon: Icon(item.icon, color: AppTheme.orangePrimary),
+                                label: item.label,
+                              );
+                            }),
+                            const NavigationDestination(
+                              icon: Icon(Icons.menu, color: AppTheme.textMuted),
+                              selectedIcon: Icon(Icons.menu, color: AppTheme.orangePrimary),
+                              label: 'Lainnya',
+                            ),
+                          ],
+                        )
+                      : NavigationBar(
+                          backgroundColor: AppTheme.white,
+                          indicatorColor: AppTheme.orangeLight,
+                          selectedIndex: _currentIndex,
+                          onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
+                          destinations: destinations.map((item) {
+                            return NavigationDestination(
+                              icon: Icon(item.icon, color: AppTheme.textMuted),
+                              selectedIcon: Icon(item.icon, color: AppTheme.orangePrimary),
+                              label: item.label,
+                            );
+                          }).toList(),
+                        ),
                 )
               : null,
         );
       },
+    );
+  }
+
+  Widget _buildDrawer(
+    UserModel? currentUser,
+    UserRole role,
+    List<NavDestinationItem> destinations,
+  ) {
+    return Drawer(
+      backgroundColor: AppTheme.white,
+      child: Column(
+        children: [
+          DrawerHeader(
+            decoration: const BoxDecoration(
+              color: AppTheme.orangeLight,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.orangePrimary,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.restaurant, color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Restoran Nusantara',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textDark),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${role.label} · ${currentUser?.namaUser ?? "Pengguna"}',
+                        style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              itemCount: destinations.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 4),
+              itemBuilder: (context, index) {
+                final item = destinations[index];
+                final isSelected = _currentIndex == index;
+                return ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  tileColor: isSelected ? AppTheme.orangeLight : Colors.transparent,
+                  leading: Icon(
+                    item.icon,
+                    color: isSelected ? AppTheme.orangePrimary : AppTheme.textMuted,
+                  ),
+                  title: Text(
+                    item.label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected ? AppTheme.orangePrimary : AppTheme.textDark,
+                    ),
+                  ),
+                  onTap: () {
+                    setState(() => _currentIndex = index);
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
+            ),
+          ),
+          const Divider(color: AppTheme.borderSubtle),
+          ListTile(
+            leading: const Icon(Icons.logout, color: AppTheme.statusRed),
+            title: const Text('Keluar Akun', style: TextStyle(color: AppTheme.statusRed, fontWeight: FontWeight.w600)),
+            onTap: () {
+              Navigator.of(context).pop();
+              widget.db.logout();
+              widget.onLogout();
+            },
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
     );
   }
 }
