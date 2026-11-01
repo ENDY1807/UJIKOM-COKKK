@@ -4,6 +4,7 @@ import '../models/menu_model.dart';
 import '../models/table_model.dart';
 import '../models/order_model.dart';
 import '../models/transaction_model.dart';
+import '../models/payment_method_model.dart';
 import 'supabase_service.dart';
 
 class DatabaseService extends ChangeNotifier {
@@ -21,12 +22,16 @@ class DatabaseService extends ChangeNotifier {
   bool _isLoadingFromSupabase = false;
   bool get isLoadingFromSupabase => _isLoadingFromSupabase;
 
-  // Lists
+  // Lists (Murni mengikuti database cloud Supabase, tidak menggunakan dummy/seed bawaan)
   final List<UserModel> _users = [];
   final List<MenuModel> _menus = [];
   final List<TableModel> _tables = [];
   final List<OrderModel> _orders = [];
   final List<TransactionModel> _transactions = [];
+
+  // Metode Pembayaran Terkoneksi Nyata (DANA, GoPay, M-Banking, dsb.) - Mulai dari 0 / kosong
+  final List<ConnectedPaymentMethod> _connectedPaymentMethods = [];
+  final List<PaymentMutation> _paymentMutations = [];
 
   // Getters
   List<UserModel> get users => List.unmodifiable(_users);
@@ -34,18 +39,18 @@ class DatabaseService extends ChangeNotifier {
   List<TableModel> get tables => List.unmodifiable(_tables);
   List<OrderModel> get orders => List.unmodifiable(_orders);
   List<TransactionModel> get transactions => List.unmodifiable(_transactions);
+  List<ConnectedPaymentMethod> get connectedPaymentMethods =>
+      List.unmodifiable(_connectedPaymentMethods);
+  List<PaymentMutation> get paymentMutations =>
+      List.unmodifiable(_paymentMutations);
 
   DatabaseService() {
-    // 1. Seed fallback data agar UI tidak kosong saat offline / initial frame
-    _seedData();
-    // Default login as admin for instant preview/testing
-    login('admin', 'admin123');
-
-    // 2. Inisialisasi sinkronisasi live data dari Supabase
+    // Data bawaan dikosongkan sesuai instruksi user
+    // Seluruh data murni disinkronisasi dari database Supabase
     initSupabase();
   }
 
-  /// Sinkronisasi dengan database cloud Supabase
+  /// Sinkronisasi langsung dengan database cloud Supabase
   Future<void> initSupabase() async {
     _isLoadingFromSupabase = true;
     notifyListeners();
@@ -55,320 +60,87 @@ class DatabaseService extends ChangeNotifier {
       _isSupabaseConnected = connected;
 
       if (connected) {
-        // 1. Sinkronisasi User dari tb_user
+        // 1. Sinkronisasi User dari tabel user / tb_user
         final cloudUsers = await _supabase.fetchUsers();
-        if (cloudUsers.isNotEmpty) {
-          _users.clear();
-          _users.addAll(cloudUsers);
-          if (_currentUser != null) {
-            final match = _users.where((u) => u.idUser == _currentUser!.idUser);
-            if (match.isNotEmpty) {
-              _currentUser = match.first;
-            }
+        _users.clear();
+        _users.addAll(cloudUsers);
+        if (_currentUser != null) {
+          final match = _users.where((u) =>
+              u.idUser == _currentUser!.idUser ||
+              (u.googleUid != null && u.googleUid == _currentUser!.googleUid) ||
+              (u.googleEmail != null && u.googleEmail!.toLowerCase() == _currentUser!.googleEmail?.toLowerCase()));
+          if (match.isNotEmpty) {
+            _currentUser = match.first;
+          } else {
+            _users.add(_currentUser!);
           }
         }
 
-        // 2. Sinkronisasi Menu dari tb_masakan
+        // 2. Sinkronisasi Menu Masakan dari tabel masakan / tb_masakan
         final cloudMenus = await _supabase.fetchMenus();
-        if (cloudMenus.isNotEmpty) {
-          _menus.clear();
-          _menus.addAll(cloudMenus);
-        }
+        _menus.clear();
+        _menus.addAll(cloudMenus);
 
-        // 3. Sinkronisasi Meja dari tb_meja
+        // 3. Sinkronisasi Orders dari tabel order & detail_order
+        final cloudOrders = await _supabase.fetchOrders(_menus, _users);
+        _orders.clear();
+        _orders.addAll(cloudOrders);
+
+        // 4. Sinkronisasi Meja (murni dari database cloud)
         final cloudTables = await _supabase.fetchTables();
+        _tables.clear();
         if (cloudTables.isNotEmpty) {
-          _tables.clear();
           _tables.addAll(cloudTables);
         }
 
-        // 4. Sinkronisasi Orders dari tb_order & tb_detail_order
-        final cloudOrders = await _supabase.fetchOrders(_menus, _users);
-        if (cloudOrders.isNotEmpty) {
-          _orders.clear();
-          _orders.addAll(cloudOrders);
-        }
-
-        // 5. Sinkronisasi Transaksi dari tb_transaksi
+        // 5. Sinkronisasi Transaksi dari tabel transaksi
         final cloudTrx = await _supabase.fetchTransactions(_orders, _users);
-        if (cloudTrx.isNotEmpty) {
-          _transactions.clear();
-          _transactions.addAll(cloudTrx);
+        _transactions.clear();
+        _transactions.addAll(cloudTrx);
+
+        // 6. Sinkronisasi Metode Pembayaran Pengguna dari cloud
+        if (_currentUser != null) {
+          final cloudMethods = await _supabase.fetchUserPaymentMethods(_currentUser!.idUser);
+          _connectedPaymentMethods.clear();
+          _connectedPaymentMethods.addAll(cloudMethods);
         }
+        _ensureDefaultDanaSandbox();
+      } else {
+        _ensureDefaultDanaSandbox();
       }
     } catch (e) {
       debugPrint('[DatabaseService] initSupabase error: $e');
+      _ensureDefaultDanaSandbox();
     } finally {
       _isLoadingFromSupabase = false;
       notifyListeners();
     }
   }
 
-  void _seedData() {
-    // 1. Seed Users
-    _users.addAll([
-      UserModel(
-        idUser: 1,
-        username: 'admin',
-        password: 'admin123',
-        namaUser: 'Ahmad Administrator',
-        role: UserRole.administrator,
-      ),
-      UserModel(
-        idUser: 2,
-        username: 'waiter',
-        password: 'waiter123',
-        namaUser: 'Budi Waiter',
-        role: UserRole.waiter,
-      ),
-      UserModel(
-        idUser: 3,
-        username: 'kasir',
-        password: 'kasir123',
-        namaUser: 'Citra Kasir',
-        role: UserRole.kasir,
-      ),
-      UserModel(
-        idUser: 4,
-        username: 'owner',
-        password: 'owner123',
-        namaUser: 'Dedi Pemilik',
-        role: UserRole.owner,
-      ),
-      UserModel(
-        idUser: 5,
-        username: 'pelanggan',
-        password: 'pelanggan123',
-        namaUser: 'Eka Pelanggan',
-        role: UserRole.pelanggan,
-      ),
-    ]);
-
-    // 2. Seed Tables
-    _tables.addAll([
-      TableModel(idMeja: 1, nomorMeja: 'Meja 01', kapasitas: 2, status: TableStatus.terisi),
-      TableModel(idMeja: 2, nomorMeja: 'Meja 02', kapasitas: 4, status: TableStatus.terisi),
-      TableModel(idMeja: 3, nomorMeja: 'Meja 03', kapasitas: 4, status: TableStatus.kosong),
-      TableModel(idMeja: 4, nomorMeja: 'Meja 04', kapasitas: 6, status: TableStatus.kosong),
-      TableModel(idMeja: 5, nomorMeja: 'Meja 05', kapasitas: 2, status: TableStatus.kosong),
-      TableModel(idMeja: 6, nomorMeja: 'Meja 06', kapasitas: 4, status: TableStatus.reservasi),
-      TableModel(idMeja: 7, nomorMeja: 'Meja 07', kapasitas: 8, status: TableStatus.kosong),
-      TableModel(idMeja: 8, nomorMeja: 'Meja 08', kapasitas: 4, status: TableStatus.kosong),
-    ]);
-
-    // 3. Seed Menus
-    _menus.addAll([
-      MenuModel(
-        idMasakan: 1,
-        namaMasakan: 'Nasi Goreng Spesial',
-        kategori: MenuCategory.makanan,
-        harga: 25000,
-        status: MenuStatus.tersedia,
-        deskripsi: 'Nasi goreng racikan bumbu khas dengan telur mata sapi dan ayam suwir.',
-      ),
-      MenuModel(
-        idMasakan: 2,
-        namaMasakan: 'Ayam Bakar Madu',
-        kategori: MenuCategory.makanan,
-        harga: 32000,
-        status: MenuStatus.tersedia,
-        deskripsi: 'Ayam bakar legit berlumur madu hutan dengan sambal terasi dan lalapan.',
-      ),
-      MenuModel(
-        idMasakan: 3,
-        namaMasakan: 'Mie Goreng Seafood',
-        kategori: MenuCategory.makanan,
-        harga: 28000,
-        status: MenuStatus.tersedia,
-        deskripsi: 'Mie telur kenyal dengan udang, cumi segar, dan sayuran renyah.',
-      ),
-      MenuModel(
-        idMasakan: 4,
-        namaMasakan: 'Sop Buntut Sapi',
-        kategori: MenuCategory.makanan,
-        harga: 45000,
-        status: MenuStatus.tersedia,
-        deskripsi: 'Potongan buntut empuk dengan kuah kaldu rempah gurih hangat.',
-      ),
-      MenuModel(
-        idMasakan: 5,
-        namaMasakan: 'Sate Ayam Madura (10 tusuk)',
-        kategori: MenuCategory.makanan,
-        harga: 30000,
-        status: MenuStatus.tersedia,
-        deskripsi: 'Sate daging ayam pilihan dibakar harum dengan bumbu kacang gurih.',
-      ),
-      MenuModel(
-        idMasakan: 6,
-        namaMasakan: 'Es Teh Manis',
-        kategori: MenuCategory.minuman,
-        harga: 6000,
-        status: MenuStatus.tersedia,
-        deskripsi: 'Teh melati wangi dingin segar pelepas dahaga.',
-      ),
-      MenuModel(
-        idMasakan: 7,
-        namaMasakan: 'Es Jeruk Peras',
-        kategori: MenuCategory.minuman,
-        harga: 9000,
-        status: MenuStatus.tersedia,
-        deskripsi: 'Perasan jeruk segar alami kaya vitamin C.',
-      ),
-      MenuModel(
-        idMasakan: 8,
-        namaMasakan: 'Jus Alpukat Kocok',
-        kategori: MenuCategory.minuman,
-        harga: 16000,
-        status: MenuStatus.tersedia,
-        deskripsi: 'Alpukat mentega kental dengan krimer cokelat manis.',
-      ),
-      MenuModel(
-        idMasakan: 9,
-        namaMasakan: 'Kopi Susu Gula Aren',
-        kategori: MenuCategory.minuman,
-        harga: 18000,
-        status: MenuStatus.tersedia,
-        deskripsi: 'Espresso robusta dengan susu segar dan gula aren murni.',
-      ),
-      MenuModel(
-        idMasakan: 10,
-        namaMasakan: 'Paket Hemat Pelajar',
-        kategori: MenuCategory.paket,
-        harga: 27000,
-        status: MenuStatus.tersedia,
-        deskripsi: 'Nasi putih pulen, ayam goreng krispi, sambal, lalap, dan Es Teh Manis.',
-      ),
-      MenuModel(
-        idMasakan: 11,
-        namaMasakan: 'Paket Keluarga 4 Orang',
-        kategori: MenuCategory.paket,
-        harga: 125000,
-        status: MenuStatus.tersedia,
-        deskripsi: '1 Bakul Nasi, 1 Ekor Ayam Bakar, 1 Porsi Sop Buntut, 4 Es Teh Manis.',
-      ),
-    ]);
-
-    // 4. Seed Active Orders (Table Service)
-    final order1 = OrderModel(
-      idOrder: 101,
-      noMeja: 'Meja 01',
-      namaPelanggan: 'Pak Rahman',
-      tanggal: DateTime.now().subtract(const Duration(minutes: 35)),
-      idUser: 2,
-      namaUser: 'Budi Waiter',
-      keterangan: 'Minta sendok garpu tambahan',
-      status: OrderStatus.diproses,
-      items: [
-        OrderItemModel(idDetailOrder: 1, menu: _menus[0], jumlah: 2, catatan: 'Satu tidak pedas'),
-        OrderItemModel(idDetailOrder: 2, menu: _menus[5], jumlah: 2, catatan: 'Manis sedang'),
-      ],
-    );
-
-    final order2 = OrderModel(
-      idOrder: 102,
-      noMeja: 'Meja 02',
-      namaPelanggan: 'Ibu Sarah',
-      tanggal: DateTime.now().subtract(const Duration(minutes: 15)),
-      idUser: 2,
-      namaUser: 'Budi Waiter',
-      keterangan: 'Pesanan untuk 3 orang',
-      status: OrderStatus.menunggu,
-      items: [
-        OrderItemModel(idDetailOrder: 3, menu: _menus[1], jumlah: 2, catatan: 'Pedas sedang'),
-        OrderItemModel(idDetailOrder: 4, menu: _menus[3], jumlah: 1, catatan: 'Kuah dipisah'),
-        OrderItemModel(idDetailOrder: 5, menu: _menus[6], jumlah: 3, catatan: ''),
-      ],
-    );
-
-    _orders.addAll([order1, order2]);
-
-    // 5. Seed Past Finished Transactions
-    final pastOrder1 = OrderModel(
-      idOrder: 98,
-      noMeja: 'Meja 03',
-      namaPelanggan: 'Keluarga Hendra',
-      tanggal: DateTime.now().subtract(const Duration(hours: 3)),
-      idUser: 2,
-      namaUser: 'Budi Waiter',
-      status: OrderStatus.selesai,
-      items: [
-        OrderItemModel(idDetailOrder: 6, menu: _menus[10], jumlah: 1),
-        OrderItemModel(idDetailOrder: 7, menu: _menus[7], jumlah: 2),
-      ],
-    );
-
-    final pastOrder2 = OrderModel(
-      idOrder: 99,
-      noMeja: 'Meja 05',
-      namaPelanggan: 'Dewi Anggraini',
-      tanggal: DateTime.now().subtract(const Duration(hours: 1, minutes: 40)),
-      idUser: 2,
-      namaUser: 'Budi Waiter',
-      status: OrderStatus.selesai,
-      items: [
-        OrderItemModel(idDetailOrder: 8, menu: _menus[2], jumlah: 1),
-        OrderItemModel(idDetailOrder: 9, menu: _menus[8], jumlah: 1),
-      ],
-    );
-
-    final pastOrder3 = OrderModel(
-      idOrder: 100,
-      noMeja: 'Meja 04',
-      namaPelanggan: 'Rian Pratama',
-      tanggal: DateTime.now().subtract(const Duration(minutes: 50)),
-      idUser: 2,
-      namaUser: 'Budi Waiter',
-      status: OrderStatus.selesai,
-      items: [
-        OrderItemModel(idDetailOrder: 10, menu: _menus[9], jumlah: 2),
-      ],
-    );
-
-    _orders.addAll([pastOrder1, pastOrder2, pastOrder3]);
-
-    _transactions.addAll([
-      TransactionModel(
-        idTransaksi: 1,
-        idUser: 3,
-        namaKasir: 'Citra Kasir',
-        order: pastOrder1,
-        tanggal: DateTime.now().subtract(const Duration(hours: 2, minutes: 20)),
-        totalBayar: pastOrder1.totalHarga,
-        jumlahBayar: 160000,
-        kembalian: 160000 - pastOrder1.totalHarga,
-        metodePembayaran: 'Tunai',
-      ),
-      TransactionModel(
-        idTransaksi: 2,
-        idUser: 3,
-        namaKasir: 'Citra Kasir',
-        order: pastOrder2,
-        tanggal: DateTime.now().subtract(const Duration(hours: 1)),
-        totalBayar: pastOrder2.totalHarga,
-        jumlahBayar: 50000,
-        kembalian: 50000 - pastOrder2.totalHarga,
-        metodePembayaran: 'QRIS',
-      ),
-      TransactionModel(
-        idTransaksi: 3,
-        idUser: 3,
-        namaKasir: 'Citra Kasir',
-        order: pastOrder3,
-        tanggal: DateTime.now().subtract(const Duration(minutes: 25)),
-        totalBayar: pastOrder3.totalHarga,
-        jumlahBayar: 60000,
-        kembalian: 60000 - pastOrder3.totalHarga,
-        metodePembayaran: 'Tunai',
-      ),
-    ]);
+  void _ensureDefaultDanaSandbox() {
+    if (_connectedPaymentMethods.isEmpty) {
+      _connectedPaymentMethods.add(
+        ConnectedPaymentMethod(
+          id: 'dana_h2h_sandbox',
+          provider: PaymentMethodProvider.dana,
+          accountNumber: '081099999999',
+          accountName: 'Tester DANA (H2H Gateway)',
+          balance: 2500000,
+          isDefault: true,
+        ),
+      );
+    }
   }
 
-  // --- AUTHENTICATION & SWITCHER ---
+  // --- AUTHENTICATION & LOGIN ---
+
+  /// Login sinkron lokal
   bool login(String username, String password) {
     try {
       final user = _users.firstWhere(
         (u) =>
-            u.username.toLowerCase() == username.trim().toLowerCase() &&
+            (u.username.toLowerCase() == username.trim().toLowerCase() ||
+             (u.googleEmail != null && u.googleEmail!.toLowerCase() == username.trim().toLowerCase())) &&
             u.password == password,
       );
       _currentUser = user;
@@ -379,14 +151,102 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  /// Login / Register via Google OAuth dengan integrasi Supabase (sp_google_login)
+  /// Login asinkron dengan validasi langsung ke database Supabase
+  Future<bool> loginAsync(String username, String password) async {
+    // 1. Cek dari memori lokal terlebih dahulu
+    if (login(username, password)) {
+      return true;
+    }
+
+    // 2. Jika belum ada di memori, query langsung ke Supabase
+    if (_isSupabaseConnected) {
+      try {
+        final c = _supabase.clientSafe;
+        if (c != null) {
+          final res = await c
+              .from('user')
+              .select('*')
+              .or('username.eq.${username.trim()},email.eq.${username.trim()}')
+              .eq('password', password)
+              .maybeSingle();
+
+          if (res != null) {
+            final user = UserModel.fromMap(res);
+            final idx = _users.indexWhere((u) => u.idUser == user.idUser);
+            if (idx != -1) {
+              _users[idx] = user;
+            } else {
+              _users.add(user);
+            }
+            _currentUser = user;
+            notifyListeners();
+            return true;
+          }
+        }
+      } catch (e) {
+        debugPrint('[DatabaseService] loginAsync cloud query error: $e');
+      }
+    }
+
+    return false;
+  }
+
+  /// Registrasi akun baru (Pelanggan) langsung ke database Supabase
+  Future<UserModel> registerUser({
+    required String username,
+    required String password,
+    required String namaUser,
+    String? email,
+  }) async {
+    // Cek apakah username sudah ada
+    final cleanUsername = username.trim();
+    final existsLocal = _users.any(
+      (u) => u.username.toLowerCase() == cleanUsername.toLowerCase(),
+    );
+    if (existsLocal) {
+      throw 'Username "$cleanUsername" sudah terdaftar. Silakan gunakan username lain.';
+    }
+
+    final newId = (_users.map((u) => u.idUser).fold(0, (max, id) => id > max ? id : max)) + 1;
+    final newUser = UserModel(
+      idUser: newId,
+      username: cleanUsername,
+      password: password,
+      namaUser: namaUser.trim(),
+      role: UserRole.pelanggan,
+      googleEmail: email?.trim(),
+    );
+
+    // Simpan ke Supabase jika terhubung
+    if (_isSupabaseConnected) {
+      try {
+        final saved = await _supabase.insertUser(newUser);
+        if (saved != null) {
+          _users.add(saved);
+          _currentUser = saved;
+          notifyListeners();
+          return saved;
+        }
+      } catch (e) {
+        debugPrint('[DatabaseService] registerUser Supabase error: $e');
+        throw 'Gagal mendaftarkan akun ke database: $e';
+      }
+    }
+
+    // Simpan ke memori jika offline
+    _users.add(newUser);
+    _currentUser = newUser;
+    notifyListeners();
+    return newUser;
+  }
+
+  /// Login / Register via Google OAuth dengan integrasi Supabase
   Future<UserModel> loginWithGoogleSupabase({
     required String googleUid,
     required String googleEmail,
     required String displayName,
     String? photoUrl,
   }) async {
-    // 1. Coba eksekusi melalui Supabase PL/pgSQL RPC
     if (_isSupabaseConnected) {
       try {
         final cloudUser = await _supabase.loginWithGoogleRpc(
@@ -400,7 +260,8 @@ class DatabaseService extends ChangeNotifier {
           final idx = _users.indexWhere((u) =>
               u.idUser == cloudUser.idUser ||
               u.googleUid == googleUid ||
-              u.username.toLowerCase() == googleEmail.toLowerCase());
+              u.username.toLowerCase() == googleEmail.toLowerCase() ||
+              (u.googleEmail != null && u.googleEmail!.toLowerCase() == googleEmail.toLowerCase()));
 
           if (idx != -1) {
             _users[idx] = cloudUser;
@@ -416,7 +277,6 @@ class DatabaseService extends ChangeNotifier {
       }
     }
 
-    // 2. Fallback ke login lokal jika Supabase offline
     return loginWithGoogle(
       googleUid: googleUid,
       googleEmail: googleEmail,
@@ -431,8 +291,8 @@ class DatabaseService extends ChangeNotifier {
     required String googleEmail,
     required String displayName,
     String? photoUrl,
+    UserRole role = UserRole.pelanggan,
   }) {
-    // 1. Cek apakah Google UID sudah terdaftar
     UserModel? existing;
     try {
       existing = _users.firstWhere((u) => u.googleUid == googleUid);
@@ -452,7 +312,6 @@ class DatabaseService extends ChangeNotifier {
       return _currentUser!;
     }
 
-    // 2. Cek apakah email Google cocok dgn akun lokal yang ada
     UserModel? byEmail;
     try {
       byEmail = _users.firstWhere(
@@ -477,15 +336,13 @@ class DatabaseService extends ChangeNotifier {
       return _currentUser!;
     }
 
-    // 3. Buat akun baru: default Pelanggan
-    final newId =
-        (_users.map((u) => u.idUser).fold(0, (max, id) => id > max ? id : max)) + 1;
+    final newId = (_users.map((u) => u.idUser).fold(0, (max, id) => id > max ? id : max)) + 1;
     final newUser = UserModel(
       idUser: newId,
-      username: googleEmail,
+      username: googleEmail.split('@').first,
       password: '',
       namaUser: displayName,
-      role: UserRole.pelanggan,
+      role: role,
       authProvider: AuthProvider.google,
       googleUid: googleUid,
       googleEmail: googleEmail,
@@ -503,11 +360,26 @@ class DatabaseService extends ChangeNotifier {
   }
 
   void switchRole(UserRole role) {
-    final user = _users.firstWhere(
-      (u) => u.role == role,
-      orElse: () => _users.first,
-    );
-    _currentUser = user;
+    if (_currentUser != null) {
+      // Ubah role pengguna saat ini (tanpa menukar akun!)
+      _currentUser = _currentUser!.copyWith(role: role);
+      final idx = _users.indexWhere((u) => u.idUser == _currentUser!.idUser);
+      if (idx != -1) {
+        _users[idx] = _currentUser!;
+      }
+    } else {
+      final user = _users.firstWhere(
+        (u) => u.role == role,
+        orElse: () => UserModel(
+          idUser: 999,
+          username: role.name,
+          password: '',
+          namaUser: role.label,
+          role: role,
+        ),
+      );
+      _currentUser = user;
+    }
     notifyListeners();
   }
 
@@ -516,10 +388,9 @@ class DatabaseService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- REGISTRASI / USER MANAGEMENT (Admin, Waiter, Kasir) ---
+  // --- USER MANAGEMENT (Admin, Waiter, Kasir) ---
   void addUser(String username, String password, String namaUser, UserRole role) {
-    final newId =
-        (_users.map((u) => u.idUser).fold(0, (max, id) => id > max ? id : max)) + 1;
+    final newId = (_users.map((u) => u.idUser).fold(0, (max, id) => id > max ? id : max)) + 1;
     final newUser = UserModel(
       idUser: newId,
       username: username,
@@ -530,7 +401,6 @@ class DatabaseService extends ChangeNotifier {
     _users.add(newUser);
     notifyListeners();
 
-    // Simpan ke Supabase asynchronously
     if (_isSupabaseConnected) {
       _supabase.insertUser(newUser).then((inserted) {
         if (inserted != null) {
@@ -570,9 +440,8 @@ class DatabaseService extends ChangeNotifier {
   }
 
   // --- ENTRI REFERENSI MENU / MASAKAN (Admin) ---
-  void addMenu(String nama, MenuCategory kategori, int harga, String deskripsi) {
-    final newId =
-        (_menus.map((m) => m.idMasakan).fold(0, (max, id) => id > max ? id : max)) + 1;
+  void addMenu(String nama, MenuCategory kategori, int harga, String deskripsi, {String gambarUrl = ''}) {
+    final newId = (_menus.map((m) => m.idMasakan).fold(0, (max, id) => id > max ? id : max)) + 1;
     final newMenu = MenuModel(
       idMasakan: newId,
       namaMasakan: nama,
@@ -580,6 +449,7 @@ class DatabaseService extends ChangeNotifier {
       harga: harga,
       status: MenuStatus.tersedia,
       deskripsi: deskripsi,
+      gambarUrl: gambarUrl,
     );
     _menus.add(newMenu);
     notifyListeners();
@@ -598,7 +468,7 @@ class DatabaseService extends ChangeNotifier {
   }
 
   void updateMenu(int idMasakan, String nama, MenuCategory kategori, int harga,
-      MenuStatus status, String deskripsi) {
+      MenuStatus status, String deskripsi, {String? gambarUrl}) {
     final index = _menus.indexWhere((m) => m.idMasakan == idMasakan);
     if (index != -1) {
       _menus[index] = _menus[index].copyWith(
@@ -607,6 +477,7 @@ class DatabaseService extends ChangeNotifier {
         harga: harga,
         status: status,
         deskripsi: deskripsi,
+        gambarUrl: gambarUrl,
       );
       notifyListeners();
 
@@ -642,10 +513,9 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  // --- ENTRI REFERENSI MEJA (Admin) ---
+  // --- ENTRI REFERENSI MEJA ---
   void addTable(String nomorMeja, int kapasitas) {
-    final newId =
-        (_tables.map((t) => t.idMeja).fold(0, (max, id) => id > max ? id : max)) + 1;
+    final newId = (_tables.map((t) => t.idMeja).fold(0, (max, id) => id > max ? id : max)) + 1;
     final newTable = TableModel(
       idMeja: newId,
       nomorMeja: nomorMeja,
@@ -656,26 +526,49 @@ class DatabaseService extends ChangeNotifier {
     notifyListeners();
 
     if (_isSupabaseConnected) {
-      _supabase.insertTable(newTable).then((inserted) {
-        if (inserted != null) {
-          final idx = _tables.indexOf(newTable);
-          if (idx != -1) {
-            _tables[idx] = inserted;
-            notifyListeners();
-          }
-        }
-      });
+      _supabase.insertTable(newTable);
+    }
+  }
+
+  void updateTable(
+    int idMeja, {
+    required String nomorMeja,
+    required int kapasitas,
+    required TableStatus status,
+  }) {
+    final index = _tables.indexWhere((t) => t.idMeja == idMeja);
+    if (index != -1) {
+      final updated = _tables[index].copyWith(
+        nomorMeja: nomorMeja,
+        kapasitas: kapasitas,
+        status: status,
+      );
+      _tables[index] = updated;
+      notifyListeners();
+
+      if (_isSupabaseConnected) {
+        _supabase.updateTable(updated);
+      }
+    }
+  }
+
+  void deleteTable(int idMeja) {
+    _tables.removeWhere((t) => t.idMeja == idMeja);
+    notifyListeners();
+
+    if (_isSupabaseConnected) {
+      _supabase.deleteTable(idMeja);
     }
   }
 
   void updateTableStatus(String nomorMeja, TableStatus status) {
-    final index = _tables.indexWhere((t) => t.nomorMeja == nomorMeja);
+    final index = _tables.indexWhere((t) => t.nomorMeja.toLowerCase() == nomorMeja.toLowerCase());
     if (index != -1) {
       _tables[index] = _tables[index].copyWith(status: status);
       notifyListeners();
 
       if (_isSupabaseConnected) {
-        _supabase.updateTableStatus(nomorMeja, status);
+        _supabase.updateTable(_tables[index]);
       }
     }
   }
@@ -687,8 +580,7 @@ class DatabaseService extends ChangeNotifier {
     required String keterangan,
     required List<OrderItemModel> items,
   }) {
-    final newId =
-        (_orders.map((o) => o.idOrder).fold(100, (max, id) => id > max ? id : max)) + 1;
+    final newId = (_orders.map((o) => o.idOrder).fold(100, (max, id) => id > max ? id : max)) + 1;
     final order = OrderModel(
       idOrder: newId,
       noMeja: noMeja,
@@ -702,8 +594,10 @@ class DatabaseService extends ChangeNotifier {
     );
     _orders.insert(0, order);
 
-    // Set meja status to Terisi
-    updateTableStatus(noMeja, TableStatus.terisi);
+    // Tandai status meja terisi jika pesanan adalah dine in
+    if (!noMeja.toLowerCase().contains('take away') && !noMeja.toLowerCase().contains('delivery')) {
+      updateTableStatus(noMeja, TableStatus.terisi);
+    }
     notifyListeners();
 
     // Simpan ke Supabase
@@ -734,6 +628,15 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
+  void deleteOrder(int idOrder) {
+    _orders.removeWhere((o) => o.idOrder == idOrder);
+    notifyListeners();
+
+    if (_isSupabaseConnected) {
+      _supabase.deleteOrder(idOrder);
+    }
+  }
+
   // --- ENTRI TRANSAKSI KASIR (Admin, Kasir) ---
   TransactionModel processTransaction({
     required OrderModel order,
@@ -747,10 +650,21 @@ class DatabaseService extends ChangeNotifier {
     final total = order.totalHarga;
     final kembalian = jumlahBayar - total;
 
+    // Tentukan user kasir pemroses yang valid dari database
+    int cashierId = _currentUser?.idUser ?? 0;
+    String cashierName = _currentUser?.namaUser ?? 'Kasir';
+    if (cashierId <= 0) {
+      final kasirUser = _users.where((u) => u.role == UserRole.kasir || u.role == UserRole.administrator).firstOrNull;
+      if (kasirUser != null) {
+        cashierId = kasirUser.idUser;
+        cashierName = kasirUser.namaUser;
+      }
+    }
+
     final transaction = TransactionModel(
       idTransaksi: newId,
-      idUser: _currentUser?.idUser ?? 3,
-      namaKasir: _currentUser?.namaUser ?? 'Citra Kasir',
+      idUser: cashierId,
+      namaKasir: cashierName,
       order: order,
       tanggal: DateTime.now(),
       totalBayar: total,
@@ -767,7 +681,7 @@ class DatabaseService extends ChangeNotifier {
       _orders[orderIndex].status = OrderStatus.selesai;
     }
 
-    // Free the table back to Kosong
+    // Bebaskan meja kembali menjadi Kosong
     updateTableStatus(order.noMeja, TableStatus.kosong);
     notifyListeners();
 
@@ -804,5 +718,240 @@ class DatabaseService extends ChangeNotifier {
     final list = map.entries.toList();
     list.sort((a, b) => b.value.compareTo(a.value));
     return list;
+  }
+
+  // --- PENGATURAN METODE PEMBAYARAN TERKONEKSI (DANA, GOPAY, M-BANKING) ---
+  void addPaymentMethod({
+    required PaymentMethodProvider provider,
+    required String accountNumber,
+    required String accountName,
+    int initialBalance = 0,
+    bool isDefault = false,
+  }) {
+    if (isDefault) {
+      for (int i = 0; i < _connectedPaymentMethods.length; i++) {
+        _connectedPaymentMethods[i] =
+            _connectedPaymentMethods[i].copyWith(isDefault: false);
+      }
+    }
+
+    final newMethod = ConnectedPaymentMethod(
+      id: 'pay_${DateTime.now().millisecondsSinceEpoch}',
+      provider: provider,
+      accountNumber: accountNumber,
+      accountName: accountName,
+      balance: initialBalance,
+      isDefault: isDefault || _connectedPaymentMethods.isEmpty,
+    );
+
+    _connectedPaymentMethods.add(newMethod);
+    notifyListeners();
+
+    if (_isSupabaseConnected && _currentUser != null) {
+      _supabase.saveUserPaymentMethod(_currentUser!.idUser, newMethod);
+    }
+  }
+
+  void removePaymentMethod(String id) {
+    _connectedPaymentMethods.removeWhere((p) => p.id == id);
+    if (_connectedPaymentMethods.isNotEmpty &&
+        !_connectedPaymentMethods.any((p) => p.isDefault)) {
+      _connectedPaymentMethods[0] =
+          _connectedPaymentMethods[0].copyWith(isDefault: true);
+    }
+    notifyListeners();
+
+    if (_isSupabaseConnected) {
+      _supabase.deleteUserPaymentMethod(id);
+    }
+  }
+
+  void setDefaultPaymentMethod(String id) {
+    for (int i = 0; i < _connectedPaymentMethods.length; i++) {
+      final isDef = _connectedPaymentMethods[i].id == id;
+      _connectedPaymentMethods[i] = _connectedPaymentMethods[i].copyWith(
+        isDefault: isDef,
+      );
+      if (_isSupabaseConnected && _currentUser != null) {
+        _supabase.saveUserPaymentMethod(
+          _currentUser!.idUser,
+          _connectedPaymentMethods[i],
+        );
+      }
+    }
+    notifyListeners();
+  }
+
+  void topUpPaymentMethod(String id, int amount, {String? notes}) {
+    final idx = _connectedPaymentMethods.indexWhere((p) => p.id == id);
+    if (idx != -1) {
+      final current = _connectedPaymentMethods[idx];
+      final updated = current.copyWith(balance: current.balance + amount);
+      _connectedPaymentMethods[idx] = updated;
+
+      final mutation = PaymentMutation(
+        idMutasi: DateTime.now().millisecondsSinceEpoch % 10000000,
+        idPaymentMethod: id,
+        idUser: _currentUser?.idUser ?? 0,
+        tipe: MutationType.credit,
+        nominal: amount,
+        saldoSebelum: current.balance,
+        saldoSesudah: updated.balance,
+        keterangan: notes ?? 'Top Up Saldo ${current.provider.label}',
+        referensiId: 'TOPUP-${DateTime.now().millisecondsSinceEpoch}',
+      );
+      _paymentMutations.insert(0, mutation);
+      notifyListeners();
+
+      if (_isSupabaseConnected) {
+        _supabase.updateUserPaymentMethodBalance(id, updated.balance);
+        _supabase.insertPaymentMutation(mutation);
+      }
+    }
+  }
+
+  bool deductPaymentMethodBalance(String id, int amount, {String? orderRef, String? notes}) {
+    final idx = _connectedPaymentMethods.indexWhere((p) => p.id == id);
+    if (idx != -1) {
+      final current = _connectedPaymentMethods[idx];
+      if (current.balance >= amount) {
+        final updated = current.copyWith(balance: current.balance - amount);
+        _connectedPaymentMethods[idx] = updated;
+
+        final mutation = PaymentMutation(
+          idMutasi: DateTime.now().millisecondsSinceEpoch % 10000000,
+          idPaymentMethod: id,
+          idUser: _currentUser?.idUser ?? 0,
+          tipe: MutationType.debit,
+          nominal: amount,
+          saldoSebelum: current.balance,
+          saldoSesudah: updated.balance,
+          keterangan: notes ?? 'Pembayaran Pesanan Menu Rasantara',
+          referensiId: orderRef ?? 'ORD-${DateTime.now().millisecondsSinceEpoch}',
+        );
+        _paymentMutations.insert(0, mutation);
+        notifyListeners();
+
+        if (_isSupabaseConnected) {
+          _supabase.updateUserPaymentMethodBalance(id, updated.balance);
+          _supabase.insertPaymentMutation(mutation);
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
+  List<PaymentMutation> getMutationsForMethod(String paymentMethodId) {
+    return _paymentMutations
+        .where((m) => m.idPaymentMethod == paymentMethodId)
+        .toList();
+  }
+
+  Future<void> syncUserPaymentMethods() async {
+    if (_isSupabaseConnected && _currentUser != null) {
+      try {
+        final cloudMethods = await _supabase.fetchUserPaymentMethods(_currentUser!.idUser);
+        _connectedPaymentMethods.clear();
+        _connectedPaymentMethods.addAll(cloudMethods);
+
+        final cloudMutations = await _supabase.fetchPaymentMutations(_currentUser!.idUser);
+        _paymentMutations.clear();
+        _paymentMutations.addAll(cloudMutations);
+
+        notifyListeners();
+      } catch (e) {
+        debugPrint('[DatabaseService] syncUserPaymentMethods error: $e');
+      }
+    }
+  }
+
+  ConnectedPaymentMethod? get defaultPaymentMethod {
+    try {
+      return _connectedPaymentMethods.firstWhere((p) => p.isDefault);
+    } catch (_) {
+      return _connectedPaymentMethods.isNotEmpty
+          ? _connectedPaymentMethods.first
+          : null;
+    }
+  }
+
+  // --- KEAMANAN AKUN (KONEKSI GOOGLE & 2-AUTH / 2FA) ---
+  void linkGoogleAccount(
+    int idUser, {
+    required String googleUid,
+    required String googleEmail,
+    required String displayName,
+    String? photoUrl,
+  }) {
+    final index = _users.indexWhere((u) => u.idUser == idUser);
+    if (index != -1) {
+      final current = _users[index];
+      final updated = current.copyWith(
+        namaUser: current.namaUser.isNotEmpty ? current.namaUser : displayName,
+        googleUid: googleUid,
+        googleEmail: googleEmail,
+        googlePhoto: photoUrl,
+        authProvider: AuthProvider.both,
+      );
+      _users[index] = updated;
+      if (_currentUser?.idUser == idUser) {
+        _currentUser = updated;
+      }
+      notifyListeners();
+
+      if (_isSupabaseConnected) {
+        _supabase.updateUser(updated);
+      }
+    }
+  }
+
+  void unlinkGoogleAccount(int idUser) {
+    final index = _users.indexWhere((u) => u.idUser == idUser);
+    if (index != -1) {
+      final current = _users[index];
+      final updated = UserModel(
+        idUser: current.idUser,
+        username: current.username.isNotEmpty ? current.username : (current.googleEmail ?? 'user_$idUser'),
+        password: current.password.isNotEmpty ? current.password : '123456',
+        namaUser: current.namaUser,
+        role: current.role,
+        authProvider: AuthProvider.local,
+        googleUid: null,
+        googleEmail: null,
+        googlePhoto: null,
+        fotoProfil: current.fotoProfil,
+        isTwoFactorEnabled: current.isTwoFactorEnabled,
+        twoFactorType: current.twoFactorType,
+      );
+      _users[index] = updated;
+      if (_currentUser?.idUser == idUser) {
+        _currentUser = updated;
+      }
+      notifyListeners();
+
+      if (_isSupabaseConnected) {
+        _supabase.updateUser(updated);
+      }
+    }
+  }
+
+  void updateTwoFactor(int idUser, {required bool isEnabled, String? type}) {
+    final index = _users.indexWhere((u) => u.idUser == idUser);
+    if (index != -1) {
+      final updated = _users[index].copyWith(
+        isTwoFactorEnabled: isEnabled,
+        twoFactorType: isEnabled ? (type ?? 'Google Authenticator') : null,
+      );
+      _users[index] = updated;
+      if (_currentUser?.idUser == idUser) {
+        _currentUser = updated;
+      }
+      notifyListeners();
+
+      if (_isSupabaseConnected) {
+        _supabase.updateUser(updated);
+      }
+    }
   }
 }

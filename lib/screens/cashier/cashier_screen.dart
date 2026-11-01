@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/order_model.dart';
+import '../../models/table_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/receipt_dialog.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/qris_payment_dialog.dart';
 
 class CashierScreen extends StatefulWidget {
   final DatabaseService db;
@@ -59,6 +61,22 @@ class _CashierScreenState extends State<CashierScreen> {
 
   void _processPayment() {
     if (_selectedOrder == null || !_isPaymentValid) return;
+
+    if (_selectedPaymentMethod == 'QRIS') {
+      QrisPaymentDialog.show(
+        context,
+        order: _selectedOrder!,
+        totalAmount: _selectedOrder!.totalHarga,
+        db: widget.db,
+        onPaymentSuccess: () {
+          setState(() {
+            _selectedOrder = null;
+            _bayarController.clear();
+          });
+        },
+      );
+      return;
+    }
 
     final transaction = widget.db.processTransaction(
       order: _selectedOrder!,
@@ -133,10 +151,15 @@ class _CashierScreenState extends State<CashierScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Antrean Pesanan Belum Dibayar',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+              const Expanded(
+                child: Text(
+                  'Antrean Pesanan Belum Dibayar',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -393,6 +416,7 @@ class _CashierScreenState extends State<CashierScreen> {
               onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
                 labelText: 'Jumlah Uang Diterima',
+                hintText: 'Masukkan Jumlah Uang',
                 prefixText: 'Rp ',
                 prefixIcon: Icon(Icons.money, color: AppTheme.orangePrimary),
               ),
@@ -468,6 +492,55 @@ class _CashierScreenState extends State<CashierScreen> {
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
               ),
+            ),
+            const SizedBox(height: 10),
+
+            // Void / Batalkan Pesanan (Admin & Kasir Management)
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.statusRed,
+                side: const BorderSide(color: AppTheme.statusRed),
+                minimumSize: const Size(double.infinity, 44),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: AppTheme.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    title: const Text('Konfirmasi Pembatalan (Void)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    content: Text('Yakin ingin membatalkan pesanan #${order.idOrder} untuk ${order.noMeja}?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: const Text('Batal'),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.statusRed),
+                        onPressed: () {
+                          widget.db.updateOrderStatus(order.idOrder, OrderStatus.dibatalkan);
+                          widget.db.updateTableStatus(order.noMeja, TableStatus.kosong);
+                          Navigator.of(ctx).pop();
+                          setState(() {
+                            _selectedOrder = null;
+                            _bayarController.clear();
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppTheme.statusRed,
+                              content: Text('✓ Pesanan #${order.idOrder} berhasil dibatalkan (Void).'),
+                            ),
+                          );
+                        },
+                        child: const Text('Ya, Batalkan Pesanan'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              icon: const Icon(Icons.cancel_outlined, size: 18),
+              label: const Text('Batalkan Pesanan (Void)'),
             ),
           ],
         ),

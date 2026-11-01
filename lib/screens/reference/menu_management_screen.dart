@@ -56,7 +56,10 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                   children: [
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Nama Masakan / Minuman'),
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Masakan / Minuman',
+                        hintText: 'Masukkan Nama Masakan',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<MenuCategory>(
@@ -73,7 +76,11 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                     TextField(
                       controller: priceController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Harga (Rp)', prefixText: 'Rp '),
+                      decoration: const InputDecoration(
+                        labelText: 'Harga (Rp)',
+                        hintText: 'Masukkan Harga',
+                        prefixText: 'Rp ',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (existing != null) ...[
@@ -92,7 +99,10 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                     TextField(
                       controller: descController,
                       maxLines: 2,
-                      decoration: const InputDecoration(labelText: 'Deskripsi Singkat'),
+                      decoration: const InputDecoration(
+                        labelText: 'Deskripsi Singkat',
+                        hintText: 'Masukkan Deskripsi',
+                      ),
                     ),
                   ],
                 ),
@@ -141,69 +151,110 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
     );
   }
 
-  void _showAddTableDialog() {
-    final tableNoController = TextEditingController(text: 'Meja 0${widget.db.tables.length + 1}');
-    final capacityController = TextEditingController(text: '4');
+  void _showAddEditTableDialog([TableModel? existing]) {
+    final tableNoController = TextEditingController(
+      text: existing?.nomorMeja ?? 'Meja 0${widget.db.tables.length + 1}',
+    );
+    final capacityController = TextEditingController(
+      text: existing != null ? '${existing.kapasitas}' : '4',
+    );
+    var selectedStatus = existing?.status ?? TableStatus.kosong;
 
     showDialog(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: AppTheme.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Tambah Meja Restoran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: tableNoController,
-                decoration: const InputDecoration(labelText: 'Nomor / Nama Meja'),
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppTheme.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(
+                existing == null ? 'Tambah Meja Restoran' : 'Edit Meja Restoran',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: capacityController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Kapasitas (Kursi)'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: tableNoController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nomor / Nama Meja',
+                      hintText: 'Masukkan Nomor Meja',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: capacityController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Kapasitas (Kursi)',
+                      hintText: 'Masukkan Kapasitas',
+                    ),
+                  ),
+                  if (existing != null) ...[
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<TableStatus>(
+                      initialValue: selectedStatus,
+                      decoration: const InputDecoration(labelText: 'Status Meja'),
+                      items: TableStatus.values.map((st) {
+                        return DropdownMenuItem(value: st, child: Text(st.label));
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) setDialogState(() => selectedStatus = val);
+                      },
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final no = tableNoController.text.trim();
-                final cap = int.tryParse(capacityController.text.trim()) ?? 0;
-                if (no.isEmpty || cap <= 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Nomor meja dan kapasitas valid wajib diisi'),
-                      backgroundColor: AppTheme.statusRed,
-                    ),
-                  );
-                  return;
-                }
-                final exists = widget.db.tables.any(
-                  (t) => t.nomorMeja.toLowerCase() == no.toLowerCase(),
-                );
-                if (exists) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Nomor meja sudah terdaftar'),
-                      backgroundColor: AppTheme.statusRed,
-                    ),
-                  );
-                  return;
-                }
-                widget.db.addTable(no, cap);
-                Navigator.of(ctx).pop();
-                setState(() {});
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final no = tableNoController.text.trim();
+                    final cap = int.tryParse(capacityController.text.trim()) ?? 0;
+                    if (no.isEmpty || cap <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Nomor meja dan kapasitas valid wajib diisi'),
+                          backgroundColor: AppTheme.statusRed,
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (existing == null) {
+                      final exists = widget.db.tables.any(
+                        (t) => t.nomorMeja.toLowerCase() == no.toLowerCase(),
+                      );
+                      if (exists) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Nomor meja sudah terdaftar'),
+                            backgroundColor: AppTheme.statusRed,
+                          ),
+                        );
+                        return;
+                      }
+                      widget.db.addTable(no, cap);
+                    } else {
+                      widget.db.updateTable(
+                        existing.idMeja,
+                        nomorMeja: no,
+                        kapasitas: cap,
+                        status: selectedStatus,
+                      );
+                    }
+                    Navigator.of(ctx).pop();
+                    setState(() {});
+                  },
+                  child: Text(existing == null ? 'Simpan' : 'Perbarui'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -246,7 +297,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
           if (_tabController.index == 0) {
             _showAddEditMenuDialog();
           } else {
-            _showAddTableDialog();
+            _showAddEditTableDialog();
           }
         },
       ),
@@ -416,12 +467,61 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                   ],
                 ),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.people_outline, size: 16, color: AppTheme.textMuted),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${table.kapasitas} Orang',
-                      style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
+                    Row(
+                      children: [
+                        const Icon(Icons.people_outline, size: 16, color: AppTheme.textMuted),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${table.kapasitas} Orang',
+                          style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textMuted),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Edit Meja',
+                          onPressed: () => _showAddEditTableDialog(table),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.statusRed),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Hapus Meja',
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (delCtx) => AlertDialog(
+                                backgroundColor: AppTheme.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                title: const Text('Hapus Meja', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                content: Text('Yakin ingin menghapus ${table.nomorMeja}?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(delCtx).pop(),
+                                    child: const Text('Batal'),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.statusRed),
+                                    onPressed: () {
+                                      widget.db.deleteTable(table.idMeja);
+                                      Navigator.of(delCtx).pop();
+                                      setState(() {});
+                                    },
+                                    child: const Text('Hapus'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),

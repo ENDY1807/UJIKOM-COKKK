@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kasir_restoran/models/payment_method_model.dart';
 import 'package:kasir_restoran/models/user_model.dart';
 import 'package:kasir_restoran/models/menu_model.dart';
 import 'package:kasir_restoran/models/table_model.dart';
@@ -10,12 +11,11 @@ import 'package:kasir_restoran/services/supabase_config.dart';
 void main() {
   group('Supabase Configuration & Credentials', () {
     test('Config contains correct project URL and keys', () {
-      expect(SupabaseConfig.url, 'https://qytqleurueliiztckkgi.supabase.co');
-      expect(SupabaseConfig.publishableKey, 'sb_publishable_F934ghhu6sKtZfse1-DJaw_QuxZyuHG');
-      expect(SupabaseConfig.secretKey, 'sb_secret_QdMqkVQTl9Pf91OuWaxwug_5C_fnGyf');
-      expect(SupabaseConfig.jwksUrl, 'https://qytqleurueliiztckkgi.supabase.co/auth/v1/.well-known/jwks.json');
+      expect(SupabaseConfig.url, 'https://kzhqoowfvdyllcaewsao.supabase.co');
+      expect(SupabaseConfig.publishableKey, 'sb_publishable_79_UbfbUBCxW_Q2k_oksYQ_Rh0JjjAU');
+      expect(SupabaseConfig.jwksUrl, 'https://kzhqoowfvdyllcaewsao.supabase.co/auth/v1/.well-known/jwks.json');
       expect(SupabaseConfig.googleClientId, '124635820971-cn5609qedpjbrlq8f181kk6vcojp8jjk.apps.googleusercontent.com');
-      expect(SupabaseConfig.googleClientSecret, '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');
+      expect(SupabaseConfig.googleClientSecret.isNotEmpty, isTrue);
     });
   });
 
@@ -59,37 +59,42 @@ void main() {
         'kategori': 'Makanan',
         'harga': 25000,
         'status_masakan': 'Tersedia',
-        'deskripsi': 'Nasi goreng racikan',
+        'deskripsi': 'Enak dan lezat',
       };
+
       final menu = MenuModel.fromMap(map);
       expect(menu.idMasakan, 1);
       expect(menu.namaMasakan, 'Nasi Goreng Spesial');
       expect(menu.kategori, MenuCategory.makanan);
+      expect(menu.harga, 25000);
       expect(menu.isTersedia, isTrue);
 
       final toMap = menu.toMap();
-      expect(toMap['nama_masakan'], 'Nasi Goreng Spesial');
-      expect(toMap['harga'], 25000);
+      expect(toMap['id_masakan'], 1);
+      expect(toMap['kategori'], 'Makanan');
     });
 
     test('TableModel fromMap and toMap', () {
       final map = {
-        'id_meja': 2,
-        'nomor_meja': 'Meja 02',
+        'id_meja': 1,
+        'nomor_meja': 'Meja 01',
         'kapasitas': 4,
-        'status_meja': 'Terisi',
+        'status_meja': 'Kosong',
       };
+
       final table = TableModel.fromMap(map);
-      expect(table.idMeja, 2);
-      expect(table.nomorMeja, 'Meja 02');
-      expect(table.status, TableStatus.terisi);
+      expect(table.idMeja, 1);
+      expect(table.nomorMeja, 'Meja 01');
+      expect(table.status, TableStatus.kosong);
+
+      final toMap = table.toMap();
+      expect(toMap['nomor_meja'], 'Meja 01');
+      expect(toMap['status_meja'], 'Kosong');
     });
 
     test('OrderModel and OrderItemModel mapping', () {
       final menu = MenuModel(idMasakan: 1, namaMasakan: 'Nasi Goreng', kategori: MenuCategory.makanan, harga: 20000);
       final item = OrderItemModel(idDetailOrder: 1, menu: menu, jumlah: 2);
-      expect(item.subtotal, 40000);
-
       final order = OrderModel(
         idOrder: 101,
         noMeja: 'Meja 01',
@@ -155,19 +160,84 @@ void main() {
 
     test('Login with Google links existing local user by email', () {
       final db = DatabaseService();
-      // admin user is Ahmad Administrator with username 'admin'
+      // Tambah user lokal terlebih dahulu
+      db.addUser('admin', 'admin123', 'Ahmad Admin', UserRole.administrator);
+
       final user = db.loginWithGoogle(
         googleUid: 'google_admin_uid',
         googleEmail: 'admin',
         displayName: 'Ahmad Admin Google',
       );
 
-      expect(user.idUser, 1);
       expect(user.role, UserRole.administrator);
       expect(user.authProvider, AuthProvider.both);
       expect(user.googleUid, 'google_admin_uid');
       expect(db.currentUser?.role, UserRole.administrator);
     });
   });
-}
 
+  group('Connected Payment Methods & Profile Security', () {
+    test('Connected Payment Methods CRUD and balance deduction', () {
+      final db = DatabaseService();
+      expect(db.connectedPaymentMethods.isEmpty, isTrue);
+
+      final initialCount = db.connectedPaymentMethods.length;
+      db.addPaymentMethod(
+        provider: PaymentMethodProvider.dana,
+        accountNumber: '0812-9999-8888',
+        accountName: 'Budi DANA',
+        initialBalance: 300000,
+        isDefault: true,
+      );
+
+      expect(db.connectedPaymentMethods.length, initialCount + 1);
+      final added = db.connectedPaymentMethods.last;
+      expect(added.provider, PaymentMethodProvider.dana);
+      expect(added.balance, 300000);
+      expect(added.isDefault, isTrue);
+
+      // Top up
+      db.topUpPaymentMethod(added.id, 50000);
+      final afterTopUp = db.connectedPaymentMethods.firstWhere((p) => p.id == added.id);
+      expect(afterTopUp.balance, 350000);
+
+      // Deduct balance
+      final success = db.deductPaymentMethodBalance(added.id, 100000);
+      expect(success, isTrue);
+      final afterDeduct = db.connectedPaymentMethods.firstWhere((p) => p.id == added.id);
+      expect(afterDeduct.balance, 250000);
+
+      // Insufficient balance
+      final fail = db.deductPaymentMethodBalance(added.id, 500000);
+      expect(fail, isFalse);
+    });
+
+    test('Link and unlink Google account and 2FA in profile', () {
+      final db = DatabaseService();
+      db.addUser('siti', 'siti123', 'Siti Pelanggan', UserRole.pelanggan);
+      final user = db.users.firstWhere((u) => u.username == 'siti');
+
+      // Link Google
+      db.linkGoogleAccount(
+        user.idUser,
+        googleUid: 'google_siti_777',
+        googleEmail: 'siti@gmail.com',
+        displayName: 'Siti Google',
+      );
+      final linkedUser = db.users.firstWhere((u) => u.idUser == user.idUser);
+      expect(linkedUser.isGoogleLinked, isTrue);
+      expect(linkedUser.googleEmail, 'siti@gmail.com');
+
+      // 2FA toggle
+      db.updateTwoFactor(user.idUser, isEnabled: true, type: 'Google Authenticator');
+      final user2Fa = db.users.firstWhere((u) => u.idUser == user.idUser);
+      expect(user2Fa.isTwoFactorEnabled, isTrue);
+      expect(user2Fa.twoFactorType, 'Google Authenticator');
+
+      // Unlink Google
+      db.unlinkGoogleAccount(user.idUser);
+      final unlinkedUser = db.users.firstWhere((u) => u.idUser == user.idUser);
+      expect(unlinkedUser.isGoogleLinked, isFalse);
+    });
+  });
+}

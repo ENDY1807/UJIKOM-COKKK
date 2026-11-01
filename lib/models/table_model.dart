@@ -50,7 +50,7 @@ class TableModel {
       kapasitas: map['kapasitas'] is int
           ? map['kapasitas'] as int
           : int.tryParse('${map['kapasitas']}') ?? 4,
-      status: TableStatus.fromString(map['status_meja']?.toString() ?? 'Kosong'),
+      status: TableStatus.fromString(map['status']?.toString() ?? map['status_meja']?.toString() ?? 'Kosong'),
     );
   }
 

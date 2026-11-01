@@ -23,6 +23,13 @@ class TransactionModel {
     this.metodePembayaran = 'Tunai',
   });
 
+  static int _parseInt(dynamic val, {int fallback = 0}) {
+    if (val == null) return fallback;
+    if (val is int) return val;
+    if (val is num) return val.round();
+    return double.tryParse(val.toString())?.round() ?? fallback;
+  }
+
   factory TransactionModel.fromMap(
     Map<String, dynamic> map, {
     required OrderModel order,
@@ -36,25 +43,19 @@ class TransactionModel {
       dt = DateTime.now();
     }
 
+    final total = _parseInt(map['total_bayar']);
+    final jBayar = _parseInt(map['jumlah_uang'] ?? map['jumlah_bayar']);
+    final kembali = _parseInt(map['kembalian']);
+
     return TransactionModel(
-      idTransaksi: map['id_transaksi'] is int
-          ? map['id_transaksi'] as int
-          : int.tryParse('${map['id_transaksi']}') ?? 0,
-      idUser: map['id_user'] is int
-          ? map['id_user'] as int
-          : int.tryParse('${map['id_user']}') ?? 0,
+      idTransaksi: _parseInt(map['id_transaksi']),
+      idUser: _parseInt(map['id_user']),
       namaKasir: fallbackKasirName ?? 'Kasir',
       order: order,
       tanggal: dt,
-      totalBayar: map['total_bayar'] is int
-          ? map['total_bayar'] as int
-          : int.tryParse('${map['total_bayar']}') ?? 0,
-      jumlahBayar: map['jumlah_bayar'] is int
-          ? map['jumlah_bayar'] as int
-          : int.tryParse('${map['jumlah_bayar']}') ?? 0,
-      kembalian: map['kembalian'] is int
-          ? map['kembalian'] as int
-          : int.tryParse('${map['kembalian']}') ?? 0,
+      totalBayar: total,
+      jumlahBayar: jBayar,
+      kembalian: kembali,
       metodePembayaran: map['metode_pembayaran'] ?? 'Tunai',
     );
   }
@@ -67,6 +68,7 @@ class TransactionModel {
       'tanggal': tanggal.toIso8601String(),
       'total_bayar': totalBayar,
       'jumlah_bayar': jumlahBayar,
+      'jumlah_uang': jumlahBayar,
       'kembalian': kembalian,
       'metode_pembayaran': metodePembayaran,
     };

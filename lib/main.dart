@@ -85,7 +85,7 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Aplikasi Kasir Restoran (Table Service)',
+      title: 'Rasantara · Restoran Masakan Nusantara',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: _db.currentUser == null

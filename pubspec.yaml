@@ -37,6 +37,16 @@ dependencies:
   intl: ^0.20.3
   supabase_flutter: ^2.18.3
   google_sign_in: ^7.2.0
+  mobile_scanner: ^7.4.3
+  geolocator: ^14.1.2
+  http: ^1.6.0
+  qr_flutter: ^4.1.0
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
+  pdf: ^3.13.1
+  printing: ^5.15.1
+  csv: ^8.0.0
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:

@@ -10,10 +10,11 @@ enum OrderStatus {
   const OrderStatus(this.label);
 
   static OrderStatus fromString(String val) {
-    return OrderStatus.values.firstWhere(
-      (s) => s.label.toLowerCase() == val.trim().toLowerCase(),
-      orElse: () => OrderStatus.menunggu,
-    );
+    final clean = val.trim().toLowerCase();
+    if (clean.contains('selesai')) return OrderStatus.selesai;
+    if (clean.contains('proses') || clean.contains('dimasak')) return OrderStatus.diproses;
+    if (clean.contains('batal')) return OrderStatus.dibatalkan;
+    return OrderStatus.menunggu;
   }
 }
 
@@ -46,15 +47,18 @@ class OrderItemModel {
     );
   }
 
+  static int _parseInt(dynamic val, {int fallback = 0}) {
+    if (val == null) return fallback;
+    if (val is int) return val;
+    if (val is num) return val.round();
+    return double.tryParse(val.toString())?.round() ?? fallback;
+  }
+
   factory OrderItemModel.fromMap(Map<String, dynamic> map, MenuModel menu) {
     return OrderItemModel(
-      idDetailOrder: map['id_detail_order'] is int
-          ? map['id_detail_order'] as int
-          : int.tryParse('${map['id_detail_order']}') ?? 0,
+      idDetailOrder: _parseInt(map['id_detail_order']),
       menu: menu,
-      jumlah: map['jumlah'] is int
-          ? map['jumlah'] as int
-          : int.tryParse('${map['jumlah']}') ?? 1,
+      jumlah: _parseInt(map['jumlah'], fallback: 1),
       catatan: map['keterangan'] ?? '',
     );
   }
@@ -65,6 +69,7 @@ class OrderItemModel {
       'id_order': orderId,
       'id_masakan': menu.idMasakan,
       'jumlah': jumlah,
+      'harga_satuan': menu.harga,
       'subtotal': subtotal,
       'keterangan': catatan,
       'status_detail_order': 'Menunggu',
@@ -122,6 +127,13 @@ class OrderModel {
     );
   }
 
+  static int _parseInt(dynamic val, {int fallback = 0}) {
+    if (val == null) return fallback;
+    if (val is int) return val;
+    if (val is num) return val.round();
+    return double.tryParse(val.toString())?.round() ?? fallback;
+  }
+
   factory OrderModel.fromMap(
     Map<String, dynamic> map, {
     String? fallbackUserName,
@@ -135,19 +147,27 @@ class OrderModel {
       dt = DateTime.now();
     }
 
+    String ket = map['keterangan'] ?? '';
+    String pel = map['nama_pelanggan'] ?? '';
+    // Jika nama_pelanggan tidak ada di kolom terpisah, coba parse dari keterangan
+    if (pel.isEmpty && ket.contains('Pelanggan:')) {
+      final parts = ket.split('Pelanggan:');
+      if (parts.length > 1) {
+        final sub = parts[1].split('|');
+        pel = sub.first.trim();
+        ket = sub.length > 1 ? sub.sublist(1).join('|').trim() : '';
+      }
+    }
+
     return OrderModel(
-      idOrder: map['id_order'] is int
-          ? map['id_order'] as int
-          : int.tryParse('${map['id_order']}') ?? 0,
-      noMeja: map['no_meja'] ?? '',
-      namaPelanggan: map['nama_pelanggan'] ?? '',
+      idOrder: _parseInt(map['id_order']),
+      noMeja: map['no_meja'] ?? 'Meja -',
+      namaPelanggan: pel.isNotEmpty ? pel : 'Pelanggan',
       tanggal: dt,
-      idUser: map['id_user'] is int
-          ? map['id_user'] as int
-          : int.tryParse('${map['id_user']}') ?? 0,
+      idUser: _parseInt(map['id_user']),
       namaUser: fallbackUserName ?? 'Staff',
-      keterangan: map['keterangan'] ?? '',
-      status: OrderStatus.fromString(map['status_order']?.toString() ?? 'Menunggu'),
+      keterangan: ket,
+      status: OrderStatus.fromString(map['status_order']?.toString() ?? map['status']?.toString() ?? 'Menunggu'),
       items: items ?? [],
     );
   }
@@ -156,10 +176,11 @@ class OrderModel {
     return {
       if (idOrder > 0) 'id_order': idOrder,
       'no_meja': noMeja,
-      'nama_pelanggan': namaPelanggan,
       'tanggal': tanggal.toIso8601String(),
       'id_user': idUser,
-      'keterangan': keterangan,
+      'keterangan': namaPelanggan.isNotEmpty
+          ? 'Pelanggan: $namaPelanggan${keterangan.isNotEmpty ? ' | $keterangan' : ''}'
+          : keterangan,
       'status_order': status.label,
     };
   }

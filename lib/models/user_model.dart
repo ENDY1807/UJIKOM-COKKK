@@ -16,7 +16,6 @@ enum UserRole {
     );
   }
 
-  // Privilege checks based on UKK matrix
   bool get canRegisterUsers =>
       this == UserRole.administrator ||
       this == UserRole.waiter ||
@@ -44,6 +43,8 @@ class UserModel {
   final String? googleEmail;
   final String? googlePhoto;
   final String? fotoProfil;
+  final bool isTwoFactorEnabled;
+  final String? twoFactorType;
 
   UserModel({
     required this.idUser,
@@ -56,6 +57,8 @@ class UserModel {
     this.googleEmail,
     this.googlePhoto,
     this.fotoProfil,
+    this.isTwoFactorEnabled = false,
+    this.twoFactorType,
   });
 
   bool get isGoogleLinked =>
@@ -66,7 +69,8 @@ class UserModel {
 
   String get displayPhoto => googlePhoto ?? fotoProfil ?? '';
 
-  String get displayEmail => googleEmail ?? '$username@kasirrestoran.app';
+  String get displayEmail =>
+      googleEmail ?? (username.contains('@') ? username : '$username@kasirrestoran.app');
 
   UserModel copyWith({
     int? idUser,
@@ -79,6 +83,8 @@ class UserModel {
     String? googleEmail,
     String? googlePhoto,
     String? fotoProfil,
+    bool? isTwoFactorEnabled,
+    String? twoFactorType,
   }) {
     return UserModel(
       idUser: idUser ?? this.idUser,
@@ -91,13 +97,15 @@ class UserModel {
       googleEmail: googleEmail ?? this.googleEmail,
       googlePhoto: googlePhoto ?? this.googlePhoto,
       fotoProfil: fotoProfil ?? this.fotoProfil,
+      isTwoFactorEnabled: isTwoFactorEnabled ?? this.isTwoFactorEnabled,
+      twoFactorType: twoFactorType ?? this.twoFactorType,
     );
   }
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
     AuthProvider provider = AuthProvider.local;
     final pStr = (map['auth_provider'] ?? 'local').toString().toLowerCase();
-    if (pStr == 'google') {
+    if (pStr == 'google' || (map['google_uid'] != null && map['google_uid'].toString().isNotEmpty)) {
       provider = AuthProvider.google;
     } else if (pStr == 'both') {
       provider = AuthProvider.both;
@@ -106,6 +114,11 @@ class UserModel {
     final idLevel = map['id_level'] is int
         ? map['id_level'] as int
         : int.tryParse('${map['id_level']}') ?? 5;
+
+    final email = map['google_email'] ?? map['email'];
+
+    final twoFactorRaw = map['is_two_factor_enabled'] ?? map['two_factor'];
+    final bool is2fa = twoFactorRaw == true || twoFactorRaw == 1 || twoFactorRaw == 'true';
 
     return UserModel(
       idUser: map['id_user'] is int
@@ -116,10 +129,12 @@ class UserModel {
       namaUser: map['nama_user'] ?? '',
       role: UserRole.fromId(idLevel),
       authProvider: provider,
-      googleUid: map['google_uid'],
-      googleEmail: map['google_email'],
-      googlePhoto: map['google_photo'],
-      fotoProfil: map['foto_profil'],
+      googleUid: map['google_uid']?.toString(),
+      googleEmail: email?.toString(),
+      googlePhoto: map['google_photo']?.toString(),
+      fotoProfil: (map['foto_profil'] ?? map['avatar_url'])?.toString(),
+      isTwoFactorEnabled: is2fa,
+      twoFactorType: map['two_factor_type']?.toString(),
     );
   }
 
@@ -130,11 +145,14 @@ class UserModel {
       'password': password,
       'nama_user': namaUser,
       'id_level': role.id,
+      'email': displayEmail,
       'auth_provider': authProvider.name,
-      'google_uid': googleUid,
-      'google_email': googleEmail,
-      'google_photo': googlePhoto,
-      'foto_profil': fotoProfil,
+      if (googleUid != null) 'google_uid': googleUid,
+      if (googleEmail != null) 'google_email': googleEmail,
+      if (googlePhoto != null) 'google_photo': googlePhoto,
+      if (fotoProfil != null) 'foto_profil': fotoProfil,
+      'is_two_factor_enabled': isTwoFactorEnabled,
+      if (twoFactorType != null) 'two_factor_type': twoFactorType,
     };
   }
 }

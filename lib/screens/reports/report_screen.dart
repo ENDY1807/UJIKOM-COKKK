@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/database_service.dart';
+import '../../services/export_report_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/analytics_charts.dart';
 import '../../widgets/receipt_dialog.dart';
 
 class ReportScreen extends StatefulWidget {
@@ -14,8 +16,13 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
-  final _currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+  final _currencyFormat = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
   final _dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+  bool _showDiagrams = true;
 
   void _showPrintReportPreview() {
     showDialog(
@@ -23,12 +30,17 @@ class _ReportScreenState extends State<ReportScreen> {
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: AppTheme.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Row(
             children: [
               Icon(Icons.print, color: AppTheme.orangePrimary),
               SizedBox(width: 8),
-              Text('Pratinjau Laporan Penjualan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                'Pratinjau Laporan Penjualan',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           content: SizedBox(
@@ -40,18 +52,31 @@ class _ReportScreenState extends State<ReportScreen> {
                 children: [
                   const Center(
                     child: Text(
-                      'LAPORAN TRANSAKSI RESTORAN NUSANTARA\nUJIKOM REKAYASA PERANGKAT LUNAK',
+                      'LAPORAN TRANSAKSI RESTORAN RASANTARA\nREKAPITULASI KASIR & PENJUALAN',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   const Divider(),
-                  Text('Tanggal Cetak: ${DateFormat('dd MMMM yyyy HH:mm').format(DateTime.now())}'),
-                  Text('Total Transaksi: ${widget.db.totalTransaksiCount} Transaksi'),
-                  Text('Total Omzet: ${_currencyFormat.format(widget.db.totalOmzet)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    'Tanggal Cetak: ${DateFormat('dd MMMM yyyy HH:mm').format(DateTime.now())}',
+                  ),
+                  Text(
+                    'Total Transaksi: ${widget.db.totalTransaksiCount} Transaksi',
+                  ),
+                  Text(
+                    'Total Omzet: ${_currencyFormat.format(widget.db.totalOmzet)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 12),
-                  const Text('Daftar Transaksi Selesai:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  const Text(
+                    'Daftar Transaksi Selesai:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
                   const SizedBox(height: 6),
                   ...widget.db.transactions.map((t) {
                     return Padding(
@@ -59,8 +84,17 @@ class _ReportScreenState extends State<ReportScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('#TRX-${t.idTransaksi} (${t.order.noMeja}) - ${t.namaKasir}', style: const TextStyle(fontSize: 12)),
-                          Text(_currencyFormat.format(t.totalBayar), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text(
+                            '#TRX-${t.idTransaksi} (${t.order.noMeja}) - ${t.namaKasir}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          Text(
+                            _currencyFormat.format(t.totalBayar),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -69,7 +103,11 @@ class _ReportScreenState extends State<ReportScreen> {
                   const Center(
                     child: Text(
                       'Dokumen ini sah dihasilkan secara sistematis oleh Aplikasi Kasir Restoran',
-                      style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontStyle: FontStyle.italic),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppTheme.textMuted,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
                 ],
@@ -81,18 +119,40 @@ class _ReportScreenState extends State<ReportScreen> {
               onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Tutup'),
             ),
-            ElevatedButton.icon(
-              onPressed: () {
+            OutlinedButton.icon(
+              onPressed: () async {
                 Navigator.of(ctx).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Laporan siap dicetak atau disimpan sebagai PDF'),
+                    content: Text('Menyiapkan dan mengunduh berkas Excel (CSV)...'),
                     duration: Duration(seconds: 2),
                   ),
                 );
+                await ExportReportService.exportTransactionsExcelCsv(
+                  transactions: widget.db.transactions,
+                );
               },
-              icon: const Icon(Icons.print, size: 18),
-              label: const Text('Cetak Sekarang'),
+              icon: const Icon(Icons.table_view_rounded, size: 18),
+              label: const Text('Ekspor Excel (CSV)'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Menyiapkan dan mengunduh berkas laporan PDF...'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                await ExportReportService.exportTransactionsPdf(
+                  transactions: widget.db.transactions,
+                  totalOmzet: widget.db.totalOmzet,
+                  restaurantName: 'Rasantara Restoran',
+                  address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
+                );
+              },
+              icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+              label: const Text('Cetak Dokumen PDF'),
             ),
           ],
         );
@@ -113,28 +173,116 @@ class _ReportScreenState extends State<ReportScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Top Action Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 750;
+                final actionButtons = Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    Text(
-                      'Laporan Penjualan & Keuangan',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.orangePrimary,
+                        side: const BorderSide(color: AppTheme.orangePrimary),
+                      ),
+                      onPressed: _showPrintReportPreview,
+                      icon: const Icon(Icons.preview_rounded, size: 18),
+                      label: const Text('Pratinjau'),
                     ),
-                    Text(
-                      'Rekapitulasi omzet dan riwayat pembayaran table service',
-                      style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF16A34A),
+                        side: const BorderSide(color: Color(0xFF16A34A)),
+                      ),
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Menyiapkan dan mengunduh berkas Excel (CSV)...'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                        await ExportReportService.exportTransactionsExcelCsv(
+                          transactions: widget.db.transactions,
+                        );
+                      },
+                      icon: const Icon(Icons.file_download_outlined, size: 18),
+                      label: const Text('Ekspor Excel'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Menyiapkan dan mengunduh berkas laporan PDF...'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                        await ExportReportService.exportTransactionsPdf(
+                          transactions: widget.db.transactions,
+                          totalOmzet: widget.db.totalOmzet,
+                          restaurantName: 'Rasantara Restoran',
+                          address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
+                        );
+                      },
+                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                      label: const Text('Cetak PDF'),
                     ),
                   ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: _showPrintReportPreview,
-                  icon: const Icon(Icons.print, size: 18),
-                  label: const Text('Cetak Laporan'),
-                ),
-              ],
+                );
+
+                if (isCompact) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Laporan Penjualan & Keuangan',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textDark,
+                            ),
+                          ),
+                          Text(
+                            'Rekapitulasi omzet dan riwayat pembayaran table service',
+                            style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      actionButtons,
+                    ],
+                  );
+                }
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Laporan Penjualan & Keuangan',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textDark,
+                            ),
+                          ),
+                          Text(
+                            'Rekapitulasi omzet dan riwayat pembayaran table service',
+                            style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    actionButtons,
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 16),
 
@@ -166,11 +314,29 @@ class _ReportScreenState extends State<ReportScreen> {
 
                 if (isWide) {
                   return Row(
-                    children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: c))).toList(),
+                    children: cards
+                        .map(
+                          (c) => Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              child: c,
+                            ),
+                          ),
+                        )
+                        .toList(),
                   );
                 } else {
                   return Column(
-                    children: cards.map((c) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: c)).toList(),
+                    children: cards
+                        .map(
+                          (c) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: c,
+                          ),
+                        )
+                        .toList(),
                   );
                 }
               },
@@ -178,167 +344,341 @@ class _ReportScreenState extends State<ReportScreen> {
 
             const SizedBox(height: 20),
 
-            // Top Selling Menu Items
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
+            // Tab Switcher: Diagram & Grafik Analitik vs Daftar Transaksi
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppTheme.borderSubtle),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.star_outline, color: AppTheme.orangePrimary, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'Menu Terlaris (Favorit Pelanggan)',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => _showDiagrams = true),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _showDiagrams
+                              ? Colors.white
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: _showDiagrams
+                              ? const [
+                                  BoxShadow(
+                                    color: Color(0x10000000),
+                                    blurRadius: 6,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    if (topSelling.isEmpty)
-                      const Text('Belum ada data penjualan menu', style: TextStyle(color: AppTheme.textMuted))
-                    else
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: topSelling.take(6).map((entry) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: AppTheme.orangeLight,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppTheme.orangeBorder),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.analytics_rounded,
+                              size: 16,
+                              color: _showDiagrams
+                                  ? const Color(0xFFEA580C)
+                                  : const Color(0xFF64748B),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  entry.key,
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textDark),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.orangePrimary,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    '${entry.value} Terjual',
-                                    style: const TextStyle(color: AppTheme.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(width: 6),
+                            Text(
+                              'Diagram & Grafik',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: _showDiagrams
+                                    ? const Color(0xFFEA580C)
+                                    : const Color(0xFF64748B),
+                              ),
                             ),
-                          );
-                        }).toList(),
+                          ],
+                        ),
                       ),
-                  ],
-                ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => _showDiagrams = false),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: !_showDiagrams
+                              ? Colors.white
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: !_showDiagrams
+                              ? const [
+                                  BoxShadow(
+                                    color: Color(0x10000000),
+                                    blurRadius: 6,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long_rounded,
+                              size: 16,
+                              color: !_showDiagrams
+                                  ? const Color(0xFFEA580C)
+                                  : const Color(0xFF64748B),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Daftar Transaksi (${transactions.length})',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: !_showDiagrams
+                                    ? const Color(0xFFEA580C)
+                                    : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 16),
 
-            const SizedBox(height: 20),
-
-            // Transaction History Table
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppTheme.borderSubtle),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Riwayat Transaksi Kasir',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-                    ),
-                    const SizedBox(height: 12),
-                    if (transactions.isEmpty)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Text('Belum ada transaksi tercatat', style: TextStyle(color: AppTheme.textMuted)),
-                        ),
-                      )
-                    else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: transactions.length,
-                        separatorBuilder: (context, index) => const Divider(height: 1, color: AppTheme.borderSubtle),
-                        itemBuilder: (context, index) {
-                          final trx = transactions[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.orangeLight,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(Icons.receipt, color: AppTheme.orangePrimary, size: 20),
+            if (_showDiagrams)
+              AnalyticsChartsWidget(db: widget.db)
+            else ...[
+              // Top Selling Menu Items
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppTheme.borderSubtle),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.star_outline,
+                            color: AppTheme.orangePrimary,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Menu Terlaris (Favorit Pelanggan)',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (topSelling.isEmpty)
+                        const Text(
+                          'Belum ada data penjualan menu',
+                          style: TextStyle(color: AppTheme.textMuted),
+                        )
+                      else
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: topSelling.take(6).map((entry) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.orangeLight,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppTheme.orangeBorder,
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    entry.key,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                      color: AppTheme.textDark,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.orangePrimary,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '${entry.value} Terjual',
+                                      style: const TextStyle(
+                                        color: AppTheme.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Transaction History Table
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppTheme.borderSubtle),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Riwayat Transaksi Kasir',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (transactions.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text(
+                              'Belum ada transaksi tercatat',
+                              style: TextStyle(color: AppTheme.textMuted),
+                            ),
+                          ),
+                        )
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: transactions.length,
+                          separatorBuilder: (context, index) => const Divider(
+                            height: 1,
+                            color: AppTheme.borderSubtle,
+                          ),
+                          itemBuilder: (context, index) {
+                            final trx = transactions[index];
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.orangeLight,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                      Icons.receipt,
+                                      color: AppTheme.orangePrimary,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '#TRX-${trx.idTransaksi.toString().padLeft(4, '0')} • ${trx.order.noMeja}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: AppTheme.textDark,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Kasir: ${trx.namaKasir} • ${_dateFormat.format(trx.tanggal)}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppTheme.textMuted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
-                                        '#TRX-${trx.idTransaksi.toString().padLeft(4, '0')} • ${trx.order.noMeja}',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textDark),
+                                        _currencyFormat.format(trx.totalBayar),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: AppTheme.orangePrimary,
+                                        ),
                                       ),
                                       Text(
-                                        'Kasir: ${trx.namaKasir} • ${_dateFormat.format(trx.tanggal)}',
-                                        style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                                        trx.metodePembayaran,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppTheme.textMuted,
+                                        ),
                                       ),
                                     ],
                                   ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      _currencyFormat.format(trx.totalBayar),
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.orangePrimary),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.visibility_outlined,
+                                      size: 20,
+                                      color: AppTheme.textMuted,
                                     ),
-                                    Text(
-                                      trx.metodePembayaran,
-                                      style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  icon: const Icon(Icons.visibility_outlined, size: 20, color: AppTheme.textMuted),
-                                  tooltip: 'Lihat Struk',
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => ReceiptDialog(transaction: trx),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                  ],
+                                    tooltip: 'Lihat Struk',
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) =>
+                                            ReceiptDialog(transaction: trx),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -356,7 +696,9 @@ class _ReportScreenState extends State<ReportScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: isPrimary ? AppTheme.orangeBorder : AppTheme.borderSubtle),
+        side: BorderSide(
+          color: isPrimary ? AppTheme.orangeBorder : AppTheme.borderSubtle,
+        ),
       ),
       color: isPrimary ? AppTheme.orangeLight : AppTheme.white,
       child: Padding(
@@ -369,25 +711,43 @@ class _ReportScreenState extends State<ReportScreen> {
                 color: isPrimary ? AppTheme.orangePrimary : AppTheme.surfaceBg,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: isPrimary ? AppTheme.white : AppTheme.orangePrimary, size: 24),
+              child: Icon(
+                icon,
+                color: isPrimary ? AppTheme.white : AppTheme.orangePrimary,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     value,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: isPrimary ? AppTheme.orangePrimary : AppTheme.textDark,
+                      color: isPrimary
+                          ? AppTheme.orangePrimary
+                          : AppTheme.textDark,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
                 ],
               ),
             ),

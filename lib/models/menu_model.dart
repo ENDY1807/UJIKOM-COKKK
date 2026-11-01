@@ -1,15 +1,20 @@
 enum MenuCategory {
   semua('Semua'),
+  paket('Paket Spesial'),
   makanan('Makanan'),
   minuman('Minuman'),
-  paket('Paket');
+  addon('Camilan & Add-On');
 
   final String label;
   const MenuCategory(this.label);
 
   static MenuCategory fromString(String val) {
+    final v = val.trim().toLowerCase();
+    if (v.contains('paket')) return MenuCategory.paket;
+    if (v.contains('minum') || v.contains('drink') || v.contains('beverage')) return MenuCategory.minuman;
+    if (v.contains('addon') || v.contains('add-on') || v.contains('snack') || v.contains('camilan') || v.contains('ekstra')) return MenuCategory.addon;
     return MenuCategory.values.firstWhere(
-      (c) => c.label.toLowerCase() == val.trim().toLowerCase(),
+      (c) => c.label.toLowerCase() == v || c.name.toLowerCase() == v,
       orElse: () => MenuCategory.makanan,
     );
   }
@@ -37,6 +42,7 @@ class MenuModel {
   final int harga;
   final MenuStatus status;
   final String deskripsi;
+  final String gambarUrl;
 
   MenuModel({
     required this.idMasakan,
@@ -45,6 +51,7 @@ class MenuModel {
     required this.harga,
     this.status = MenuStatus.tersedia,
     this.deskripsi = '',
+    this.gambarUrl = '',
   });
 
   bool get isTersedia => status == MenuStatus.tersedia;
@@ -56,6 +63,7 @@ class MenuModel {
     int? harga,
     MenuStatus? status,
     String? deskripsi,
+    String? gambarUrl,
   }) {
     return MenuModel(
       idMasakan: idMasakan ?? this.idMasakan,
@@ -64,7 +72,15 @@ class MenuModel {
       harga: harga ?? this.harga,
       status: status ?? this.status,
       deskripsi: deskripsi ?? this.deskripsi,
+      gambarUrl: gambarUrl ?? this.gambarUrl,
     );
+  }
+
+  static int _parsePrice(dynamic val) {
+    if (val == null) return 0;
+    if (val is int) return val;
+    if (val is num) return val.round();
+    return double.tryParse(val.toString())?.round() ?? 0;
   }
 
   factory MenuModel.fromMap(Map<String, dynamic> map) {
@@ -74,11 +90,10 @@ class MenuModel {
           : int.tryParse('${map['id_masakan']}') ?? 0,
       namaMasakan: map['nama_masakan'] ?? '',
       kategori: MenuCategory.fromString(map['kategori']?.toString() ?? 'Makanan'),
-      harga: map['harga'] is int
-          ? map['harga'] as int
-          : int.tryParse('${map['harga']}') ?? 0,
-      status: MenuStatus.fromString(map['status_masakan']?.toString() ?? 'Tersedia'),
+      harga: _parsePrice(map['harga']),
+      status: MenuStatus.fromString(map['status_masakan']?.toString() ?? map['status']?.toString() ?? 'Tersedia'),
       deskripsi: map['deskripsi'] ?? '',
+      gambarUrl: map['gambar_url'] ?? '',
     );
   }
 
@@ -90,6 +105,7 @@ class MenuModel {
       'harga': harga,
       'status_masakan': status.label,
       'deskripsi': deskripsi,
+      if (gambarUrl.isNotEmpty) 'gambar_url': gambarUrl,
     };
   }
 }

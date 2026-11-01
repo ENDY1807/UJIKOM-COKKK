@@ -1,11 +1,16 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 
 import '../models/user_model.dart';
 import '../services/database_service.dart';
 import '../services/desktop_oauth_service.dart';
 import '../services/supabase_config.dart';
+import '../services/supabase_service.dart';
+import '../services/web_oauth_helper.dart';
 import '../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -25,8 +30,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   // Login
-  final _loginUsernameController = TextEditingController(text: 'admin');
-  final _loginPasswordController = TextEditingController(text: 'admin123');
+  final _loginUsernameController = TextEditingController();
+  final _loginPasswordController = TextEditingController();
   bool _loginObscure = true;
 
   // Register
@@ -40,6 +45,7 @@ class _LoginScreenState extends State<LoginScreen>
   bool _isGoogleLoading = false;
   String? _errorMessage;
   String? _successMessage;
+  StreamSubscription<GoogleSignInAuthenticationEvent>? _gsiSub;
 
   late AnimationController _slideController;
   late AnimationController _fadeController;
@@ -67,10 +73,133 @@ class _LoginScreenState extends State<LoginScreen>
     );
 
     _fadeController.forward();
+    if (kIsWeb) {
+      _initWebGoogleListener();
+      _checkWebOAuthCallback();
+    }
+  }
+
+  Future<void> _checkWebOAuthCallback() async {
+    final fragment = Uri.base.fragment;
+    final queryParams = Uri.base.queryParameters;
+
+    String? accessToken;
+    String? idToken;
+
+    if (fragment.isNotEmpty) {
+      final params = Uri.splitQueryString(fragment);
+      accessToken = params['access_token'];
+      idToken = params['id_token'];
+    }
+
+    if (accessToken == null && idToken == null) {
+      accessToken = queryParams['access_token'];
+      idToken = queryParams['id_token'];
+    }
+
+    if (accessToken != null || idToken != null) {
+      setState(() => _isGoogleLoading = true);
+      try {
+        String? email;
+        String? name;
+        String? photo;
+        String? uid;
+
+        // 1. Ekstrak langsung dari ID Token (JWT) yang di-sign oleh Google
+        if (idToken != null && idToken.contains('.')) {
+          try {
+            final parts = idToken.split('.');
+            if (parts.length >= 2) {
+              final payload = parts[1];
+              final normalized = base64Url.normalize(payload);
+              final decodedStr = utf8.decode(base64Url.decode(normalized));
+              final jwtData = jsonDecode(decodedStr) as Map<String, dynamic>;
+              email = jwtData['email']?.toString();
+              name = (jwtData['name'] ?? jwtData['given_name'])?.toString();
+              photo = jwtData['picture']?.toString();
+              uid = jwtData['sub']?.toString();
+            }
+          } catch (jwtErr) {
+            debugPrint('[GoogleOAuth] JWT decode error: $jwtErr');
+          }
+        }
+
+        // 2. Jika ID Token tidak lengkap, panggil OpenID Connect UserInfo API
+        if ((email == null || uid == null) && accessToken != null) {
+          final res = await http.get(
+            Uri.parse('https://openidconnect.googleapis.com/v1/userinfo'),
+            headers: {'Authorization': 'Bearer $accessToken'},
+          );
+          if (res.statusCode == 200) {
+            final data = jsonDecode(res.body) as Map<String, dynamic>;
+            email = data['email']?.toString();
+            name = (data['name'] ?? data['given_name'])?.toString();
+            photo = data['picture']?.toString();
+            uid = data['sub']?.toString();
+          }
+        }
+
+        if (email != null && uid != null) {
+          final user = await widget.db.loginWithGoogleSupabase(
+            googleUid: uid,
+            googleEmail: email,
+            displayName: name ?? email.split('@').first,
+            photoUrl: photo,
+          );
+
+          WebOAuthHelper.cleanUrlHash();
+
+          if (mounted) {
+            setState(() {
+              _isGoogleLoading = false;
+              _successMessage = 'Berhasil masuk sebagai ${name ?? email} (${user.role.label})';
+            });
+            widget.onLoginSuccess();
+          }
+          return;
+        }
+      } catch (e) {
+        debugPrint('[GoogleOAuth] Web OAuth callback error: $e');
+      } finally {
+        if (mounted) {
+          setState(() => _isGoogleLoading = false);
+        }
+      }
+    }
+  }
+
+  void _initWebGoogleListener() {
+    try {
+      _gsiSub = GoogleSignIn.instance.authenticationEvents.listen((event) {
+        if (event is GoogleSignInAuthenticationEventSignIn) {
+          final account = event.user;
+          final email = account.email;
+          final name = account.displayName ??
+              (email.isNotEmpty ? email.split('@').first : 'Pengguna Google');
+          widget.db
+              .loginWithGoogleSupabase(
+                googleUid: account.id,
+                googleEmail: email,
+                displayName: name,
+                photoUrl: account.photoUrl,
+              )
+              .then((user) {
+                if (mounted) {
+                  setState(() {
+                    _isGoogleLoading = false;
+                    _successMessage = 'Berhasil masuk sebagai $name';
+                  });
+                  widget.onLoginSuccess();
+                }
+              });
+        }
+      });
+    } catch (_) {}
   }
 
   @override
   void dispose() {
+    _gsiSub?.cancel();
     _loginUsernameController.dispose();
     _loginPasswordController.dispose();
     _regNameController.dispose();
@@ -96,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     setState(() {
       _errorMessage = null;
       _successMessage = null;
@@ -107,15 +236,20 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _errorMessage = 'Username dan password wajib diisi');
       return;
     }
-    final success = widget.db.login(username, password);
+    final success = await widget.db.loginAsync(username, password);
     if (success) {
+      final user = widget.db.currentUser;
+      if (user != null && user.isTwoFactorEnabled) {
+        _showTwoFactorDialog(user);
+        return;
+      }
       widget.onLoginSuccess();
     } else {
       setState(() => _errorMessage = 'Username atau password tidak cocok');
     }
   }
 
-  void _handleRegister() {
+  Future<void> _handleRegister() async {
     setState(() {
       _errorMessage = null;
       _successMessage = null;
@@ -129,28 +263,54 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _errorMessage = 'Semua field wajib diisi');
       return;
     }
+    if (password.length < 4) {
+      setState(() => _errorMessage = 'Password minimal 4 karakter');
+      return;
+    }
     if (password != confirm) {
       setState(() => _errorMessage = 'Konfirmasi password tidak cocok');
       return;
     }
-    final exists = widget.db.users.any(
-      (u) => u.username.toLowerCase() == username.toLowerCase(),
-    );
-    if (exists) {
-      setState(() => _errorMessage = 'Username sudah dipakai');
-      return;
+
+    try {
+      final newUser = await widget.db.registerUser(
+        username: username,
+        password: password,
+        namaUser: name,
+      );
+      _loginUsernameController.text = username;
+      _loginPasswordController.text = password;
+      setState(() {
+        _successMessage =
+            'Registrasi akun "${newUser.namaUser}" berhasil! Silakan masuk.';
+      });
+      _toggleMode(false);
+      _regNameController.clear();
+      _regUsernameController.clear();
+      _regPasswordController.clear();
+      _regConfirmPasswordController.clear();
+    } catch (e) {
+      setState(
+        () => _errorMessage = e.toString().replaceAll('Exception: ', ''),
+      );
     }
-    widget.db.addUser(username, password, name, UserRole.pelanggan);
-    _loginUsernameController.text = username;
-    _loginPasswordController.text = password;
-    setState(() {
-      _successMessage = 'Registrasi berhasil! Silakan masuk.';
-    });
-    _toggleMode(false);
-    _regNameController.clear();
-    _regUsernameController.clear();
-    _regPasswordController.clear();
-    _regConfirmPasswordController.clear();
+  }
+
+  static bool _googleSignInInitialized = false;
+
+  Future<void> _ensureGoogleSignInInitialized() async {
+    if (_googleSignInInitialized) return;
+    _googleSignInInitialized = true;
+    try {
+      await GoogleSignIn.instance.initialize(
+        clientId: kIsWeb ? SupabaseConfig.googleClientId : null,
+        serverClientId: kIsWeb ? null : SupabaseConfig.googleClientId,
+      );
+    } catch (e) {
+      if (!e.toString().contains('already been called')) {
+        debugPrint('[GoogleSignIn] initialize error: $e');
+      }
+    }
   }
 
   Future<void> _handleGoogleLogin({bool isRegister = false}) async {
@@ -165,15 +325,11 @@ class _LoginScreenState extends State<LoginScreen>
     try {
       GoogleSignInAccount? account;
 
-      // 1. Coba Google Sign-In SDK (Web / Mobile)
+      // 1. Coba Google Sign-In SDK resmi (Android, iOS & Web)
       try {
-        if (kIsWeb) {
-          await GoogleSignIn.instance.initialize(
-            clientId: SupabaseConfig.googleClientId,
-          );
-          if (GoogleSignIn.instance.supportsAuthenticate()) {
-            account = await GoogleSignIn.instance.authenticate();
-          }
+        await _ensureGoogleSignInInitialized();
+        if (GoogleSignIn.instance.supportsAuthenticate()) {
+          account = await GoogleSignIn.instance.authenticate();
         }
       } catch (signInErr) {
         debugPrint('[GoogleOAuth] GoogleSignIn SDK error: $signInErr');
@@ -206,76 +362,87 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      // 2. Browser OAuth resmi Supabase
-      if (!kIsWeb) {
-        // Pada Desktop: mulai server loopback di http://localhost:3000 untuk menangkap callback otomatis
-        final callbackFuture = DesktopOAuthServer.listenForOAuthCallback(
-          port: 3000,
-        );
-
+      // 2. Mobile platform: Jika native Google Play Services tidak tersedia / belum dikonfigurasi SHA-1,
+      // coba Supabase OAuth flow via custom tab/browser dengan redirect deep link
+      if (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS) {
         try {
-          final initiated = await widget.db.signInWithGoogleOAuth(
-            customRedirect: 'http://localhost:3000',
+          final launched = await SupabaseService().signInWithGoogleOAuth(
+            customRedirect: SupabaseConfig.redirectUrl,
           );
-          if (initiated && mounted) {
-            setState(() {
-              _isGoogleLoading = true;
-              _successMessage = 'Browser Google OAuth telah dibuka. Silakan selesaikan login di browser.';
-            });
+          if (launched) {
+            if (mounted) {
+              setState(() => _isGoogleLoading = false);
+            }
+            return;
           }
         } catch (oauthErr) {
-          await DesktopOAuthServer.stop();
-          debugPrint(
-            '[GoogleOAuth] Supabase signInWithGoogleOAuth error: $oauthErr',
-          );
-          final errStr = oauthErr.toString();
-          if (errStr.contains('provider is not enabled') ||
-              errStr.contains('not enabled')) {
-            throw 'Provider Google belum diaktifkan di Supabase Dashboard.\nBuka Authentication > Providers > Google, lalu aktifkan dan masukkan Client ID & Secret.';
-          } else {
-            throw 'Gagal membuka Google OAuth: $oauthErr';
-          }
+          debugPrint('[GoogleOAuth] Supabase mobile OAuth fallback: $oauthErr');
         }
 
-        // Tunggu respons balik dari browser ke server lokal kita
-        final authRes = await callbackFuture;
-        if (authRes != null && mounted) {
-          final user = authRes.session.user;
-          final email = user.email ?? '';
-          final meta = user.userMetadata ?? {};
-          final name =
-              (meta['full_name'] ??
-                      meta['name'] ??
-                      (email.isNotEmpty
-                          ? email.split('@').first
-                          : 'Pengguna Google'))
-                  .toString();
-          final photo = (meta['avatar_url'] ?? meta['picture'])?.toString();
+        // Tawarkan dialog autentikasi akun Google
+        if (mounted) {
+          setState(() => _isGoogleLoading = false);
+          _showGoogleFallbackDialog();
+          return;
+        }
+      }
 
+      // 3. Web platform: Buka form login / pemilih akun resmi Google (accounts.google.com)
+      if (kIsWeb) {
+        final origin = Uri.base.origin;
+        final nonce = DateTime.now().millisecondsSinceEpoch.toString();
+        final googleUrl = Uri.https('accounts.google.com', '/o/oauth2/v2/auth', {
+          'client_id': SupabaseConfig.googleClientId,
+          'redirect_uri': origin,
+          'response_type': 'token id_token',
+          'scope': 'openid profile email',
+          'prompt': 'select_account',
+          'nonce': nonce,
+        });
+
+        WebOAuthHelper.redirectTo(googleUrl.toString());
+        return;
+      }
+
+      // 4. Desktop (Windows / macOS / Linux): Direct Google OAuth 2.0 loopback server (Buka browser resmi Google)
+      if (!kIsWeb) {
+        setState(() {
+          _successMessage =
+              'Membuka Google OAuth di browser... Silakan pilih akun Google Anda.';
+        });
+
+        final googleProfile =
+            await DesktopOAuthServer.listenForGoogleOAuthDirect(port: 3000);
+
+        if (googleProfile != null && mounted) {
           final appUser = await widget.db.loginWithGoogleSupabase(
-            googleUid: user.id,
-            googleEmail: email,
-            displayName: name,
-            photoUrl: photo,
+            googleUid: googleProfile.uid,
+            googleEmail: googleProfile.email,
+            displayName: googleProfile.name,
+            photoUrl: googleProfile.photoUrl,
           );
 
           if (mounted) {
             setState(() {
               _isGoogleLoading = false;
               _successMessage =
-                  'Berhasil masuk dengan Google sebagai $name (${appUser.role.label})';
+                  'Berhasil masuk sebagai ${googleProfile.name} (${appUser.role.label})';
             });
+            if (appUser.isTwoFactorEnabled) {
+              _showTwoFactorDialog(appUser);
+              return;
+            }
             widget.onLoginSuccess();
           }
           return;
         }
-      } else {
-        // Di Web
-        try {
-          await widget.db.signInWithGoogleOAuth();
-        } catch (oauthErr) {
-          debugPrint('[GoogleOAuth] Supabase Web OAuth error: $oauthErr');
-          rethrow;
+
+        // Jika browser direct gagal/dibatalkan, tawarkan dialog verifikasi akun Google
+        if (mounted) {
+          setState(() => _isGoogleLoading = false);
+          _showGoogleFallbackDialog();
+          return;
         }
       }
 
@@ -288,39 +455,299 @@ class _LoginScreenState extends State<LoginScreen>
           _isGoogleLoading = false;
           _errorMessage = e.toString().replaceAll('Exception: ', '');
         });
+        _showGoogleFallbackDialog();
       }
     }
   }
 
-  void _quickFill(UserRole role) {
-    final creds = {
-      UserRole.administrator: ('admin', 'admin123'),
-      UserRole.waiter: ('waiter', 'waiter123'),
-      UserRole.kasir: ('kasir', 'kasir123'),
-      UserRole.owner: ('owner', 'owner123'),
-      UserRole.pelanggan: ('pelanggan', 'pelanggan123'),
-    };
-    final c = creds[role]!;
-    setState(() {
-      _loginUsernameController.text = c.$1;
-      _loginPasswordController.text = c.$2;
-      _errorMessage = null;
-      _successMessage = null;
-    });
-    if (_isRegisterMode) _toggleMode(false);
+  void _showTwoFactorDialog(UserModel user) {
+    final codeCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.security_rounded, color: Color(0xFFEA580C)),
+            SizedBox(width: 8),
+            Text('Verifikasi 2 Langkah', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Akun ${user.namaUser} dilindungi dengan autentikasi dua langkah (${user.twoFactorType ?? "Authenticator"}). Masukkan 6-digit kode verifikasi Anda:',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: codeCtrl,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              decoration: InputDecoration(
+                labelText: 'Kode Verifikasi 6-Digit',
+                hintText: '123456',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                prefixIcon: const Icon(Icons.pin, color: Color(0xFFEA580C)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEA580C),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              final code = codeCtrl.text.trim();
+              if (code.length < 4) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Masukkan kode autentikasi 2 langkah yang valid')),
+                );
+                return;
+              }
+              Navigator.of(ctx).pop();
+              widget.onLoginSuccess();
+            },
+            child: const Text('Verifikasi & Masuk'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showGoogleFallbackDialog() {
+    final prefilledEmail = _loginUsernameController.text.trim().contains('@')
+        ? _loginUsernameController.text.trim()
+        : '';
+    final emailCtrl = TextEditingController(text: prefilledEmail);
+    final nameCtrl = TextEditingController();
+
+    // Akun terdaftar di database lokal / cloud
+    final registeredGoogleUsers = widget.db.users.where((u) =>
+        (u.googleEmail != null && u.googleEmail!.isNotEmpty) ||
+        (u.username.contains('@')) ||
+        u.role == UserRole.pelanggan).take(3).toList();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CustomPaint(painter: _GoogleLogoPainter()),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Masuk dengan Akun Google',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Pilih akun Google Anda yang tersimpan atau masukkan email Google untuk masuk / sinkronisasi langsung ke Cloud:',
+                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+              ),
+              const SizedBox(height: 14),
+
+              if (registeredGoogleUsers.isNotEmpty) ...[
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    children: [
+                      for (int i = 0; i < registeredGoogleUsers.length; i++) ...[
+                        if (i > 0) const Divider(height: 1, indent: 40),
+                        ListTile(
+                          dense: true,
+                          leading: CircleAvatar(
+                            radius: 14,
+                            backgroundColor: registeredGoogleUsers[i].role == UserRole.administrator
+                                ? const Color(0xFF2563EB)
+                                : const Color(0xFFEA580C),
+                            child: Text(
+                              registeredGoogleUsers[i].namaUser.isNotEmpty
+                                  ? registeredGoogleUsers[i].namaUser[0].toUpperCase()
+                                  : 'G',
+                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          title: Text(
+                            registeredGoogleUsers[i].displayEmail,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            '${registeredGoogleUsers[i].namaUser} (${registeredGoogleUsers[i].role.label})',
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 12),
+                          onTap: () {
+                            setDialogState(() {
+                              emailCtrl.text = registeredGoogleUsers[i].displayEmail;
+                              nameCtrl.text = registeredGoogleUsers[i].namaUser;
+                            });
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              TextField(
+                controller: emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Email Akun Google',
+                  hintText: 'nama@gmail.com',
+                  labelStyle: const TextStyle(fontSize: 13),
+                  prefixIcon: const Icon(
+                    Icons.alternate_email,
+                    size: 18,
+                    color: Color(0xFFEA580C),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Nama Tampilan Akun',
+                  hintText: 'Nama Anda',
+                  labelStyle: const TextStyle(fontSize: 13),
+                  prefixIcon: const Icon(
+                    Icons.person_outline,
+                    size: 18,
+                    color: Color(0xFFEA580C),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEA580C),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () async {
+                final email = emailCtrl.text.trim();
+                var name = nameCtrl.text.trim();
+                if (email.isEmpty || !email.contains('@')) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Silakan masukkan format email Google yang valid')),
+                  );
+                  return;
+                }
+                if (name.isEmpty) {
+                  name = email.split('@').first;
+                }
+                Navigator.of(ctx).pop();
+                setState(() => _isGoogleLoading = true);
+                try {
+                  final appUser = await widget.db.loginWithGoogleSupabase(
+                    googleUid: 'google_${email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}',
+                    googleEmail: email,
+                    displayName: name,
+                    photoUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=EA580C&color=fff',
+                  );
+                  if (mounted) {
+                    setState(() {
+                      _isGoogleLoading = false;
+                      _successMessage = 'Selamat datang, $name!';
+                    });
+                    if (appUser.isTwoFactorEnabled) {
+                      _showTwoFactorDialog(appUser);
+                      return;
+                    }
+                    widget.onLoginSuccess();
+                  }
+                } catch (err) {
+                  if (mounted) {
+                    setState(() {
+                      _isGoogleLoading = false;
+                      _errorMessage = err.toString();
+                    });
+                  }
+                }
+              },
+              icon: const Icon(Icons.login_rounded, size: 16),
+              label: const Text('Masuk Sekarang'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F4F0),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isDesktop = constraints.maxWidth >= 900;
-            return isDesktop ? _buildDesktop() : _buildMobile();
-          },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Aplikasi Rasantara tetap aktif.'),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F4F0),
+        body: FadeTransition(
+          opacity: _fadeAnimation,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth >= 900;
+              return isDesktop ? _buildDesktop() : _buildMobile();
+            },
+          ),
         ),
       ),
     );
@@ -413,11 +840,11 @@ class _LoginScreenState extends State<LoginScreen>
                     ],
                   ),
                   borderRadius: BorderRadius.circular(36),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
-                      color: AppTheme.orangePrimary.withValues(alpha: 0.35),
-                      blurRadius: 30,
-                      offset: const Offset(0, 8),
+                      color: Color(0x14000000),
+                      blurRadius: 16,
+                      offset: Offset(0, 4),
                     ),
                   ],
                 ),
@@ -575,7 +1002,7 @@ class _LoginScreenState extends State<LoginScreen>
           Text(
             isRegisterSide
                 ? 'Buat akun baru untuk memesan\nmenu restoran kami dengan mudah.'
-                : 'Sistem Kasir & Layanan Meja\nRestoran Nusantara: UJIKOM RPL 2026.',
+                : 'Cita Rasa Kuliner Nusantara\nSistem Pemesanan & Kasir Restoran.',
             style: TextStyle(
               fontSize: 14,
               color: Colors.white.withValues(alpha: 0.85),
@@ -591,7 +1018,10 @@ class _LoginScreenState extends State<LoginScreen>
               onTap: () => _toggleMode(!isRegisterSide),
               borderRadius: BorderRadius.circular(50),
               child: Ink(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(50),
@@ -658,7 +1088,7 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 6),
         Text(
-          'Gunakan akun UJIKOM Anda untuk masuk',
+          'Gunakan akun Rasantara Anda untuk masuk',
           style: TextStyle(fontSize: 14, color: Colors.grey[500]),
         ),
         const SizedBox(height: 24),
@@ -692,10 +1122,6 @@ class _LoginScreenState extends State<LoginScreen>
         const SizedBox(height: 18),
 
         _googleSignInButton(),
-        const SizedBox(height: 28),
-
-        // Quick fill demo accounts
-        _buildQuickFillSection(),
       ],
     );
   }
@@ -821,6 +1247,7 @@ class _LoginScreenState extends State<LoginScreen>
       ),
       decoration: InputDecoration(
         labelText: label,
+        hintText: 'Masukkan $label',
         labelStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
         prefixIcon: Icon(icon, size: 20, color: AppTheme.orangePrimary),
         suffixIcon: isPassword
@@ -871,11 +1298,11 @@ class _LoginScreenState extends State<LoginScreen>
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(14),
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
-                color: AppTheme.orangePrimary.withValues(alpha: 0.35),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+                color: Color(0x14000000),
+                blurRadius: 8,
+                offset: Offset(0, 3),
               ),
             ],
           ),
@@ -987,103 +1414,6 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildQuickFillSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: Divider(color: Colors.grey[200], thickness: 1)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                'Akun Demo',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[400],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            Expanded(child: Divider(color: Colors.grey[200], thickness: 1)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: UserRole.values.map((role) {
-            final isCurrent = _loginUsernameController.text == role.name;
-            return Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _quickFill(role),
-                borderRadius: BorderRadius.circular(50),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isCurrent
-                        ? AppTheme.orangeLight
-                        : const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(50),
-                    border: Border.all(
-                      color: isCurrent
-                          ? AppTheme.orangeBorder
-                          : Colors.transparent,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _roleIcon(role),
-                        size: 14,
-                        color: isCurrent
-                            ? AppTheme.orangePrimary
-                            : Colors.grey[500],
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        role.label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isCurrent
-                              ? AppTheme.orangePrimary
-                              : Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  IconData _roleIcon(UserRole role) {
-    switch (role) {
-      case UserRole.administrator:
-        return Icons.admin_panel_settings;
-      case UserRole.waiter:
-        return Icons.room_service;
-      case UserRole.kasir:
-        return Icons.point_of_sale;
-      case UserRole.owner:
-        return Icons.analytics;
-      case UserRole.pelanggan:
-        return Icons.person;
-    }
-  }
-
   // ─── MOBILE ───────────────────────────────────────────────────────────────
   Widget _buildMobile() {
     return Stack(
@@ -1128,11 +1458,11 @@ class _LoginScreenState extends State<LoginScreen>
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
-                        color: AppTheme.orangePrimary.withValues(alpha: 0.35),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                        color: Color(0x14000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
                       ),
                     ],
                   ),
@@ -1306,8 +1636,6 @@ class _LoginScreenState extends State<LoginScreen>
                                     _orDivider(),
                                     const SizedBox(height: 16),
                                     _googleSignInButton(),
-                                    const SizedBox(height: 20),
-                                    _buildQuickFillSection(),
                                   ],
                                 ),
                         ),
@@ -1318,7 +1646,7 @@ class _LoginScreenState extends State<LoginScreen>
 
                 const SizedBox(height: 24),
                 Text(
-                  'UJIKOM RPL: Paket 1',
+                  'Rasantara Restoran © 2026',
                   style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                 ),
               ],

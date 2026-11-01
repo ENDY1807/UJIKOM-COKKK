@@ -40,18 +40,27 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   children: [
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Nama Lengkap'),
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Lengkap',
+                        hintText: 'Masukkan Nama Lengkap',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: usernameController,
                       enabled: existing == null,
-                      decoration: const InputDecoration(labelText: 'Username'),
+                      decoration: const InputDecoration(
+                        labelText: 'Username',
+                        hintText: 'Masukkan Username',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: passwordController,
-                      decoration: const InputDecoration(labelText: 'Password'),
+                      decoration: const InputDecoration(
+                        labelText: 'Password',
+                        hintText: 'Masukkan Password',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (isAdmin)

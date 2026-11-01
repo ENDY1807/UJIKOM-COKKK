@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/transaction_model.dart';
+import '../services/export_report_service.dart';
 import '../theme/app_theme.dart';
 
 class ReceiptDialog extends StatelessWidget {
@@ -67,7 +68,7 @@ class ReceiptDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Jl. Raya Pendidikan No. 45, Kota Ujikom',
+                    'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Bandung',
                     style: TextStyle(fontSize: 11, color: AppTheme.textMuted.withValues(alpha: 0.9)),
                   ),
                 ],
@@ -152,13 +153,11 @@ class ReceiptDialog extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Struk berhasil disimulasikan cetak ke printer kasir'),
-                            duration: Duration(seconds: 2),
-                          ),
+                      onPressed: () async {
+                        await ExportReportService.printReceiptPdf(
+                          transaction: transaction,
+                          restaurantName: 'Rasantara Restoran',
+                          address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Bandung',
                         );
                       },
                       icon: const Icon(Icons.print, size: 18),
