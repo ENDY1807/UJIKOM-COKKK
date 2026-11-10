@@ -61,8 +61,19 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
     decimalDigits: 0,
   );
 
-  Color get _brandColor => widget.providerName == 'DANA' ? const Color(0xFF118EEA) : const Color(0xFF00AED6);
-  IconData get _brandIcon => widget.providerName == 'DANA' ? Icons.account_balance_wallet_rounded : Icons.wallet_rounded;
+  Color get _brandColor {
+    if (widget.providerName == 'DANA') return const Color(0xFF118EEA);
+    if (widget.providerName == 'GoPay') return const Color(0xFF00AED6);
+    if (widget.providerName == 'QRIS') return const Color(0xFF002855);
+    return const Color(0xFFEA580C);
+  }
+
+  IconData get _brandIcon {
+    if (widget.providerName == 'DANA') return Icons.account_balance_wallet_rounded;
+    if (widget.providerName == 'GoPay') return Icons.wallet_rounded;
+    if (widget.providerName == 'QRIS') return Icons.qr_code_scanner_rounded;
+    return Icons.payment_rounded;
+  }
 
   @override
   void initState() {
@@ -78,12 +89,15 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
         amount: widget.totalAmount,
         customerName: widget.order.namaPelanggan.isNotEmpty ? widget.order.namaPelanggan : 'Pelanggan Rasantara',
         email: 'pelanggan@rasantara.com',
+        enabledPayments: widget.providerName == 'QRIS' ? ['qris'] : null,
       );
       if (mounted) {
         setState(() {
           _redirectUrl = res['redirect_url']?.toString();
           _isLoading = false;
         });
+        // Otomatis buka halaman checkout resmi Midtrans Snap
+        _openPaymentUrl();
       }
     } catch (e) {
       if (mounted) {
@@ -117,7 +131,9 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
     final transaction = widget.db.processTransaction(
       order: widget.order,
       jumlahBayar: widget.totalAmount,
-      metodePembayaran: '${widget.providerName} (Direct Debit SNAP BI)',
+      metodePembayaran: widget.providerName == 'QRIS'
+          ? 'QRIS (Midtrans Snap)'
+          : '${widget.providerName} (Direct Debit SNAP BI)',
     );
 
     setState(() => _isVerifying = false);
@@ -156,7 +172,9 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
                       Icon(_brandIcon, color: _brandColor, size: 24),
                       const SizedBox(width: 8),
                       Text(
-                        'Pembayaran ${widget.providerName}',
+                        widget.providerName == 'QRIS'
+                            ? 'QRIS Midtrans Snap'
+                            : 'Pembayaran ${widget.providerName}',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                     ],
@@ -179,7 +197,12 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
                 ),
                 child: Column(
                   children: [
-                    Text('Total Pembayaran ${widget.providerName}', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+                    Text(
+                      widget.providerName == 'QRIS'
+                          ? 'Total Tagihan QRIS'
+                          : 'Total Pembayaran ${widget.providerName}',
+                      style: TextStyle(fontSize: 12, color: context.textSecondary),
+                    ),
                     const SizedBox(height: 6),
                     Text(
                       _currencyFmt.format(widget.totalAmount),
@@ -215,7 +238,9 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
                   child: AppLoadingAnimation(
                     size: 40,
                     primaryColor: _brandColor,
-                    message: 'Menghubungkan ke Gateway ${widget.providerName}...',
+                    message: widget.providerName == 'QRIS'
+                        ? 'Membuat Transaksi QRIS Midtrans Snap...'
+                        : 'Menghubungkan ke Gateway ${widget.providerName}...',
                   ),
                 )
               else if (_errorMessage != null)
@@ -228,7 +253,33 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
                   ),
                 )
               else if (_redirectUrl != null) ...[
-                // Tombol Buka Web Pembayaran DANA / GoPay
+                if (widget.providerName == 'QRIS')
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F9FF),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFBAE6FD)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.info_outline_rounded, color: Color(0xFF0284C7), size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            context.t(
+                              'Halaman QRIS resmi Midtrans otomatis dibuka di browser. Anda dapat memindai QRIS di sana, lalu klik tombol verifikasi di bawah.',
+                              'Official Midtrans QRIS page has been opened in your browser. Scan the QRIS code there, then tap the verify button below.',
+                            ),
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF0369A1), height: 1.3),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                // Tombol Buka Web Pembayaran DANA / GoPay / QRIS Midtrans
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
                     backgroundColor: _brandColor,
@@ -236,7 +287,12 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: const Icon(Icons.open_in_browser_rounded, size: 18),
-                  label: Text('Buka Gerbang ${widget.providerName} di Browser', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  label: Text(
+                    widget.providerName == 'QRIS'
+                        ? 'Buka Halaman QRIS Midtrans di Browser'
+                        : 'Buka Gerbang ${widget.providerName} di Browser',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
                   onPressed: _openPaymentUrl,
                 ),
                 const SizedBox(height: 10),

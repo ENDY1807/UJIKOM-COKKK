@@ -229,18 +229,43 @@ class PaymentGatewayService {
     );
   }
 
-  /// Membuat Transaksi Snap Payment Gateway (DANA, GoPay, E-Wallet, ShopeePay)
+  /// Membuat Transaksi Snap Payment Gateway (QRIS, DANA, GoPay, E-Wallet, ShopeePay)
   static Future<Map<String, dynamic>> createSnapTransaction({
     required String orderId,
     required int amount,
     required String customerName,
     String? email,
     String? phone,
+    List<String>? enabledPayments,
   }) async {
     final basicAuth = base64Encode(utf8.encode('${PaymentGatewayConfig.midtransServerKey}:'));
     final url = PaymentGatewayConfig.isProduction
         ? 'https://app.midtrans.com/snap/v1/transactions'
         : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
+
+    final bodyMap = <String, dynamic>{
+      'transaction_details': {
+        'order_id': orderId,
+        'gross_amount': amount,
+      },
+      'customer_details': {
+        'first_name': customerName,
+        'email': email ?? 'pelanggan@rasantara.com',
+        'phone': phone ?? '081234567890',
+      },
+      'item_details': [
+        {
+          'id': 'FOOD-RSN',
+          'price': amount,
+          'quantity': 1,
+          'name': 'Menu Kuliner Rasantara',
+        }
+      ],
+    };
+
+    if (enabledPayments != null && enabledPayments.isNotEmpty) {
+      bodyMap['enabled_payments'] = enabledPayments;
+    }
 
     final response = await http.post(
       Uri.parse(url),
@@ -249,25 +274,7 @@ class PaymentGatewayService {
         'Accept': 'application/json',
         'Authorization': 'Basic $basicAuth',
       },
-      body: jsonEncode({
-        'transaction_details': {
-          'order_id': orderId,
-          'gross_amount': amount,
-        },
-        'customer_details': {
-          'first_name': customerName,
-          'email': email ?? 'pelanggan@rasantara.com',
-          'phone': phone ?? '081234567890',
-        },
-        'item_details': [
-          {
-            'id': 'FOOD-RSN',
-            'price': amount,
-            'quantity': 1,
-            'name': 'Menu Kuliner Rasantara',
-          }
-        ],
-      }),
+      body: jsonEncode(bodyMap),
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
