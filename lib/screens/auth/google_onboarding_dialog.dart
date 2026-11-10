@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/user_model.dart';
 import '../../services/database_service.dart';
-import '../../services/whatsapp_otp_service.dart';
+import '../../services/phone_otp_service.dart';
 import '../../theme/app_theme.dart';
 
 class GoogleOnboardingDialog extends StatefulWidget {
@@ -48,6 +48,7 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
   late TextEditingController _nameCtrl;
   late TextEditingController _phoneCtrl;
   late TextEditingController _otpCtrl;
+  final FocusNode _otpFocusNode = FocusNode();
 
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -92,6 +93,7 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
     _passwordCtrl.dispose();
     _phoneCtrl.dispose();
     _otpCtrl.dispose();
+    _otpFocusNode.dispose();
     super.dispose();
   }
 
@@ -155,10 +157,8 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
     });
 
     try {
-      await WhatsAppOtpService.instance.sendOtp(
+      await PhoneOtpService.instance.sendOtp(
         rawPhone: rawPhone,
-        userName: _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : username,
-        purpose: 'Konfirmasi Akun & Nomor Telepon Rasantara',
       );
 
       _startCountdownTimer();
@@ -170,7 +170,7 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Gagal mengirim OTP ke nomor tersebut: $e';
+        _errorMessage = 'Gagal mengirim kode verifikasi: $e';
         _isLoading = false;
       });
     }
@@ -183,10 +183,8 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
     setState(() => _isLoading = true);
 
     try {
-      await WhatsAppOtpService.instance.sendOtp(
+      await PhoneOtpService.instance.sendOtp(
         rawPhone: rawPhone,
-        userName: _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : 'Pengguna',
-        purpose: 'Kirim Ulang Kode OTP Rasantara',
       );
       _startCountdownTimer();
       setState(() {
@@ -195,7 +193,7 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Gagal mengirim ulang OTP: $e';
+        _errorMessage = 'Gagal mengirim ulang kode: $e';
         _isLoading = false;
       });
     }
@@ -207,11 +205,11 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
     final inputCode = _otpCtrl.text.trim();
 
     if (inputCode.length != 6) {
-      setState(() => _errorMessage = 'Kode OTP harus 6 digit');
+      setState(() => _errorMessage = 'Masukkan 6 digit kode verifikasi.');
       return;
     }
 
-    final res = WhatsAppOtpService.instance.verifyOtp(
+    final res = await PhoneOtpService.instance.verifyOtp(
       rawPhone: rawPhone,
       inputCode: inputCode,
     );
@@ -458,9 +456,9 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
         ),
         const SizedBox(height: 14),
 
-        // Input Nomor Telepon / WhatsApp (Bersih, TANPA TOMBOL OTP)
+        // Input Nomor Telepon
         Text(
-          'Nomor Telepon / WhatsApp',
+          'Nomor Telepon',
           style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
         ),
         const SizedBox(height: 6),
@@ -472,7 +470,7 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
             hintText: '081234567890',
             hintStyle: TextStyle(color: context.textSecondary),
             prefixIcon: const Icon(Icons.phone_android, size: 18, color: Color(0xFFEA580C)),
-            helperText: 'Kode OTP akan otomatis dikirimkan ke nomor ini saat konfirmasi',
+            helperText: 'Kode verifikasi akan dikirimkan untuk konfirmasi nomor telepon',
             helperStyle: TextStyle(fontSize: 11, color: context.textSecondary),
             filled: true,
             fillColor: context.fillSubtle,
@@ -495,7 +493,7 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
               : const Icon(Icons.arrow_forward_rounded, size: 18),
           label: Text(
-            _isLoading ? 'Mengirim Kode OTP...' : 'Konfirmasi Akun & Masuk Aplikasi',
+            _isLoading ? 'Mengirim Kode...' : 'Konfirmasi & Lanjutkan',
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           onPressed: _isLoading ? null : _submitAndSendOtp,
@@ -504,72 +502,16 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
     );
   }
 
-  /// Step 2: Tampilan Verifikasi Kode OTP (dengan banner notifikasi SMS/WA masuk)
+  /// Step 2: Tampilan Verifikasi Kode OTP (Sederhana & Bersih)
   Widget _buildOtpVerification() {
     final rawPhone = _phoneCtrl.text.trim();
-    final normalized = WhatsAppOtpService.normalizePhoneNumber(rawPhone);
+    final displayPhone = PhoneOtpService.formatDisplayPhone(rawPhone);
+    final text = _otpCtrl.text;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Simulated Push Notification Banner SMS / WhatsApp
-        Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0F172A),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0x1F000000),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF16A34A),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.mark_chat_unread_rounded, color: Colors.white, size: 16),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'WhatsApp / SMS • Rasantara Security',
-                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
-                        const Text(
-                          'Baru saja',
-                          style: TextStyle(color: Color(0xFF64748B), fontSize: 9),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    const Text(
-                      'Pesan keamanan telah dikirimkan ke nomor WhatsApp/SMS Anda. Masukkan kode 6 digit untuk mengonfirmasi.',
-                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
         // Header Verifikasi
         Row(
           children: [
@@ -583,19 +525,19 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
               },
             ),
             const SizedBox(width: 4),
-            const Text(
-              'Verifikasi Kode OTP',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+            Text(
+              'Verifikasi Nomor Telepon',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
 
         Text(
-          'Kode 6 digit keamanan telah dikirimkan ke nomor WhatsApp/SMS +$normalized.',
-          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          'Masukkan 6 digit kode yang dikirim ke $displayPhone',
+          style: TextStyle(fontSize: 13, color: context.textSecondary, height: 1.4),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
         if (_errorMessage != null) ...[
           Container(
@@ -621,64 +563,107 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
           const SizedBox(height: 14),
         ],
 
-        // Input 6 Digit OTP
-        TextField(
-          controller: _otpCtrl,
-          keyboardType: TextInputType.number,
-          maxLength: 6,
-          autofocus: true,
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold, color: context.textPrimary),
-          decoration: InputDecoration(
-            counterText: '',
-            hintText: '••••••',
-            filled: true,
-            fillColor: context.fillSubtle,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: context.borderSubtle),
-            ),
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-              borderSide: BorderSide(color: Color(0xFFEA580C), width: 2),
-            ),
+        // 6-Digit Boxes
+        GestureDetector(
+          onTap: () => _otpFocusNode.requestFocus(),
+          behavior: HitTestBehavior.opaque,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Hidden TextField
+              Opacity(
+                opacity: 0.0,
+                child: SizedBox(
+                  width: 1,
+                  height: 1,
+                  child: TextField(
+                    controller: _otpCtrl,
+                    focusNode: _otpFocusNode,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(6),
+                    ],
+                    onChanged: (val) {
+                      setState(() {});
+                      if (val.trim().length == 6) {
+                        _verifyOtpAndLogin();
+                      }
+                    },
+                  ),
+                ),
+              ),
+
+              // 6 Box visuals
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List.generate(6, (index) {
+                  final isFilled = index < text.length;
+                  final isCurrent = index == text.length;
+                  final digit = isFilled ? text[index] : '';
+
+                  return Container(
+                    width: 42,
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? const Color(0xFFEA580C).withValues(alpha: 0.05)
+                          : context.fillSubtle,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isCurrent
+                            ? const Color(0xFFEA580C)
+                            : (isFilled ? context.borderSubtle.withValues(alpha: 0.8) : context.borderSubtle),
+                        width: isCurrent ? 2 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      digit,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
           ),
-          onChanged: (val) {
-            if (val.trim().length == 6) {
-              _verifyOtpAndLogin();
-            }
-          },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
 
         // Countdown & Kirim Ulang
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              _resendCountdown > 0
-                  ? 'Kirim ulang kode dalam $_resendCountdown detik'
-                  : 'Tidak menerima kode?',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-            ),
-            if (_resendCountdown == 0) ...[
-              const SizedBox(width: 4),
+            if (_resendCountdown > 0)
+              Text(
+                'Kirim ulang dalam $_resendCountdown detik',
+                style: TextStyle(fontSize: 12, color: context.textSecondary),
+              )
+            else
               TextButton(
                 onPressed: _isLoading ? null : _resendOtp,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 child: const Text(
-                  'Kirim Ulang',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                  'Kirim ulang kode',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                 ),
               ),
-            ],
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
         // Tombol Verifikasi & Masuk
         FilledButton(
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF16A34A),
+            backgroundColor: const Color(0xFFEA580C),
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -686,7 +671,7 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
           child: _isLoading
               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
               : const Text(
-                  'Verifikasi & Masuk ke Aplikasi',
+                  'Verifikasi & Masuk',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
         ),

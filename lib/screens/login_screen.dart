@@ -11,7 +11,8 @@ import '../services/desktop_oauth_service.dart';
 import '../services/supabase_config.dart';
 import '../services/supabase_service.dart';
 import '../services/web_oauth_helper.dart';
-import '../services/whatsapp_otp_service.dart';
+import '../services/phone_otp_service.dart';
+import '../widgets/phone_otp_dialog.dart';
 import '../theme/app_theme.dart';
 import 'auth/google_onboarding_dialog.dart';
 
@@ -374,15 +375,21 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      // 2. Mobile platform: Jika native Google Play Services tidak tersedia / belum dikonfigurasi SHA-1,
-      // buka dialog otentikasi Google yang aman dan terhubung langsung ke wizard onboarding
+      // 2. Mobile platform: Jika native Google Play Services tidak tersedia, gunakan Supabase OAuth browser flow
       if (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS) {
+        final success = await SupabaseService().signInWithGoogleOAuth(
+          customRedirect: SupabaseConfig.redirectUrl,
+        );
         if (mounted) {
-          setState(() => _isGoogleLoading = false);
-          _showGoogleFallbackDialog();
-          return;
+          setState(() {
+            _isGoogleLoading = false;
+            if (!success) {
+              _errorMessage = 'Autentikasi Google dibatalkan atau tidak selesai.';
+            }
+          });
         }
+        return;
       }
 
       // 3. Web platform: Buka form login / pemilih akun resmi Google (accounts.google.com)
@@ -431,10 +438,11 @@ class _LoginScreenState extends State<LoginScreen>
           return;
         }
 
-        // Jika browser direct gagal/dibatalkan, tawarkan dialog verifikasi akun Google
         if (mounted) {
-          setState(() => _isGoogleLoading = false);
-          _showGoogleFallbackDialog();
+          setState(() {
+            _isGoogleLoading = false;
+            _errorMessage = 'Masuk dengan Google dibatalkan.';
+          });
           return;
         }
       }
@@ -448,7 +456,6 @@ class _LoginScreenState extends State<LoginScreen>
           _isGoogleLoading = false;
           _errorMessage = e.toString().replaceAll('Exception: ', '');
         });
-        _showGoogleFallbackDialog();
       }
     }
   }
@@ -476,319 +483,22 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _showTwoFactorDialog(UserModel user) async {
-    final codeCtrl = TextEditingController();
     final rawPhone = user.phoneNumber.isNotEmpty ? user.phoneNumber : '081234567890';
-    
-    // Kirim kode OTP WhatsApp nyata
-    await WhatsAppOtpService.instance.sendOtp(
+
+    final sendResult = await PhoneOtpService.instance.sendOtp(
       rawPhone: rawPhone,
-      userName: user.namaUser,
-      purpose: 'Verifikasi Login 2FA Rasantara',
     );
 
     if (!mounted) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.security_rounded, color: Color(0xFFEA580C)),
-            SizedBox(width: 8),
-            Text('Autentikasi 2 Langkah', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0F172A),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.mark_chat_unread_rounded, color: Color(0xFF22C55E), size: 16),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'SMS / WhatsApp Terkirim: Silakan periksa pesan chat Anda untuk melihat 6 digit kode.',
-                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              'Kode OTP autentikasi telah dikirim ke nomor WhatsApp Anda ($rawPhone). Silakan masukkan 6 digit kode keamanan:',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: codeCtrl,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 20, letterSpacing: 6, fontWeight: FontWeight.bold),
-              decoration: InputDecoration(
-                hintText: '••••••',
-                counterText: '',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                prefixIcon: const Icon(Icons.pin, color: Color(0xFFEA580C)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEA580C),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () {
-              final result = WhatsAppOtpService.instance.verifyOtp(
-                rawPhone: rawPhone,
-                inputCode: codeCtrl.text,
-              );
-              if (result.isValid) {
-                Navigator.of(ctx).pop();
-                widget.onLoginSuccess();
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(result.message),
-                    backgroundColor: const Color(0xFFDC2626),
-                  ),
-                );
-              }
-            },
-            child: const Text('Verifikasi & Masuk'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showGoogleFallbackDialog() {
-    final prefilledEmail = _loginUsernameController.text.trim().contains('@')
-        ? _loginUsernameController.text.trim()
-        : '';
-    final emailCtrl = TextEditingController(text: prefilledEmail);
-    final nameCtrl = TextEditingController();
-
-    // Akun terdaftar di database lokal / cloud
-    final registeredGoogleUsers = widget.db.users.where((u) =>
-        (u.googleEmail != null && u.googleEmail!.isNotEmpty) ||
-        (u.username.contains('@')) ||
-        u.role == UserRole.pelanggan).take(3).toList();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              SizedBox(
-                width: 22,
-                height: 22,
-                child: CustomPaint(painter: _GoogleLogoPainter()),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'Masuk dengan Akun Google',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Pilih akun Google Anda yang tersimpan atau masukkan email Google untuk masuk / sinkronisasi langsung ke Cloud:',
-                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
-              ),
-              const SizedBox(height: 14),
-
-              if (registeredGoogleUsers.isNotEmpty) ...[
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Column(
-                    children: [
-                      for (int i = 0; i < registeredGoogleUsers.length; i++) ...[
-                        if (i > 0) const Divider(height: 1, indent: 40),
-                        ListTile(
-                          dense: true,
-                          leading: CircleAvatar(
-                            radius: 14,
-                            backgroundColor: registeredGoogleUsers[i].role == UserRole.administrator
-                                ? const Color(0xFF2563EB)
-                                : const Color(0xFFEA580C),
-                            child: Text(
-                              registeredGoogleUsers[i].namaUser.isNotEmpty
-                                  ? registeredGoogleUsers[i].namaUser[0].toUpperCase()
-                                  : 'G',
-                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          title: Text(
-                            registeredGoogleUsers[i].displayEmail,
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(
-                            '${registeredGoogleUsers[i].namaUser} (${registeredGoogleUsers[i].role.label})',
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 12),
-                          onTap: () {
-                            setDialogState(() {
-                              emailCtrl.text = registeredGoogleUsers[i].displayEmail;
-                              nameCtrl.text = registeredGoogleUsers[i].namaUser;
-                            });
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              TextField(
-                controller: emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Email Akun Google',
-                  hintText: 'nama@gmail.com',
-                  labelStyle: const TextStyle(fontSize: 13),
-                  prefixIcon: const Icon(
-                    Icons.alternate_email,
-                    size: 18,
-                    color: Color(0xFFEA580C),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: nameCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Nama Tampilan Akun',
-                  hintText: 'Nama Anda',
-                  labelStyle: const TextStyle(fontSize: 13),
-                  prefixIcon: const Icon(
-                    Icons.person_outline,
-                    size: 18,
-                    color: Color(0xFFEA580C),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Batal', style: TextStyle(color: Colors.grey)),
-            ),
-            TextButton.icon(
-              icon: const Icon(Icons.open_in_browser, size: 16, color: Color(0xFF64748B)),
-              label: const Text('Browser Google', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                try {
-                  await SupabaseService().signInWithGoogleOAuth(
-                    customRedirect: SupabaseConfig.redirectUrl,
-                  );
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Gagal membuka browser: $e')),
-                    );
-                  }
-                }
-              },
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEA580C),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () async {
-                final email = emailCtrl.text.trim();
-                var name = nameCtrl.text.trim();
-                if (email.isEmpty || !email.contains('@')) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Silakan masukkan format email Google yang valid')),
-                  );
-                  return;
-                }
-                if (name.isEmpty) {
-                  name = email.split('@').first;
-                }
-                Navigator.of(ctx).pop();
-                setState(() => _isGoogleLoading = true);
-                try {
-                  final appUser = await widget.db.loginWithGoogleSupabase(
-                    googleUid: 'google_${email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}',
-                    googleEmail: email,
-                    displayName: name,
-                    photoUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=EA580C&color=fff',
-                  );
-                  if (mounted) {
-                    setState(() {
-                      _isGoogleLoading = false;
-                      _successMessage = 'Selamat datang, $name!';
-                    });
-                    _completeUserLogin(appUser);
-                  }
-                } catch (err) {
-                  if (mounted) {
-                    setState(() {
-                      _isGoogleLoading = false;
-                      _errorMessage = err.toString();
-                    });
-                  }
-                }
-              },
-              icon: const Icon(Icons.login_rounded, size: 16),
-              label: const Text('Masuk Sekarang'),
-            ),
-          ],
-        ),
-      ),
+    PhoneOtpDialog.show(
+      context,
+      phoneNumber: rawPhone,
+      title: 'Verifikasi Dua Langkah',
+      subtitle: sendResult.message,
+      onVerified: () {
+        widget.onLoginSuccess();
+      },
     );
   }
 

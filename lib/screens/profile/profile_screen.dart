@@ -909,7 +909,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Text(
                             user?.telepon.isNotEmpty == true
                                 ? user!.telepon
-                                : (user?.googleEmail ?? 'Akun Terverifikasi'),
+                                : 'Pelanggan Terverifikasi',
                             style: TextStyle(
                               fontSize: 12,
                               color: context.textSecondary,

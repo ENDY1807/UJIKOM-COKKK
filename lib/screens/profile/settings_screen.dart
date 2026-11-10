@@ -3,9 +3,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/database_service.dart';
-import '../../services/whatsapp_otp_service.dart';
+import '../../services/phone_otp_service.dart';
 import '../../widgets/app_loading_animation.dart';
 import '../../widgets/biometric_auth_dialog.dart';
+import '../../widgets/phone_otp_dialog.dart';
 import '../../theme/app_theme.dart';
 import '../../services/audio_notification_service.dart';
 
@@ -158,102 +159,26 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   Future<void> _verifyPhoneWithOtp() async {
     final rawPhone = _phoneCtrl.text.trim();
     if (rawPhone.length < 8) {
-      _showSnackbar('Masukkan nomor WhatsApp yang valid terlebih dahulu', isError: true);
+      _showSnackbar('Masukkan nomor telepon yang valid terlebih dahulu', isError: true);
       return;
     }
 
-    final user = widget.db.currentUser;
-    await WhatsAppOtpService.instance.sendOtp(
+    _showSnackbar('Mengirim kode verifikasi...');
+    final sendResult = await PhoneOtpService.instance.sendOtp(
       rawPhone: rawPhone,
-      userName: user?.namaUser ?? 'Pelanggan Rasantara',
-      purpose: 'Verifikasi Nomor WhatsApp Rasantara',
     );
 
     if (!mounted) return;
 
-    final otpCtrl = TextEditingController();
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.mark_chat_read_rounded, color: Color(0xFF16A34A), size: 24),
-            SizedBox(width: 10),
-            Text('Verifikasi OTP WhatsApp', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Kode OTP resmi telah dikirim ke nomor WhatsApp:\n$rawPhone',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0F172A),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.mark_chat_unread_rounded, color: Color(0xFF22C55E), size: 16),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'SMS / WhatsApp Terkirim: Silakan buka aplikasi chat Anda untuk melihat 6 digit kode.',
-                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: otpCtrl,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              style: const TextStyle(fontSize: 20, letterSpacing: 6, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                hintText: '••••••',
-                counterText: '',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF16A34A), width: 2),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B))),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
-            onPressed: () {
-              final result = WhatsAppOtpService.instance.verifyOtp(
-                rawPhone: rawPhone,
-                inputCode: otpCtrl.text,
-              );
-              Navigator.pop(ctx);
-              if (result.isValid) {
-                _showSnackbar(result.message);
-                setState(() {});
-              } else {
-                _showSnackbar(result.message, isError: true);
-              }
-            },
-            child: const Text('Verifikasi OTP'),
-          ),
-        ],
-      ),
+    PhoneOtpDialog.show(
+      context,
+      phoneNumber: rawPhone,
+      title: 'Verifikasi Nomor Telepon',
+      subtitle: sendResult.message,
+      onVerified: () {
+        _showSnackbar('Nomor telepon berhasil diverifikasi.');
+        setState(() {});
+      },
     );
   }
 
@@ -566,7 +491,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                             ),
                             Text(
-                              context.t('Minta kode verifikasi WhatsApp OTP saat login', 'Require WhatsApp OTP verification code upon login'),
+                              context.t('Minta kode verifikasi SMS / Telepon saat login', 'Require SMS / Phone verification code upon login'),
                               style: TextStyle(fontSize: 11, color: context.textSecondary),
                             ),
                           ],
@@ -577,7 +502,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                         activeThumbColor: const Color(0xFFEA580C),
                         onChanged: (val) {
                           if (val && _phoneCtrl.text.trim().isEmpty) {
-                            _showSnackbar('Isi nomor WhatsApp terlebih dahulu untuk mengaktifkan 2FA', isError: true);
+                            _showSnackbar(context.t('Isi nomor telepon terlebih dahulu untuk mengaktifkan 2FA', 'Please enter your phone number first to enable 2FA'), isError: true);
                             return;
                           }
                           setState(() => _is2faActive = val);
@@ -753,8 +678,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             children: [
               _buildSwitchTile(
                 icon: Icons.phonelink_lock_rounded,
-                title: context.t('Verifikasi 2 Langkah (2FA WhatsApp)', '2-Step Verification (WhatsApp 2FA)'),
-                subtitle: context.t('Minta kode verifikasi OTP WhatsApp setiap kali masuk akun baru', 'Require WhatsApp OTP verification code on new sign-ins'),
+                title: context.t('Verifikasi 2 Langkah (2FA Telepon)', '2-Step Verification (Phone 2FA)'),
+                subtitle: context.t('Minta kode verifikasi OTP SMS/Telepon setiap kali masuk akun baru', 'Require phone OTP verification code on new sign-ins'),
                 value: _is2faActive,
                 onChanged: (val) {
                   if (val && _phoneCtrl.text.trim().isEmpty) {
