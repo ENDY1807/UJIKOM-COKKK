@@ -15,7 +15,7 @@ import '../../widgets/order_tracker_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   final DatabaseService db;
-  final Function(int tabIndex) onNavigateToTab;
+  final void Function(int tabIndex, {MenuCategory? category, String? searchQuery, String? couponCode}) onNavigateToTab;
 
   const DashboardScreen({
     super.key,
@@ -1276,21 +1276,29 @@ class _DashboardScreenState extends State<DashboardScreen>
         'title': 'Aneka Nasi & Lauk',
         'desc': 'Rendang, Ayam Goreng, Nasi Uduk',
         'icon': Icons.rice_bowl_rounded,
+        'cat': MenuCategory.makanan,
+        'query': '',
       },
       {
         'title': 'Olahan Mie & Bakso',
         'desc': 'Mie Goreng Jawa, Bakso Sapi Kuah',
         'icon': Icons.ramen_dining_rounded,
+        'cat': MenuCategory.makanan,
+        'query': 'mie',
       },
       {
         'title': 'Minuman Tradisional',
         'desc': 'Es Cendol, Es Kelapa, Teh Tarik',
         'icon': Icons.local_cafe_rounded,
+        'cat': MenuCategory.minuman,
+        'query': '',
       },
       {
         'title': 'Camilan & Gorengan',
         'desc': 'Pisang Crispy, Tahu Gejrot, Tempe Mendoan',
         'icon': Icons.bakery_dining_rounded,
+        'cat': MenuCategory.addon,
+        'query': '',
       },
     ];
 
@@ -1418,6 +1426,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1E293B),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -1426,6 +1436,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                             fontSize: 11,
                             color: Color(0xFF64748B),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -1444,12 +1456,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Kupon ${v['code']} siap digunakan pada pesanan Anda!'),
+                          content: Text('Kupon ${v['code']} aktif dan siap digunakan!'),
                           backgroundColor: const Color(0xFFEA580C),
                           duration: const Duration(seconds: 2),
                         ),
                       );
-                      widget.onNavigateToTab(1);
+                      widget.onNavigateToTab(1, couponCode: v['code'] as String);
                     },
                     child: const Text(
                       'Pakai',
@@ -1513,7 +1525,13 @@ class _DashboardScreenState extends State<DashboardScreen>
           // ── Grid / List Kategori ──
           ...categories.map((c) {
             return InkWell(
-              onTap: () => widget.onNavigateToTab(1),
+              onTap: () {
+                widget.onNavigateToTab(
+                  1,
+                  category: c['cat'] as MenuCategory?,
+                  searchQuery: c['query'] as String?,
+                );
+              },
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 8),

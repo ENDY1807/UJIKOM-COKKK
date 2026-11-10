@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/user_model.dart';
 import '../models/order_model.dart';
+import '../models/menu_model.dart';
 import '../services/database_service.dart';
 import '../services/order_simulation_service.dart';
 import '../widgets/order_tracker_sheet.dart';
@@ -47,10 +48,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
   String? _scannedTableFromQr;
+  MenuCategory? _selectedCategoryForOrder;
+  String? _searchQueryForOrder;
+  String? _autoApplyCouponForOrder;
 
-  void _navigateToTab(int index) {
+  void _navigateToTab(int index, {MenuCategory? category, String? searchQuery, String? couponCode}) {
     setState(() {
       _currentIndex = index;
+      if (category != null) _selectedCategoryForOrder = category;
+      if (searchQuery != null) _searchQueryForOrder = searchQuery;
+      if (couponCode != null) _autoApplyCouponForOrder = couponCode;
     });
   }
 
@@ -108,13 +115,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         label: role == UserRole.pelanggan ? 'Pesan Menu' : 'Entri Order',
         icon: Icons.restaurant_menu_rounded,
         screen: OrderEntryScreen(
-          key: ValueKey(_scannedTableFromQr),
+          key: ValueKey('order-$_scannedTableFromQr-${_selectedCategoryForOrder?.name}-$_searchQueryForOrder-$_autoApplyCouponForOrder'),
           db: widget.db,
           initialTableNo: _scannedTableFromQr,
+          initialCategory: _selectedCategoryForOrder,
+          initialSearch: _searchQueryForOrder,
+          initialCoupon: _autoApplyCouponForOrder,
           onNavigateToTab: _navigateToTab,
           onOrderSubmitted: () {
             setState(() {
               _scannedTableFromQr = null;
+              _selectedCategoryForOrder = null;
+              _searchQueryForOrder = null;
+              _autoApplyCouponForOrder = null;
             });
             _navigateToTab(0);
           },

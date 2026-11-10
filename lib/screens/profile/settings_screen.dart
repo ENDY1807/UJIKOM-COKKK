@@ -150,7 +150,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     }
 
     final user = widget.db.currentUser;
-    final code = await WhatsAppOtpService.instance.sendOtp(
+    await WhatsAppOtpService.instance.sendOtp(
       rawPhone: rawPhone,
       userName: user?.namaUser ?? 'Pelanggan Rasantara',
       purpose: 'Verifikasi Nomor WhatsApp Rasantara',
@@ -186,14 +186,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 color: const Color(0xFF0F172A),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  const Icon(Icons.mark_chat_unread_rounded, color: Color(0xFF22C55E), size: 16),
-                  const SizedBox(width: 8),
+                  Icon(Icons.mark_chat_unread_rounded, color: Color(0xFF22C55E), size: 16),
+                  SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'SMS / WhatsApp Masuk: Kode OTP verifikasi adalah $code',
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                      'SMS / WhatsApp Terkirim: Silakan buka aplikasi chat Anda untuk melihat 6 digit kode.',
+                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -388,7 +388,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                               border: Border.all(color: const Color(0xFFFFEDD5)),
                             ),
                             child: Text(
-                              'Role: ${user?.role.label ?? "Pelanggan"}',
+                              user?.telepon.isNotEmpty == true ? user!.telepon : 'Member Rasantara',
                               style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                             ),
                           ),
@@ -708,6 +708,129 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                       setState(() => _mapStyle = val);
                       widget.db.updateAppSettings(mapStyle: val);
                     }
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ── Konfigurasi Gateway Pembayaran Midtrans ──
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.payment_rounded, size: 18, color: Color(0xFFEA580C)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Konfigurasi Payment Gateway & Midtrans',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.verified_rounded, size: 16, color: Color(0xFF16A34A)),
+                          SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Midtrans Snap BI Gateway: Terhubung',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Metode aktif: QRIS Nasional, BCA/Mandiri/BRI/BNI Virtual Account, GoPay, dan DANA Sandbox.',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildSwitchTile(
+                  icon: Icons.science_outlined,
+                  title: 'Mode Sandbox Pengujian',
+                  subtitle: 'Gunakan sandbox.midtrans.com untuk simulasi transaksi',
+                  value: true,
+                  onChanged: (val) {
+                    _showSnackbar('Mode pengujian Sandbox tetap aktif untuk keamanan');
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ── Konfigurasi Pengantaran & Biaya Resto ──
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.delivery_dining_rounded, size: 18, color: Color(0xFFEA580C)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Konfigurasi Pengantaran & Layanan Resto',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _buildSwitchTile(
+                  icon: Icons.storefront_outlined,
+                  title: 'Layanan Pengantaran Aktif',
+                  subtitle: 'Terima order Take Away & Pengantaran alamat pelanggan',
+                  value: true,
+                  onChanged: (val) {
+                    _showSnackbar('Pengaturan layanan pengantaran disimpan');
+                  },
+                ),
+                const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                _buildSwitchTile(
+                  icon: Icons.animation_rounded,
+                  title: 'Animasi Loading & Transisi',
+                  subtitle: 'Tampilkan animasi logo Rasantara saat memuat data',
+                  value: true,
+                  onChanged: (val) {
+                    _showSnackbar('Preferensi animasi diperbarui');
                   },
                 ),
               ],

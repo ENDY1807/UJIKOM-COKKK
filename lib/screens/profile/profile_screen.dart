@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/payment_method_model.dart';
-import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
 import 'manage_payments_screen.dart';
@@ -847,7 +846,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = widget.db.currentUser;
-    final role = user?.role ?? UserRole.pelanggan;
     final is2Fa = user?.isTwoFactorEnabled == true;
     final paymentMethods = widget.db.connectedPaymentMethods;
 
@@ -907,28 +905,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             user?.displayEmail ?? 'pelanggan@rasantara.resto',
                             style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                           ),
-                          const SizedBox(height: 6),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF7ED),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: const Color(0xFFFFEDD5)),
-                                ),
-                                child: Text(
-                                  role.label,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFEA580C),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: 4),
+                          Text(
+                            user?.telepon.isNotEmpty == true
+                                ? user!.telepon
+                                : (user?.googleEmail ?? 'Akun Terverifikasi'),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),

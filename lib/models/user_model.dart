@@ -73,6 +73,8 @@ class UserModel {
 
   String get displayPhoto => googlePhoto ?? fotoProfil ?? '';
 
+  String get telepon => phoneNumber;
+
   String get displayEmail =>
       googleEmail ?? (username.contains('@') ? username : '$username@kasirrestoran.app');
 

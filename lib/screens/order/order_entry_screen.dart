@@ -30,6 +30,9 @@ enum OrderServiceType {
 class OrderEntryScreen extends StatefulWidget {
   final DatabaseService db;
   final String? initialTableNo;
+  final MenuCategory? initialCategory;
+  final String? initialSearch;
+  final String? initialCoupon;
   final void Function(int tabIndex)? onNavigateToTab;
   final VoidCallback? onOrderSubmitted;
 
@@ -37,6 +40,9 @@ class OrderEntryScreen extends StatefulWidget {
     super.key,
     required this.db,
     this.initialTableNo,
+    this.initialCategory,
+    this.initialSearch,
+    this.initialCoupon,
     this.onNavigateToTab,
     this.onOrderSubmitted,
   });
@@ -119,6 +125,18 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     } else if (widget.db.primaryAddress != null) {
       _deliveryAddressController.text = widget.db.primaryAddress!.formattedFullAddress;
     }
+
+    // Terapkan filter kategori, search, dan kupon dari navigasi
+    if (widget.initialCategory != null) {
+      _selectedCategory = widget.initialCategory!;
+    }
+    if (widget.initialSearch != null && widget.initialSearch!.isNotEmpty) {
+      _searchController.text = widget.initialSearch!;
+      _searchQuery = widget.initialSearch!;
+    }
+    if (widget.initialCoupon != null && widget.initialCoupon!.isNotEmpty) {
+      _applyCoupon(widget.initialCoupon!);
+    }
   }
 
   @override
@@ -144,13 +162,49 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     super.dispose();
   }
 
-  // ── Promo, Kupon & Poin Loyalitas ──
+  // ── Multi-Kupon Promo, Event & Poin Loyalitas ──
   int? _selectedEventId;
-  String _couponCode = '';
-  int _couponDiscount = 0;
+  final Set<String> _appliedCoupons = {};
   bool _usePointsDiscount = false;
   final TextEditingController _couponInputCtrl = TextEditingController();
   String? _couponStatusMsg;
+
+  int _calcDiscountForCoupon(String code) {
+    final clean = code.trim().toUpperCase();
+    if (clean == 'RASANTARA30') {
+      // Diskon 30% s.d. Rp 30.000
+      return (_cartTotalHarga * 0.30).round().clamp(0, 30000);
+    } else if (clean == 'HEMAT15K') {
+      // Potongan langsung Rp 15.000
+      return 15000.clamp(0, _cartTotalHarga);
+    } else if (clean == 'BEBASONGKIR') {
+      // Bebas ongkir pengantaran (Rp 10.000)
+      return _currentDeliveryFee.clamp(0, 10000);
+    } else if (clean == 'RASANTARA10') {
+      // Kupon Event 10% s.d. Rp 25.000
+      return (_cartTotalHarga * 0.10).round().clamp(0, 25000);
+    } else if (clean == 'DISKONMEMBER') {
+      // Kupon Member Spesial Rp 15.000
+      return 15000.clamp(0, _cartTotalHarga);
+    } else if (clean == 'HEMAT20') {
+      // Pesta Kuliner 20% s.d. Rp 30.000
+      return (_cartTotalHarga * 0.20).round().clamp(0, 30000);
+    } else if (clean == 'MAKANENAK') {
+      // Santap Nikmat Rp 10.000
+      return 10000.clamp(0, _cartTotalHarga);
+    }
+    return 0;
+  }
+
+  int get _couponDiscount {
+    int total = 0;
+    for (final code in _appliedCoupons) {
+      total += _calcDiscountForCoupon(code);
+    }
+    return total.clamp(0, _cartTotalHarga + _currentDeliveryFee);
+  }
+
+  String get _couponCode => _appliedCoupons.join(', ');
 
   int get _diskonEventAmount {
     if (_selectedEventId == null) return 0;
@@ -178,41 +232,48 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     return raw > 0 ? raw : 0;
   }
 
-  void _clearCoupon() {
-    _couponCode = '';
-    _couponDiscount = 0;
+  void _clearCoupons() {
+    _appliedCoupons.clear();
     _couponStatusMsg = null;
     _couponInputCtrl.clear();
   }
 
-  void _applyCoupon(String code) {
+  void _toggleCoupon(String code, {bool? forceAdd}) {
     final clean = code.trim().toUpperCase();
-    if (clean.isEmpty) {
-      _clearCoupon();
+    if (clean.isEmpty) return;
+
+    final validCodes = [
+      'RASANTARA30',
+      'HEMAT15K',
+      'BEBASONGKIR',
+      'RASANTARA10',
+      'DISKONMEMBER',
+      'HEMAT20',
+      'MAKANENAK',
+    ];
+
+    if (!validCodes.contains(clean)) {
+      _couponStatusMsg = 'Kode kupon "$code" tidak terdaftar';
       return;
     }
 
-    if (clean == 'RASANTARA10') {
-      _couponCode = clean;
-      _couponDiscount = (_cartTotalHarga * 0.10).round().clamp(0, 25000);
-      _couponStatusMsg = 'Kupon Event 10% berhasil diterapkan';
-    } else if (clean == 'DISKONMEMBER') {
-      _couponCode = clean;
-      _couponDiscount = 15000.clamp(0, _cartTotalHarga);
-      _couponStatusMsg = 'Kupon Member Rp 15.000 diterapkan';
-    } else if (clean == 'HEMAT20') {
-      _couponCode = clean;
-      _couponDiscount = (_cartTotalHarga * 0.20).round().clamp(0, 30000);
-      _couponStatusMsg = 'Kupon Pesta Kuliner 20% diterapkan';
-    } else if (clean == 'MAKANENAK') {
-      _couponCode = clean;
-      _couponDiscount = 10000.clamp(0, _cartTotalHarga);
-      _couponStatusMsg = 'Kupon Santap Nikmat Rp 10.000 diterapkan';
-    } else {
-      _couponCode = '';
-      _couponDiscount = 0;
-      _couponStatusMsg = 'Kode kupon "$code" tidak valid';
+    if (forceAdd == true) {
+      _appliedCoupons.add(clean);
+      _couponStatusMsg = 'Kupon $clean berhasil diterapkan (${_appliedCoupons.length} kupon aktif)';
+      return;
     }
+
+    if (_appliedCoupons.contains(clean)) {
+      _appliedCoupons.remove(clean);
+      _couponStatusMsg = 'Kupon $clean dinonaktifkan';
+    } else {
+      _appliedCoupons.add(clean);
+      _couponStatusMsg = 'Kupon $clean diterapkan (${_appliedCoupons.length} kupon aktif)';
+    }
+  }
+
+  void _applyCoupon(String code) {
+    _toggleCoupon(code, forceAdd: true);
   }
 
   // ── Mutasi Keranjang ──
@@ -981,11 +1042,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (sheetContext, setModalState) {
           final availableCouponsList = [
-            {'code': '', 'label': 'Tidak Menggunakan Kupon (Default)', 'desc': 'Tanpa potongan kupon promo'},
-            {'code': 'RASANTARA10', 'label': 'Event Nusantara 10%', 'desc': 'Diskon 10% s.d. Rp 25.000'},
-            {'code': 'DISKONMEMBER', 'label': 'Kupon Member Spesial', 'desc': 'Potongan langsung Rp 15.000'},
-            {'code': 'HEMAT20', 'label': 'Kupon Pesta Kuliner 20%', 'desc': 'Diskon 20% s.d. Rp 30.000'},
-            {'code': 'MAKANENAK', 'label': 'Kupon Santap Nikmat', 'desc': 'Potongan langsung Rp 10.000'},
+            {'code': 'RASANTARA30', 'tag': '30% OFF', 'label': 'Pesta Rasa Akhir Pekan', 'desc': 'Diskon 30% s.d. Rp 30.000'},
+            {'code': 'HEMAT15K', 'tag': 'Rp 15RB', 'label': 'Diskon Pelanggan Setia', 'desc': 'Potongan langsung Rp 15.000'},
+            {'code': 'BEBASONGKIR', 'tag': 'GRATIS', 'label': 'Bebas Ongkir Pengantaran', 'desc': 'Gratis ongkir s.d. Rp 10.000'},
+            {'code': 'DISKONMEMBER', 'tag': 'MEMBER', 'label': 'Kupon Member Spesial', 'desc': 'Potongan langsung Rp 15.000'},
+            {'code': 'HEMAT20', 'tag': '20% OFF', 'label': 'Pesta Kuliner 20%', 'desc': 'Diskon 20% s.d. Rp 30.000'},
+            {'code': 'MAKANENAK', 'tag': 'Rp 10RB', 'label': 'Kupon Santap Nikmat', 'desc': 'Potongan langsung Rp 10.000'},
           ];
 
           return Container(
@@ -1371,41 +1433,108 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               ),
                               const SizedBox(height: 10),
 
-                              // Dropdown Selector Kupon (Default Kosong)
-                              DropdownButtonFormField<String>(
-                                initialValue: availableCouponsList.any((c) => c['code'] == _couponCode) ? _couponCode : '',
-                                isExpanded: true,
-                                decoration: InputDecoration(
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                                items: availableCouponsList.map((c) {
-                                  return DropdownMenuItem<String>(
-                                    value: c['code'],
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(c['label']!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                        Text(c['desc']!, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
-                                      ],
+                              // Multi-Kupon Selector (Bisa Menggunakan Lebih dari 1 Kupon Sekaligus)
+                              Column(
+                                children: availableCouponsList.map((c) {
+                                  final code = c['code']!;
+                                  final isApplied = _appliedCoupons.contains(code);
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    decoration: BoxDecoration(
+                                      color: isApplied ? const Color(0xFFFFF7ED) : Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: isApplied ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+                                        width: isApplied ? 1.5 : 1.0,
+                                      ),
+                                    ),
+                                    child: CheckboxListTile(
+                                      value: isApplied,
+                                      dense: true,
+                                      activeColor: const Color(0xFFEA580C),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                                      title: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFFF7ED),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(color: const Color(0xFFFFEDD5)),
+                                            ),
+                                            child: Text(
+                                              c['tag'] ?? 'PROMO',
+                                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              c['label']!,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: isApplied ? const Color(0xFFEA580C) : const Color(0xFF1E293B),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      subtitle: Text(
+                                        c['desc']!,
+                                        style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      onChanged: (val) {
+                                        setModalState(() {
+                                          _toggleCoupon(code);
+                                        });
+                                        setState(() {
+                                          _toggleCoupon(code);
+                                        });
+                                      },
                                     ),
                                   );
                                 }).toList(),
-                                onChanged: (code) {
-                                  setModalState(() {
-                                    _applyCoupon(code ?? '');
-                                  });
-                                  setState(() {
-                                    _applyCoupon(code ?? '');
-                                  });
-                                },
                               ),
-                              const SizedBox(height: 10),
 
-                              // Input Manual Kode Promo
+                              if (_appliedCoupons.isNotEmpty) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFECFDF5),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFF059669)),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          '${_appliedCoupons.length} Kupon Aktif • Hemat ${_currencyFmt.format(_couponDiscount)}',
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF065F46)),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      InkWell(
+                                        onTap: () {
+                                          setModalState(() => _clearCoupons());
+                                          setState(() => _clearCoupons());
+                                        },
+                                        child: const Text('Reset Kupon', style: TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+
+                              // Input Manual Kode Promo Tambahan
                               Row(
                                 children: [
                                   Expanded(
@@ -1447,27 +1576,15 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               ),
                               if (_couponStatusMsg != null) ...[
                                 const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        _couponStatusMsg!,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: _couponDiscount > 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                                        ),
-                                      ),
-                                    ),
-                                    if (_couponDiscount > 0)
-                                      InkWell(
-                                        onTap: () {
-                                          setModalState(() => _clearCoupon());
-                                          setState(() => _clearCoupon());
-                                        },
-                                        child: const Text('Hapus', style: TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
-                                      ),
-                                  ],
+                                Text(
+                                  _couponStatusMsg!,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: _couponDiscount > 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
 
@@ -2235,13 +2352,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
       children: [
-        // 1. Info Restoran Gojek Style (Inspirasi Image 2)
-        _buildGojekRestaurantInfoCard(),
-
-        // 2. 4 Quick Service Tiles (Inspirasi Image 1)
-        _buildGojekQuickServiceTiles(),
-
-        // 3. Flash Sale Banner 11.11 (Inspirasi Image 1)
+        // 1. Flash Sale Banner 11.11 (Inspirasi Image 1)
         if (pakets.isNotEmpty)
           _buildGojekFlashSaleBanner(pakets),
 
@@ -2672,201 +2783,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       ),
     ),
   );
-  }
-
-  // ── Info Restoran Gojek Style (Inspirasi Image 2) ──
-  Widget _buildGojekRestaurantInfoCard() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Rasantara Resto & Cafe',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Icon(Icons.star_rounded, size: 16, color: Color(0xFFF59E0B)),
-                        SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            '4.9 (23rb+) • 20-30 min (1.8 km)',
-                            style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFF7ED),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.favorite_border_rounded, size: 18, color: Color(0xFFEA580C)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 10),
-
-          // Chips promo diskon
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF7ED),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFFFEDD5)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.timer_outlined, size: 14, color: Color(0xFFEA580C)),
-                      SizedBox(width: 6),
-                      Text(
-                        'Diskon makanan 30%, maks. Rp 30.000',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.group_rounded, size: 14, color: Color(0xFF64748B)),
-                      SizedBox(width: 6),
-                      Text(
-                        'Group Order',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── 4 Quick Service Tiles (Inspirasi Gojek Image 1) ──
-  Widget _buildGojekQuickServiceTiles() {
-    final services = [
-      {'title': 'Ongkir\nMURAH', 'icon': Icons.delivery_dining_rounded, 'badge': 'HEMAT'},
-      {'title': 'Resto\nTerdekat', 'icon': Icons.store_mall_directory_rounded, 'badge': '1.8 km'},
-      {'title': 'Group\nOrder', 'icon': Icons.group_add_rounded, 'badge': '-30%'},
-      {'title': 'Kirim\nMakanan', 'icon': Icons.takeout_dining_rounded, 'badge': null},
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: services.map((s) {
-          final hasBadge = s['badge'] != null;
-          return Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x06000000),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                alignment: Alignment.center,
-                children: [
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFFF7ED),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(s['icon'] as IconData, size: 20, color: const Color(0xFFEA580C)),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        s['title'] as String,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B), height: 1.2),
-                      ),
-                    ],
-                  ),
-                  if (hasBadge)
-                    Positioned(
-                      top: -6,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEA580C),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          s['badge'] as String,
-                          style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
   }
 
   // ── Flash Sale Card (Inspirasi Gojek Image 1) ──

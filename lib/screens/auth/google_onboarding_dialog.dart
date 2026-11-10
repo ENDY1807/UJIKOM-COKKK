@@ -55,7 +55,6 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
   // Step 1: Form Profil & Nomor Telepon (tanpa tombol OTP)
   // Step 2: Konfirmasi Kode OTP setelah nomor diverifikasi
   int _step = 1;
-  String? _sentOtpCode;
   int _resendCountdown = 60;
   Timer? _countdownTimer;
 
@@ -155,7 +154,7 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
     });
 
     try {
-      final code = await WhatsAppOtpService.instance.sendOtp(
+      await WhatsAppOtpService.instance.sendOtp(
         rawPhone: rawPhone,
         userName: _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : username,
         purpose: 'Konfirmasi Akun & Nomor Telepon Rasantara',
@@ -164,7 +163,6 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
       _startCountdownTimer();
 
       setState(() {
-        _sentOtpCode = code;
         _step = 2; // Pindah ke tampilan konfirmasi OTP
         _isLoading = false;
         _errorMessage = null;
@@ -184,14 +182,13 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
     setState(() => _isLoading = true);
 
     try {
-      final code = await WhatsAppOtpService.instance.sendOtp(
+      await WhatsAppOtpService.instance.sendOtp(
         rawPhone: rawPhone,
         userName: _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : 'Pengguna',
         purpose: 'Kirim Ulang Kode OTP Rasantara',
       );
       _startCountdownTimer();
       setState(() {
-        _sentOtpCode = code;
         _isLoading = false;
         _errorMessage = null;
       });
@@ -534,9 +531,9 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
                       ],
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      'Kode OTP verifikasi Anda: ${_sentOtpCode ?? "------"}. Masukkan kode ini untuk mengonfirmasi akun.',
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                    const Text(
+                      'Pesan keamanan telah dikirimkan ke nomor WhatsApp/SMS Anda. Masukkan kode 6 digit untuk mengonfirmasi.',
+                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
