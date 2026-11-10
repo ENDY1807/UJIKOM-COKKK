@@ -1961,7 +1961,13 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         if (_diskonEventAmount > 0)
                           _buildCostRow('Diskon Event Promo', '- ${_currencyFmt.format(_diskonEventAmount)}', isHighlight: true),
                         if (_couponDiscount > 0)
-                          _buildCostRow('Diskon Kupon ($_couponCode)', '- ${_currencyFmt.format(_couponDiscount)}', isHighlight: true),
+                          _buildCostRow(
+                            _appliedCoupons.length > 1
+                                ? 'Diskon Kupon (${_appliedCoupons.length} Kupon Diterapkan)'
+                                : 'Diskon Kupon ($_couponCode)',
+                            '- ${_currencyFmt.format(_couponDiscount)}',
+                            isHighlight: true,
+                          ),
                         if (_potonganPoinAmount > 0)
                           _buildCostRow('Potongan Poin Kuliner', '- ${_currencyFmt.format(_potonganPoinAmount)}', isHighlight: true),
                         if (_packagingFee > 0)
@@ -2112,14 +2118,19 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
-              color: isHighlight ? const Color(0xFF16A34A) : context.textSecondary,
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
+                color: isHighlight ? const Color(0xFF16A34A) : context.textSecondary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             val,
             style: TextStyle(
