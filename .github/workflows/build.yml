@@ -42,6 +42,13 @@ jobs:
           name: Rasantara-Android-APK
           path: build/app/outputs/flutter-apk/app-release.apk
 
+      - name: Upload Build Log on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-failure-log
+          path: build/
+
   build-windows:
     name: Build Windows App
     runs-on: windows-latest
