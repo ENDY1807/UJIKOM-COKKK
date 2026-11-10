@@ -360,7 +360,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                             child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF00AA13),
+                                color: const Color(0xFFEA580C),
                                 shape: BoxShape.circle,
                                 border: Border.all(color: Colors.white, width: 2),
                               ),
@@ -383,13 +383,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF0FDF4),
+                              color: const Color(0xFFFFF7ED),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: const Color(0xFFBBF7D0)),
+                              border: Border.all(color: const Color(0xFFFFEDD5)),
                             ),
                             child: Text(
                               'Role: ${user?.role.label ?? "Pelanggan"}',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                             ),
                           ),
                           const SizedBox(height: 8),

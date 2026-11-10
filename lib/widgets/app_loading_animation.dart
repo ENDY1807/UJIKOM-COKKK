@@ -14,8 +14,8 @@ class AppLoadingAnimation extends StatefulWidget {
     super.key,
     this.size = 56.0,
     this.message,
-    this.primaryColor = const Color(0xFF00AA13), // Gojek Green
-    this.secondaryColor = const Color(0xFFEA580C), // Rasantara Orange
+    this.primaryColor = const Color(0xFFEA580C), // Rasantara Orange
+    this.secondaryColor = const Color(0xFFF97316), // Warm Orange Accent
     this.icon = Icons.restaurant_menu_rounded,
   });
 
@@ -135,7 +135,7 @@ class _AppLoadingAnimationState extends State<AppLoadingAnimation> with SingleTi
                       width: widget.size * 0.52,
                       height: widget.size * 0.52,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF0FDF4),
+                        color: const Color(0xFFFFF7ED),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: widget.primaryColor.withAlpha(80),

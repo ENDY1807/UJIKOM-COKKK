@@ -1102,8 +1102,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                   ),
                                   OutlinedButton(
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: const Color(0xFF00AA13),
-                                      side: const BorderSide(color: Color(0xFF00AA13), width: 1.5),
+                                      foregroundColor: const Color(0xFFEA580C),
+                                      side: const BorderSide(color: Color(0xFFEA580C), width: 1.5),
                                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                       minimumSize: Size.zero,
@@ -1144,11 +1144,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                         child: ChoiceChip(
                                           label: Text(instruction),
                                           selected: isSelected,
-                                          selectedColor: const Color(0xFFE8F5E9),
+                                          selectedColor: const Color(0xFFFFF7ED),
                                           labelStyle: TextStyle(
                                             fontSize: 10.5,
                                             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                            color: isSelected ? const Color(0xFF00AA13) : const Color(0xFF475569),
+                                            color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF475569),
                                           ),
                                           onSelected: (val) {
                                             setModalState(() {
@@ -1324,8 +1324,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               ),
                               OutlinedButton(
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFF00AA13),
-                                  side: const BorderSide(color: Color(0xFF00AA13), width: 1.5),
+                                  foregroundColor: const Color(0xFFEA580C),
+                                  side: const BorderSide(color: Color(0xFFEA580C), width: 1.5),
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                   minimumSize: Size.zero,
@@ -1670,7 +1670,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                                   ? Icons.account_balance_rounded
                                                   : Icons.payments_outlined))),
                                   size: 18,
-                                  color: _selectedPaymentMethodId == 'gopay' ? const Color(0xFF00AED6) : const Color(0xFF00AA13),
+                                  color: _selectedPaymentMethodId == 'gopay' ? const Color(0xFF00AED6) : const Color(0xFFEA580C),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -1700,22 +1700,23 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8F5E9),
+                              color: const Color(0xFFFFF7ED),
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFFFEDD5)),
                             ),
                             child: const Text(
                               'Midtrans Aktif',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00AA13)),
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
 
-                      // Tombol Utama Gojek Signature Green
+                      // Tombol Utama Gojek Pill - Rasantara Orange & White
                       FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF00AA13), // Gojek Signature Green
+                          backgroundColor: const Color(0xFFEA580C), // Rasantara Orange
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           minimumSize: const Size.fromHeight(48),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -2216,8 +2217,18 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     final addons = allMenus.where((m) => m.kategori == MenuCategory.addon).toList();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
       children: [
+        // 1. Info Restoran Gojek Style (Inspirasi Image 2)
+        _buildGojekRestaurantInfoCard(),
+
+        // 2. 4 Quick Service Tiles (Inspirasi Image 1)
+        _buildGojekQuickServiceTiles(),
+
+        // 3. Flash Sale Banner 11.11 (Inspirasi Image 1)
+        if (pakets.isNotEmpty)
+          _buildGojekFlashSaleBanner(pakets),
+
         // State Kosong Jika Hasil Pencarian Tidak Ditemukan
         if (allMenus.isEmpty) ...[
           Container(
@@ -2590,7 +2601,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           width: 32,
                           height: 32,
                           decoration: const BoxDecoration(
-                            color: Color(0xFF00AA13), // Gojek Signature Green
+                            color: Color(0xFFEA580C), // Rasantara Orange
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.add, size: 18, color: Colors.white),
@@ -2601,7 +2612,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF00AA13), width: 1.5),
+                          border: Border.all(color: const Color(0xFFEA580C), width: 1.5),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -2611,7 +2622,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               borderRadius: BorderRadius.circular(16),
                               child: const Padding(
                                 padding: EdgeInsets.all(4),
-                                child: Icon(Icons.remove, size: 16, color: Color(0xFF00AA13)),
+                                child: Icon(Icons.remove, size: 16, color: Color(0xFFEA580C)),
                               ),
                             ),
                             Padding(
@@ -2630,7 +2641,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               borderRadius: BorderRadius.circular(16),
                               child: const Padding(
                                 padding: EdgeInsets.all(4),
-                                child: Icon(Icons.add, size: 16, color: Color(0xFF00AA13)),
+                                child: Icon(Icons.add, size: 16, color: Color(0xFFEA580C)),
                               ),
                             ),
                           ],
@@ -2647,56 +2658,420 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   );
   }
 
-  // ── Widget Sticky Bottom Cart Bar ──
-  Widget _buildFloatingCartBar() {
+  // ── Info Restoran Gojek Style (Inspirasi Image 2) ──
+  Widget _buildGojekRestaurantInfoCard() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      decoration: const BoxDecoration(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 16,
-            offset: Offset(0, -4),
+            color: Color(0x06000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '$_cartTotalItems Item Terpilih (${_serviceType.label})',
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                    'Rasantara Resto & Cafe',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _currencyFmt.format(_grandTotal),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFEA580C),
+                  SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(Icons.star_rounded, size: 16, color: Color(0xFFF59E0B)),
+                      SizedBox(width: 4),
+                      Text(
+                        '4.9 (23rb+) • 20-30 min (1.8 km)',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF7ED),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.favorite_border_rounded, size: 18, color: Color(0xFFEA580C)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 10),
+
+          // Chips promo diskon
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFFEDD5)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.timer_outlined, size: 14, color: Color(0xFFEA580C)),
+                      SizedBox(width: 6),
+                      Text(
+                        'Diskon makanan 30%, maks. Rp 30.000',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.group_rounded, size: 14, color: Color(0xFF64748B)),
+                      SizedBox(width: 6),
+                      Text(
+                        'Group Order',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 4 Quick Service Tiles (Inspirasi Gojek Image 1) ──
+  Widget _buildGojekQuickServiceTiles() {
+    final services = [
+      {'title': 'Ongkir\nMURAH', 'icon': Icons.delivery_dining_rounded, 'badge': 'HEMAT'},
+      {'title': 'Resto\nTerdekat', 'icon': Icons.store_mall_directory_rounded, 'badge': '1.8 km'},
+      {'title': 'Group\nOrder', 'icon': Icons.group_add_rounded, 'badge': '-30%'},
+      {'title': 'Kirim\nMakanan', 'icon': Icons.takeout_dining_rounded, 'badge': null},
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: services.map((s) {
+          final hasBadge = s['badge'] != null;
+          return Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x06000000),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFF7ED),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(s['icon'] as IconData, size: 20, color: const Color(0xFFEA580C)),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        s['title'] as String,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B), height: 1.2),
+                      ),
+                    ],
+                  ),
+                  if (hasBadge)
+                    Positioned(
+                      top: -6,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEA580C),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          s['badge'] as String,
+                          style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ── Flash Sale Card (Inspirasi Gojek Image 1) ──
+  Widget _buildGojekFlashSaleBanner(List<MenuModel> flashMenus) {
+    if (flashMenus.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFEA580C), Color(0xFFF97316)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x24EA580C),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Flash Sale Rasantara',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      '01 : 51 : 43',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                     ),
                   ),
                 ],
               ),
+              const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+            ],
+          ),
+          const SizedBox(height: 2),
+          const Text(
+            'Diskonnya s.d. 40%, serbu hidangan lezat sekarang!',
+            style: TextStyle(fontSize: 11, color: Colors.white70),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 180,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: flashMenus.length,
+              separatorBuilder: (ctx, i) => const SizedBox(width: 10),
+              itemBuilder: (ctx, i) {
+                final m = flashMenus[i];
+                final originalPrice = (m.harga * 1.35).round();
+                return Container(
+                  width: 140,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                            child: SizedBox(
+                              height: 90,
+                              width: 140,
+                              child: m.gambarUrl.isNotEmpty
+                                  ? Image.network(m.gambarUrl, fit: BoxFit.cover, errorBuilder: (c, e, s) => _menuImageFallback())
+                                  : _menuImageFallback(),
+                            ),
+                          ),
+                          Positioned(
+                            top: 6,
+                            left: 6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEA580C),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                '-35%',
+                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              m.namaMasakan,
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _currencyFmt.format(originalPrice),
+                              style: const TextStyle(fontSize: 9.5, color: Color(0xFF94A3B8), decoration: TextDecoration.lineThrough),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _currencyFmt.format(m.harga),
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                                ),
+                                InkWell(
+                                  onTap: () => _addToCart(m),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFEA580C),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.add, size: 14, color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFEA580C),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              icon: const Icon(Icons.shopping_cart_checkout_rounded, size: 18),
-              label: const Text('Checkout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              onPressed: _openCheckoutSheet,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Widget Sticky Bottom Cart Bar (Floating Pill Gaya Gojek) ──
+  Widget _buildFloatingCartBar() {
+    return Container(
+      color: Colors.transparent,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: SafeArea(
+        child: InkWell(
+          onTap: _openCheckoutSheet,
+          borderRadius: BorderRadius.circular(30),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEA580C),
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33EA580C),
+                  blurRadius: 16,
+                  offset: Offset(0, 6),
+                ),
+              ],
             ),
-          ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$_cartTotalItems',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Total Pesanan',
+                          style: TextStyle(fontSize: 10.5, color: Colors.white70, fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          _currencyFmt.format(_grandTotal),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const Row(
+                  children: [
+                    Text(
+                      'Lihat Keranjang',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    SizedBox(width: 6),
+                    Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
