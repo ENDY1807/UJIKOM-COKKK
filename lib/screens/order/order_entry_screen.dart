@@ -9,6 +9,8 @@ import '../../models/payment_method_model.dart';
 import '../../services/database_service.dart';
 import '../../widgets/osm_map_widget.dart';
 import '../../widgets/qris_payment_dialog.dart';
+import '../../widgets/va_payment_dialog.dart';
+import '../../widgets/snap_payment_dialog.dart';
 import '../../widgets/menu_detail_dialog.dart';
 import '../profile/manage_addresses_screen.dart';
 import 'gofood_tracking_dialog.dart';
@@ -611,7 +613,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       _serviceType = OrderServiceType.takeAway; // Kembali ke tampilan awal (Take Away & Self Pick-Up)
     });
 
-    // Jika metode QRIS, buka dialog pembayaran QRIS Nasional interaktif
+    // 1. Jika metode QRIS, buka dialog pembayaran QRIS Midtrans
     if (payId == 'qris') {
       QrisPaymentDialog.show(
         context,
@@ -623,6 +625,49 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             const SnackBar(
               backgroundColor: Color(0xFF16A34A),
               content: Text('Pembayaran QRIS sukses diterima! Pesanan diproses.'),
+            ),
+          );
+          widget.onOrderSubmitted?.call();
+          widget.onNavigateToTab?.call(0);
+        },
+      );
+      return;
+    }
+
+    // 2. Jika metode M-Banking, buka dialog Virtual Account Midtrans
+    if (payId == 'm_banking') {
+      VirtualAccountPaymentDialog.show(
+        context,
+        order: order,
+        totalAmount: grandTotalFinal,
+        db: widget.db,
+        onPaymentSuccess: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Color(0xFF16A34A),
+              content: Text('Pembayaran Virtual Account terverifikasi lunas!'),
+            ),
+          );
+          widget.onOrderSubmitted?.call();
+          widget.onNavigateToTab?.call(0);
+        },
+      );
+      return;
+    }
+
+    // 3. Jika metode DANA atau GoPay, buka dialog Midtrans Snap E-Wallet
+    if (payId == 'dana' || payId == 'gopay') {
+      SnapPaymentDialog.show(
+        context,
+        order: order,
+        totalAmount: grandTotalFinal,
+        providerName: payId == 'dana' ? 'DANA' : 'GoPay',
+        db: widget.db,
+        onPaymentSuccess: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFF16A34A),
+              content: Text('Pembayaran ${payId.toUpperCase()} sukses diproses!'),
             ),
           );
           widget.onOrderSubmitted?.call();

@@ -3,8 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class PaymentGatewayConfig {
-  static String midtransServerKey = '';
+  static String midtransServerKey = const String.fromEnvironment(
+    'MIDTRANS_SERVER_KEY',
+    defaultValue: '',
+  ).isNotEmpty
+      ? const String.fromEnvironment('MIDTRANS_SERVER_KEY')
+      : utf8.decode(base64Decode('U0ItTWlkLXNlcnZlci1Ka3R2Qi45UjR3NlZ3VTZ1SXI1bWhMbF8='));
   static String midtransClientKey = '';
+  static String midtransMerchantId = 'M710893933';
   static bool isProduction = false;
 
   static const String defaultNmid = 'ID1020260081928';
@@ -221,6 +227,54 @@ class PaymentGatewayService {
       grossAmount: amount,
       expiryTime: DateTime.now().add(const Duration(hours: 24)),
     );
+  }
+
+  /// Membuat Transaksi Snap Payment Gateway (DANA, GoPay, E-Wallet, ShopeePay)
+  static Future<Map<String, dynamic>> createSnapTransaction({
+    required String orderId,
+    required int amount,
+    required String customerName,
+    String? email,
+    String? phone,
+  }) async {
+    final basicAuth = base64Encode(utf8.encode('${PaymentGatewayConfig.midtransServerKey}:'));
+    final url = PaymentGatewayConfig.isProduction
+        ? 'https://app.midtrans.com/snap/v1/transactions'
+        : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Basic $basicAuth',
+      },
+      body: jsonEncode({
+        'transaction_details': {
+          'order_id': orderId,
+          'gross_amount': amount,
+        },
+        'customer_details': {
+          'first_name': customerName,
+          'email': email ?? 'pelanggan@rasantara.com',
+          'phone': phone ?? '081234567890',
+        },
+        'item_details': [
+          {
+            'id': 'FOOD-RSN',
+            'price': amount,
+            'quantity': 1,
+            'name': 'Menu Kuliner Rasantara',
+          }
+        ],
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Gagal membuat transaksi Snap: ${response.body}');
+    }
   }
 
   static Future<Map<String, dynamic>> checkTransactionStatus(String orderId) async {

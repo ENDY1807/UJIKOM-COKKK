@@ -76,14 +76,13 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
 
   Future<void> _initDanaH2hQris() async {
     try {
-      final res = await PaymentGatewayService.createDanaH2hQrisPayment(
-        orderId: 'ORD-${widget.order.idOrder}-${DateTime.now().millisecondsSinceEpoch % 100000}',
+      final res = await PaymentGatewayService.generateQris(
+        orderId: 'RSN-${widget.order.idOrder}-${DateTime.now().millisecondsSinceEpoch % 100000}',
         amount: widget.totalAmount,
-        orderTitle: 'Pesanan Meja ${widget.order.noMeja}',
       );
-      if (res['qrCode'] != null && mounted) {
+      if (res.qrString.isNotEmpty && mounted) {
         setState(() {
-          _qrisPayload = res['qrCode'].toString();
+          _qrisPayload = res.qrString;
         });
       }
     } catch (_) {}
