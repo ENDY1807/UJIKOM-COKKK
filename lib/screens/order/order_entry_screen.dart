@@ -305,7 +305,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: context.surfaceCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
@@ -809,10 +809,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   : (_serviceType == OrderServiceType.selfPickUp
                       ? 'Pesanan Self Pick-Up Disiapkan!'
                       : 'Pesanan Meja Diteruskan!'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
+                color: context.textPrimary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -867,7 +867,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                       ),
                       Text(
                         paymentMethodName,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                     ],
                   ),
@@ -1009,10 +1009,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFFF7ED) : Colors.white,
+          color: isSelected
+              ? (context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
+              : context.surfaceCard,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+            color: isSelected ? const Color(0xFFEA580C) : context.borderSubtle,
             width: isSelected ? 1.5 : 1.0,
           ),
         ),
@@ -1033,10 +1035,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
+                      color: context.textPrimary,
                     ),
                   ),
                   Text(
@@ -1191,7 +1193,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                               : (_serviceType == OrderServiceType.dineIn
                                                   ? 'Makan di Meja Restoran (${_selectedTableNo ?? "Pilih Meja"})'
                                                   : 'Ambil Sendiri di Resto (Self Pick-Up)'),
-                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -1326,10 +1328,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                       children: [
                                         Text(
                                           item.menu.namaMasakan,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
-                                            color: Color(0xFF1E293B),
+                                            color: context.textPrimary,
                                           ),
                                         ),
                                         Text(
@@ -1412,15 +1414,15 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Expanded(
+                              Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       'Ada lagi yang mau dibeli?',
-                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
                                     ),
-                                    Text(
+                                    const Text(
                                       'Masih bisa nambah menu lain, ya.',
                                       style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                                     ),
@@ -1443,27 +1445,27 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         ),
 
                         const SizedBox(height: 18),
-                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        Divider(height: 1, color: context.borderSubtle),
                         const SizedBox(height: 16),
 
                         // 2. KUPON, EVENT & POIN PELANGGAN
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: context.fillSubtle,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: context.borderSubtle),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Row(
+                              Row(
                                 children: [
-                                  Icon(Icons.confirmation_number_outlined, size: 16, color: Color(0xFFEA580C)),
-                                  SizedBox(width: 8),
+                                  const Icon(Icons.confirmation_number_outlined, size: 16, color: Color(0xFFEA580C)),
+                                  const SizedBox(width: 8),
                                   Text(
                                     'Pilih Kupon Promo & Event Restoran',
-                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                                   ),
                                 ],
                               ),
@@ -1477,10 +1479,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 8),
                                     decoration: BoxDecoration(
-                                      color: isApplied ? const Color(0xFFFFF7ED) : Colors.white,
+                                      color: isApplied
+                                          ? (context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
+                                          : context.surfaceCard,
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: isApplied ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+                                        color: isApplied ? const Color(0xFFEA580C) : context.borderSubtle,
                                         width: isApplied ? 1.5 : 1.0,
                                       ),
                                     ),
@@ -1510,7 +1514,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.bold,
-                                                color: isApplied ? const Color(0xFFEA580C) : const Color(0xFF1E293B),
+                                                color: isApplied ? const Color(0xFFEA580C) : context.textPrimary,
                                               ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
@@ -1585,7 +1589,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                           hintStyle: const TextStyle(fontSize: 11),
                                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                           filled: true,
-                                          fillColor: Colors.white,
+                                          fillColor: context.fillSubtle,
                                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                         ),
                                       ),
@@ -1630,9 +1634,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: context.surfaceCard,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  border: Border.all(color: context.borderSubtle),
                                 ),
                                 child: Row(
                                   children: [
@@ -1652,7 +1656,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                         children: [
                                           Text(
                                             'Gunakan Poin Kuliner (${widget.db.userPoints} Poin)',
-                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
                                           ),
                                           const Text(
                                             '1 Poin = Rp 1 Potongan langsung harga makanan',
@@ -1849,7 +1853,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                                     : (_selectedPaymentMethodId == 'm_banking'
                                                         ? 'Virtual Account'
                                                         : 'Bayar Tunai'))),
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -2071,14 +2075,16 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   // ── Widget Card Pengaturan Layanan Sesuai Tipe ──
   Widget _buildServiceConfigCard() {
     return Container(
-      color: Colors.white,
+      color: context.surfaceCard,
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF7ED),
+          color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFFFF7ED),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFFFEDD5)),
+          border: Border.all(
+            color: context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFFFEDD5),
+          ),
         ),
         child: Column(
           children: [
@@ -2101,7 +2107,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         children: [
                           Text(
                             _selectedTableNo!,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
                           ),
                           const Text(
                             'Terkunci otomatis via scan QR Meja',
@@ -2124,8 +2130,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
-                        foregroundColor: const Color(0xFF64748B),
-                        side: const BorderSide(color: Color(0xFFCBD5E1)),
+                        foregroundColor: context.textSecondary,
+                        side: BorderSide(color: context.borderSubtle),
                       ),
                       onPressed: () {
                         setState(() {
@@ -2148,7 +2154,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.surfaceCard,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: const Color(0xFFEA580C)),
                           ),
@@ -2170,8 +2176,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
-                        foregroundColor: const Color(0xFF64748B),
-                        side: const BorderSide(color: Color(0xFFCBD5E1)),
+                        foregroundColor: context.textSecondary,
+                        side: BorderSide(color: context.borderSubtle),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                       ),
                       onPressed: () {
@@ -2199,8 +2205,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: _deliveryAddressController.text.isNotEmpty
-                            ? const Color(0xFF1E293B)
-                            : const Color(0xFF64748B),
+                            ? context.textPrimary
+                            : context.textSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -2298,24 +2304,24 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 ],
               ),
             ] else ...[
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.storefront_rounded, color: Color(0xFFEA580C), size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.storefront_rounded, color: Color(0xFFEA580C), size: 20),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Self Pick-Up di Counter Restoran Rasantara (Jl. Soekarno-Hatta No. 590, Buahbatu, Bandung)',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.textPrimary),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Estimasi Waktu Siap: 15 - 20 Menit', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                  Text('Biaya Kemasan: Rp 2.000', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
+                  Text('Estimasi Waktu Siap: 15 - 20 Menit', style: TextStyle(fontSize: 11, color: context.textSecondary)),
+                  const Text('Biaya Kemasan: Rp 2.000', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
                 ],
               ),
             ],
@@ -2328,7 +2334,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   // ── Widget Search Bar & Filter Chips ──
   Widget _buildSearchAndCategoryBar() {
     return Container(
-      color: Colors.white,
+      color: context.surfaceCard,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Column(
         children: [
@@ -2336,19 +2342,21 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           Container(
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: context.fillSubtle,
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: context.borderSubtle),
             ),
             child: TextField(
               controller: _searchController,
+              style: TextStyle(color: context.textPrimary, fontSize: 13),
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
                 hintText: 'Cari Menu',
-                hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF64748B)),
+                hintStyle: TextStyle(fontSize: 13, color: context.textSecondary),
+                prefixIcon: Icon(Icons.search_rounded, size: 20, color: context.textSecondary),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear_rounded, size: 16),
+                        icon: Icon(Icons.clear_rounded, size: 16, color: context.textSecondary),
                         onPressed: () {
                           _searchController.clear();
                           setState(() => _searchQuery = '');
@@ -2380,14 +2388,16 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     labelStyle: TextStyle(
                       fontSize: 12,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF475569),
+                      color: isSelected ? const Color(0xFFEA580C) : context.textSecondary,
                     ),
-                    backgroundColor: Colors.white,
-                    selectedColor: const Color(0xFFFFF7ED),
+                    backgroundColor: context.surfaceCard,
+                    selectedColor: context.isDarkMode
+                        ? const Color(0xFF7C2D12).withValues(alpha: 0.35)
+                        : const Color(0xFFFFF7ED),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
-                        color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+                        color: isSelected ? const Color(0xFFEA580C) : context.borderSubtle,
                       ),
                     ),
                     showCheckmark: false,
@@ -2436,12 +2446,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 const SizedBox(height: 12),
                 Text(
                   'Menu "$_searchQuery" tidak ditemukan',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Coba cari dengan kata kunci lain atau reset filter',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  style: TextStyle(fontSize: 12, color: context.textSecondary),
                 ),
                 const SizedBox(height: 12),
                 TextButton(
@@ -2511,10 +2521,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             const SizedBox(width: 8),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
+                color: context.textPrimary,
               ),
             ),
           ],
@@ -2522,8 +2532,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF7ED),
+            color: context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFF7ED),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: context.isDarkMode ? const Color(0xFF7C2D12) : const Color(0xFFFFEDD5),
+            ),
           ),
           child: Text(
             subtitle,
@@ -2547,10 +2560,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       child: Container(
         width: 220,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: qty > 0 ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+          color: qty > 0 ? const Color(0xFFEA580C) : context.borderSubtle,
           width: qty > 0 ? 1.5 : 1,
         ),
         boxShadow: const [
@@ -2608,7 +2621,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     Expanded(
                       child: Text(
                         menu.namaMasakan,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.textPrimary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -2622,7 +2635,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 const SizedBox(height: 3),
                 Text(
                   menu.deskripsi.isNotEmpty ? menu.deskripsi : 'Paket hemat komplit pilihan terbaik Rasantara.',
-                  style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                  style: TextStyle(fontSize: 10.5, color: context.textSecondary),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -2922,8 +2935,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 return Container(
                   width: 140,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFFFEDD5),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2964,7 +2980,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           children: [
                             Text(
                               m.namaMasakan,
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: context.textPrimary,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

@@ -1091,7 +1091,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   maxCrossAxisExtent: 220,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  mainAxisExtent: 215,
+                  mainAxisExtent: 232,
                 ),
                 itemCount: displayMenus.length,
                 itemBuilder: (context, i) {
@@ -1184,24 +1184,25 @@ class _DashboardScreenState extends State<DashboardScreen>
                             ),
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
                                           menu.namaMasakan,
-                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: context.textPrimary),
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, color: context.textPrimary),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           fmt.format(menu.harga),
-                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFFEA580C)),
+                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5, color: Color(0xFFEA580C)),
                                         ),
                                       ],
                                     ),
@@ -1210,13 +1211,19 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       height: 26,
                                       child: FilledButton(
                                         style: FilledButton.styleFrom(
-                                          backgroundColor: const Color(0xFFFFF7ED),
+                                          backgroundColor: context.isDarkMode
+                                              ? const Color(0xFF7C2D12).withValues(alpha: 0.35)
+                                              : const Color(0xFFFFF7ED),
                                           foregroundColor: const Color(0xFFEA580C),
                                           elevation: 0,
                                           padding: EdgeInsets.zero,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(6),
-                                            side: const BorderSide(color: Color(0xFFFFEDD5)),
+                                            side: BorderSide(
+                                              color: context.isDarkMode
+                                                  ? const Color(0xFF7C2D12)
+                                                  : const Color(0xFFFFEDD5),
+                                            ),
                                           ),
                                         ),
                                         onPressed: () {

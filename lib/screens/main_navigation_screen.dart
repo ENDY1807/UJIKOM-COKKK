@@ -817,7 +817,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFFFF7ED) : Colors.transparent,
+                color: isSelected
+                    ? (context.isDarkMode
+                        ? const Color(0xFF7C2D12).withValues(alpha: 0.4)
+                        : const Color(0xFFFFF7ED))
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
