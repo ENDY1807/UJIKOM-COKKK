@@ -61,7 +61,7 @@ class _ManageAddressesScreenState extends State<ManageAddressesScreen> {
     final addresses = widget.db.userAddresses;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: context.surfaceBg,
       appBar: AppBar(
         title: Text(
           widget.selectMode ? 'Pilih Alamat Pengantaran' : 'Alamat Pengantaran Saya',

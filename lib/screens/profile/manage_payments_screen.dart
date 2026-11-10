@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/payment_method_model.dart';
 import '../../services/database_service.dart';
+import '../../theme/app_theme.dart';
 
 class ManagePaymentsScreen extends StatefulWidget {
   final DatabaseService db;
@@ -37,9 +38,9 @@ class _ManagePaymentsScreenState extends State<ManagePaymentsScreen> {
         final balance = widget.db.userBalance;
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF8FAFC),
+          backgroundColor: context.surfaceBg,
           appBar: AppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: context.surfaceCard,
             elevation: 0,
             scrolledUnderElevation: 1,
             leading: IconButton(

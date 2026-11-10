@@ -114,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         : 'Selamat Malam';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F6F3),
+      backgroundColor: context.surfaceBg,
       body: RefreshIndicator(
         color: const Color(0xFFEA580C),
         onRefresh: () async {

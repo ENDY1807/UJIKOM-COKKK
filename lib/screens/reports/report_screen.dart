@@ -166,7 +166,7 @@ class _ReportScreenState extends State<ReportScreen> {
     final topSelling = widget.db.topSellingMenus;
 
     return Scaffold(
-      backgroundColor: AppTheme.surfaceBg,
+      backgroundColor: context.surfaceBg,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

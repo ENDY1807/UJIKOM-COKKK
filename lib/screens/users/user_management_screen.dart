@@ -78,7 +78,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceBg,
+                          color: context.surfaceBg,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: AppTheme.borderSubtle),
                         ),
@@ -151,7 +151,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final isAdmin = widget.db.currentUser?.role == UserRole.administrator;
 
     return Scaffold(
-      backgroundColor: AppTheme.surfaceBg,
+      backgroundColor: context.surfaceBg,
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: users.length,

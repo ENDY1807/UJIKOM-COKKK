@@ -263,11 +263,11 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.surfaceBg,
+      backgroundColor: context.surfaceBg,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(48),
         child: Container(
-          color: AppTheme.white,
+          color: context.surfaceCard,
           child: TabBar(
             controller: _tabController,
             labelColor: AppTheme.orangePrimary,

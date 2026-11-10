@@ -102,7 +102,7 @@ class _CashierScreenState extends State<CashierScreen> {
     final activeOrders = widget.db.orders.where((o) => o.status != OrderStatus.selesai && o.status != OrderStatus.dibatalkan).toList();
 
     return Scaffold(
-      backgroundColor: AppTheme.surfaceBg,
+      backgroundColor: context.surfaceBg,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth > 750;
@@ -143,7 +143,7 @@ class _CashierScreenState extends State<CashierScreen> {
 
   Widget _buildOrderList(List<OrderModel> activeOrders) {
     return Container(
-      color: AppTheme.surfaceBg,
+      color: context.surfaceBg,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,7 +336,7 @@ class _CashierScreenState extends State<CashierScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceBg,
+                color: context.surfaceBg,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: AppTheme.borderSubtle),
               ),

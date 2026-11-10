@@ -530,7 +530,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppTheme.surfaceBg,
+                                color: context.surfaceBg,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: AppTheme.borderSubtle),
                               ),
