@@ -1054,9 +1054,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF64748B),
+                      color: context.textSecondary,
                     ),
                   ),
                 ],
@@ -1079,6 +1079,287 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     );
   }
 
+  static const List<Map<String, String>> _availableCoupons = [
+    {'code': 'RASANTARA30', 'tag': '30% OFF', 'label': 'Pesta Rasa Akhir Pekan', 'desc': 'Diskon 30% s.d. Rp 30.000'},
+    {'code': 'HEMAT15K', 'tag': 'Rp 15RB', 'label': 'Diskon Pelanggan Setia', 'desc': 'Potongan langsung Rp 15.000'},
+    {'code': 'BEBASONGKIR', 'tag': 'GRATIS', 'label': 'Bebas Ongkir Pengantaran', 'desc': 'Gratis ongkir s.d. Rp 10.000'},
+    {'code': 'DISKONMEMBER', 'tag': 'MEMBER', 'label': 'Kupon Member Spesial', 'desc': 'Potongan langsung Rp 15.000'},
+    {'code': 'HEMAT20', 'tag': '20% OFF', 'label': 'Pesta Kuliner 20%', 'desc': 'Diskon 20% s.d. Rp 30.000'},
+    {'code': 'MAKANENAK', 'tag': 'Rp 10RB', 'label': 'Kupon Santap Nikmat', 'desc': 'Potongan langsung Rp 10.000'},
+  ];
+
+  // ── Bottom Sheet Pilihan Kupon Promo (Muncul Card dari Bawah) ──
+  void _openCouponPickerModal(BuildContext parentContext, StateSetter parentSetState) {
+    showModalBottomSheet(
+      context: parentContext,
+      isScrollControlled: true,
+      backgroundColor: context.surfaceCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (couponCtx) => StatefulBuilder(
+        builder: (ctx, setCouponState) {
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.85,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header (Fixed)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 16, 12),
+                  child: Column(
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFCBD5E1),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.confirmation_number_rounded, color: Color(0xFFEA580C), size: 22),
+                              const SizedBox(width: 8),
+                              Text(
+                                context.t('Kupon Promo & Diskon', 'Promo Coupons & Deals'),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              if (_appliedCoupons.isNotEmpty)
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                    foregroundColor: const Color(0xFFDC2626),
+                                  ),
+                                  onPressed: () {
+                                    _clearCoupons();
+                                    setCouponState(() {});
+                                    parentSetState(() {});
+                                    setState(() {});
+                                  },
+                                  child: Text(
+                                    context.t('Hapus', 'Clear'),
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              IconButton(
+                                icon: Icon(Icons.close_rounded, color: context.textSecondary),
+                                onPressed: () => Navigator.of(couponCtx).pop(),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(height: 1, color: context.borderSubtle),
+
+                // Scrollable List of Coupons
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    children: [
+                      // Manual Input Promo Code
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 42,
+                              child: TextField(
+                                controller: _couponInputCtrl,
+                                style: TextStyle(fontSize: 12, color: context.textPrimary),
+                                textCapitalization: TextCapitalization.characters,
+                                decoration: InputDecoration(
+                                  hintText: context.t('Punya kode promo lain?', 'Have another promo code?'),
+                                  hintStyle: TextStyle(fontSize: 11, color: context.textSecondary),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  filled: true,
+                                  fillColor: context.fillSubtle,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide(color: context.borderSubtle),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide(color: context.borderSubtle),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(color: Color(0xFFEA580C)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFEA580C),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                            ),
+                            onPressed: () {
+                              setCouponState(() {
+                                _applyCoupon(_couponInputCtrl.text);
+                              });
+                              parentSetState(() {});
+                              setState(() {});
+                            },
+                            child: Text(
+                              context.t('Terapkan', 'Apply'),
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_couponStatusMsg != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          _couponStatusMsg!,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: _couponDiscount > 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+
+                      Text(
+                        context.t('Kupon Tersedia Untuk Anda', 'Available Coupons For You'),
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: context.textPrimary),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Daftar Kupon dengan Checkbox Centang
+                      ..._availableCoupons.map((c) {
+                        final code = c['code']!;
+                        final isApplied = _appliedCoupons.contains(code);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: isApplied
+                                ? (context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
+                                : (context.isDarkMode ? const Color(0xFF1E293B) : Colors.white),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isApplied ? const Color(0xFFEA580C) : context.borderSubtle,
+                              width: isApplied ? 1.5 : 1.0,
+                            ),
+                          ),
+                          child: CheckboxListTile(
+                            value: isApplied,
+                            activeColor: const Color(0xFFEA580C),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            title: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isApplied
+                                        ? const Color(0xFFEA580C)
+                                        : (context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFFFF7ED)),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    c['tag'] ?? 'PROMO',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: isApplied ? Colors.white : const Color(0xFFEA580C),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    c['label']!,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: isApplied ? const Color(0xFFEA580C) : context.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                c['desc']!,
+                                style: TextStyle(fontSize: 11, color: context.textSecondary),
+                              ),
+                            ),
+                            onChanged: (val) {
+                              setCouponState(() {
+                                _toggleCoupon(code);
+                              });
+                              parentSetState(() {});
+                              setState(() {});
+                            },
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+
+                // Sticky Bottom Confirm Button
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: context.surfaceCard,
+                    border: Border(top: BorderSide(color: context.borderSubtle)),
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFEA580C),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        Navigator.of(couponCtx).pop();
+                        parentSetState(() {});
+                        setState(() {});
+                      },
+                      child: Text(
+                        _appliedCoupons.isNotEmpty
+                            ? '${context.t('Pakai', 'Apply')} ${_appliedCoupons.length} ${context.t('Kupon (Hemat', 'Coupons (Save')} ${_currencyFmt.format(_couponDiscount)})'
+                            : context.t('Selesai', 'Done'),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   // ── Bottom Sheet Ringkasan Keranjang & Checkout ──
   void _openCheckoutSheet() {
     showModalBottomSheet(
@@ -1090,15 +1371,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (sheetContext, setModalState) {
-          final availableCouponsList = [
-            {'code': 'RASANTARA30', 'tag': '30% OFF', 'label': 'Pesta Rasa Akhir Pekan', 'desc': 'Diskon 30% s.d. Rp 30.000'},
-            {'code': 'HEMAT15K', 'tag': 'Rp 15RB', 'label': 'Diskon Pelanggan Setia', 'desc': 'Potongan langsung Rp 15.000'},
-            {'code': 'BEBASONGKIR', 'tag': 'GRATIS', 'label': 'Bebas Ongkir Pengantaran', 'desc': 'Gratis ongkir s.d. Rp 10.000'},
-            {'code': 'DISKONMEMBER', 'tag': 'MEMBER', 'label': 'Kupon Member Spesial', 'desc': 'Potongan langsung Rp 15.000'},
-            {'code': 'HEMAT20', 'tag': '20% OFF', 'label': 'Pesta Kuliner 20%', 'desc': 'Diskon 20% s.d. Rp 30.000'},
-            {'code': 'MAKANENAK', 'tag': 'Rp 10RB', 'label': 'Kupon Santap Nikmat', 'desc': 'Potongan langsung Rp 10.000'},
-          ];
-
           return Container(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.90,
@@ -1175,9 +1447,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: context.borderSubtle),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1187,8 +1459,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(8),
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFFFF7ED),
+                                    decoration: BoxDecoration(
+                                      color: context.isDarkMode
+                                          ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                                          : const Color(0xFFFFF7ED),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(Icons.location_on_rounded, color: Color(0xFFEA580C), size: 20),
@@ -1200,10 +1474,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                       children: [
                                         Text(
                                           _serviceType == OrderServiceType.takeAway
-                                              ? (_deliveryAddressController.text.isNotEmpty ? _deliveryAddressController.text : 'Pilih Alamat Pengantaran')
+                                              ? (_deliveryAddressController.text.isNotEmpty ? _deliveryAddressController.text : context.t('Pilih Alamat Pengantaran', 'Select Delivery Address'))
                                               : (_serviceType == OrderServiceType.dineIn
-                                                  ? 'Makan di Meja Restoran (${_selectedTableNo ?? "Pilih Meja"})'
-                                                  : 'Ambil Sendiri di Resto (Self Pick-Up)'),
+                                                  ? '${context.t('Makan di Meja Restoran', 'Dine-In at Table')} (${_selectedTableNo ?? context.t('Pilih Meja', 'Select Table')})'
+                                                  : context.t('Ambil Sendiri di Resto (Self Pick-Up)', 'Self Pick-Up at Restaurant')),
                                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
@@ -1211,9 +1485,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                         const SizedBox(height: 2),
                                         Text(
                                           _serviceType == OrderServiceType.takeAway
-                                              ? (_deliveryDistanceKm > 0 ? '${_deliveryDistanceKm.toStringAsFixed(1)} km • $_deliveryEstimatedTime' : 'Pilih titik lokasi presisi di peta OSM')
+                                              ? (_deliveryDistanceKm > 0 ? '${_deliveryDistanceKm.toStringAsFixed(1)} km • $_deliveryEstimatedTime' : context.t('Pilih titik lokasi presisi di peta OSM', 'Select precise pin on OSM map'))
                                               : 'Rasantara Kuliner Nusantara',
-                                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                          style: TextStyle(fontSize: 11, color: context.textSecondary),
                                         ),
                                       ],
                                     ),
@@ -1234,17 +1508,17 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                         _scanTableQr();
                                       }
                                     },
-                                    child: const Text('Ganti', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    child: Text(context.t('Ganti', 'Change'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                   ),
                                 ],
                               ),
                               if (_serviceType == OrderServiceType.takeAway) ...[
                                 const SizedBox(height: 12),
-                                const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                                Divider(height: 1, color: context.borderSubtle),
                                 const SizedBox(height: 10),
-                                const Text(
-                                  'Instruksi Pengantaran Driver:',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                                Text(
+                                  context.t('Instruksi Pengantaran Driver:', 'Driver Delivery Instructions:'),
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: context.textPrimary),
                                 ),
                                 const SizedBox(height: 6),
                                 SingleChildScrollView(
@@ -1262,11 +1536,20 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                         child: ChoiceChip(
                                           label: Text(instruction),
                                           selected: isSelected,
-                                          selectedColor: const Color(0xFFFFF7ED),
+                                          backgroundColor: context.surfaceCard,
+                                          selectedColor: context.isDarkMode
+                                              ? const Color(0xFF7C2D12).withValues(alpha: 0.4)
+                                              : const Color(0xFFFFF7ED),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                            side: BorderSide(
+                                              color: isSelected ? const Color(0xFFEA580C) : context.borderSubtle,
+                                            ),
+                                          ),
                                           labelStyle: TextStyle(
                                             fontSize: 10.5,
                                             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                            color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF475569),
+                                            color: isSelected ? const Color(0xFFEA580C) : context.textPrimary,
                                           ),
                                           onSelected: (val) {
                                             setModalState(() {
@@ -1347,9 +1630,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                         ),
                                         Text(
                                           _currencyFmt.format(item.menu.harga),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: Color(0xFF64748B),
+                                            color: context.textSecondary,
                                           ),
                                         ),
                                         if (item.catatan.isNotEmpty)
@@ -1419,9 +1702,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           margin: const EdgeInsets.only(top: 14),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: context.borderSubtle),
                           ),
                           child: Row(
                             children: [
@@ -1430,12 +1713,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Ada lagi yang mau dibeli?',
+                                      context.t('Ada lagi yang mau dibeli?', 'Anything else to add?'),
                                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
                                     ),
-                                    const Text(
-                                      'Masih bisa nambah menu lain, ya.',
-                                      style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                    Text(
+                                      context.t('Masih bisa nambah menu lain, ya.', 'You can still add more dishes.'),
+                                      style: TextStyle(fontSize: 11, color: context.textSecondary),
                                     ),
                                   ],
                                 ),
@@ -1449,7 +1732,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                   minimumSize: Size.zero,
                                 ),
                                 onPressed: () => Navigator.of(ctx).pop(),
-                                child: const Text('Tambah', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                child: Text(context.t('Tambah', 'Add'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                               ),
                             ],
                           ),
@@ -1459,231 +1742,125 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         Divider(height: 1, color: context.borderSubtle),
                         const SizedBox(height: 16),
 
-                        // 2. KUPON, EVENT & POIN PELANGGAN
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: context.fillSubtle,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: context.borderSubtle),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.confirmation_number_outlined, size: 16, color: Color(0xFFEA580C)),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Pilih Kupon Promo & Event Restoran',
-                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
-                                  ),
-                                ],
+                        // 2. KUPON PROMO RESTORAN (Sistem 1 Text yang jika dipencet akan memunculkan Bottom Sheet Kupon)
+                        InkWell(
+                          onTap: () {
+                            _openCouponPickerModal(sheetContext, setModalState);
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: _appliedCoupons.isNotEmpty ? const Color(0xFFEA580C) : context.borderSubtle,
+                                width: _appliedCoupons.isNotEmpty ? 1.5 : 1.0,
                               ),
-                              const SizedBox(height: 10),
-
-                              // Multi-Kupon Selector (Bisa Menggunakan Lebih dari 1 Kupon Sekaligus)
-                              Column(
-                                children: availableCouponsList.map((c) {
-                                  final code = c['code']!;
-                                  final isApplied = _appliedCoupons.contains(code);
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    decoration: BoxDecoration(
-                                      color: isApplied
-                                          ? (context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
-                                          : context.surfaceCard,
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color: isApplied ? const Color(0xFFEA580C) : context.borderSubtle,
-                                        width: isApplied ? 1.5 : 1.0,
-                                      ),
-                                    ),
-                                    child: CheckboxListTile(
-                                      value: isApplied,
-                                      dense: true,
-                                      activeColor: const Color(0xFFEA580C),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                                      title: Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFFFF7ED),
-                                              borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(color: const Color(0xFFFFEDD5)),
-                                            ),
-                                            child: Text(
-                                              c['tag'] ?? 'PROMO',
-                                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              c['label']!,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: isApplied ? const Color(0xFFEA580C) : context.textPrimary,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      subtitle: Text(
-                                        c['desc']!,
-                                        style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      onChanged: (val) {
-                                        setModalState(() {
-                                          _toggleCoupon(code);
-                                        });
-                                        setState(() {
-                                          _toggleCoupon(code);
-                                        });
-                                      },
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-
-                              if (_appliedCoupons.isNotEmpty) ...[
+                            ),
+                            child: Row(
+                              children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFECFDF5),
+                                    color: _appliedCoupons.isNotEmpty
+                                        ? const Color(0xFFEA580C).withValues(alpha: 0.15)
+                                        : (context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFFFF7ED)),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: const Color(0xFFA7F3D0)),
                                   ),
-                                  child: Row(
+                                  child: const Icon(Icons.confirmation_number_rounded, color: Color(0xFFEA580C), size: 20),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFF059669)),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          '${_appliedCoupons.length} Kupon Aktif • Hemat ${_currencyFmt.format(_couponDiscount)}',
-                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF065F46)),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                      Text(
+                                        _appliedCoupons.isNotEmpty
+                                            ? '${_appliedCoupons.length} ${context.t('Kupon Digunakan', 'Coupons Applied')}'
+                                            : context.t('Gunakan Kupon Promo / Diskon', 'Use Promo Coupon / Discount'),
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: _appliedCoupons.isNotEmpty ? const Color(0xFFEA580C) : context.textPrimary,
                                         ),
                                       ),
-                                      InkWell(
-                                        onTap: () {
-                                          setModalState(() => _clearCoupons());
-                                          setState(() => _clearCoupons());
-                                        },
-                                        child: const Text('Reset Kupon', style: TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _appliedCoupons.isNotEmpty
+                                            ? '${context.t('Hemat', 'Saved')} ${_currencyFmt.format(_couponDiscount)} ${context.t('dari total pesanan', 'from total order')}'
+                                            : context.t('Pilih kupon hemat untuk potongan harga', 'Tap to select discount vouchers'),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: _appliedCoupons.isNotEmpty ? const Color(0xFF16A34A) : context.textSecondary,
+                                          fontWeight: _appliedCoupons.isNotEmpty ? FontWeight.bold : FontWeight.normal,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                              ],
-
-                              // Input Manual Kode Promo Tambahan
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: 38,
-                                      child: TextField(
-                                        controller: _couponInputCtrl,
-                                        style: const TextStyle(fontSize: 12),
-                                        textCapitalization: TextCapitalization.characters,
-                                        decoration: InputDecoration(
-                                          hintText: 'Punya kode promo lain? (cth: RASANTARA10)',
-                                          hintStyle: const TextStyle(fontSize: 11),
-                                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                          filled: true,
-                                          fillColor: context.fillSubtle,
-                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  FilledButton(
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: const Color(0xFFEA580C),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                    ),
-                                    onPressed: () {
-                                      setModalState(() {
-                                        _applyCoupon(_couponInputCtrl.text);
-                                      });
-                                      setState(() {
-                                        _applyCoupon(_couponInputCtrl.text);
-                                      });
-                                    },
-                                    child: const Text('Terapkan', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                  ),
-                                ],
-                              ),
-                              if (_couponStatusMsg != null) ...[
-                                const SizedBox(height: 6),
-                                Text(
-                                  _couponStatusMsg!,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: _couponDiscount > 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-
-                              const SizedBox(height: 12),
-
-                              // 3. Poin Pelanggan (1 Poin = Rp 1 Potongan)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: context.surfaceCard,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: context.borderSubtle),
-                                ),
-                                child: Row(
+                                const SizedBox(width: 8),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Checkbox(
-                                      value: _usePointsDiscount,
-                                      activeColor: const Color(0xFFEA580C),
-                                      onChanged: widget.db.userPoints > 0
-                                          ? (val) {
-                                              setModalState(() => _usePointsDiscount = val ?? false);
-                                              setState(() => _usePointsDiscount = val ?? false);
-                                            }
-                                          : null,
-                                    ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Gunakan Poin Kuliner (${widget.db.userPoints} Poin)',
-                                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
-                                          ),
-                                          const Text(
-                                            '1 Poin = Rp 1 Potongan langsung harga makanan',
-                                            style: TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-                                          ),
-                                        ],
+                                    Text(
+                                      _appliedCoupons.isNotEmpty ? context.t('Ubah', 'Change') : context.t('Pilih', 'Select'),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFEA580C),
                                       ),
                                     ),
-                                    if (_usePointsDiscount && _potonganPoinAmount > 0)
-                                      Text(
-                                        '- ${_currencyFmt.format(_potonganPoinAmount)}',
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
-                                      ),
+                                    const SizedBox(width: 2),
+                                    const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFFEA580C)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // 3. Poin Pelanggan (1 Poin = Rp 1 Potongan)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: context.borderSubtle),
+                          ),
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: _usePointsDiscount,
+                                activeColor: const Color(0xFFEA580C),
+                                onChanged: widget.db.userPoints > 0
+                                    ? (val) {
+                                        setModalState(() => _usePointsDiscount = val ?? false);
+                                        setState(() => _usePointsDiscount = val ?? false);
+                                      }
+                                    : null,
+                              ),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${context.t('Gunakan Poin Kuliner', 'Use Food Points')} (${widget.db.userPoints} ${context.t('Poin', 'Pts')})',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
+                                    ),
+                                    Text(
+                                      context.t('1 Poin = Rp 1 Potongan langsung harga makanan', '1 Point = Rp 1 direct discount on food bill'),
+                                      style: TextStyle(fontSize: 10, color: context.textSecondary),
+                                    ),
                                   ],
                                 ),
                               ),
+                              if (_usePointsDiscount && _potonganPoinAmount > 0)
+                                Text(
+                                  '- ${_currencyFmt.format(_potonganPoinAmount)}',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+                                ),
                             ],
                           ),
                         ),
@@ -1776,7 +1953,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         ),
 
                         const SizedBox(height: 18),
-                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        Divider(height: 1, color: context.borderSubtle),
                         const SizedBox(height: 14),
 
                         // 4. RINGKASAN BIAYA
@@ -1832,7 +2009,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F5F9),
+                                    color: context.fillSubtle,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
@@ -1884,9 +2061,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFF7ED),
+                              color: context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFF7ED),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFFFEDD5)),
+                              border: Border.all(color: context.isDarkMode ? const Color(0xFF7C2D12) : const Color(0xFFFFEDD5)),
                             ),
                             child: const Text(
                               'Midtrans Aktif',
@@ -1940,7 +2117,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
-              color: isHighlight ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+              color: isHighlight ? const Color(0xFF16A34A) : context.textSecondary,
             ),
           ),
           Text(
@@ -1948,7 +2125,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: isHighlight ? const Color(0xFF16A34A) : const Color(0xFF334155),
+              color: isHighlight ? const Color(0xFF16A34A) : context.textPrimary,
             ),
           ),
         ],
@@ -1992,7 +2169,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             // ── 1. Tab Selector Tipe Layanan (Disembunyikan jika Makan di Tempat via scan QR) ──
             if (_serviceType != OrderServiceType.dineIn)
               Container(
-                color: context.surfaceCard,
+                color: context.surfaceBg,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Container(
                   decoration: BoxDecoration(
@@ -2086,7 +2263,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   // ── Widget Card Pengaturan Layanan Sesuai Tipe ──
   Widget _buildServiceConfigCard() {
     return Container(
-      color: context.surfaceCard,
+      color: context.surfaceBg,
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -2348,7 +2525,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   // ── Widget Search Bar & Filter Chips ──
   Widget _buildSearchAndCategoryBar() {
     return Container(
-      color: context.surfaceCard,
+      color: context.surfaceBg,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Column(
         children: [
@@ -3190,7 +3367,7 @@ class _FlashSaleCountdownTimerState extends State<FlashSaleCountdownTimer> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(10),
         boxShadow: const [
           BoxShadow(
