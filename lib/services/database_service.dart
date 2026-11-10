@@ -122,6 +122,18 @@ class DatabaseService extends ChangeNotifier {
   bool get appHaptic => _appHaptic;
   String _appMapStyle = 'osm';
   String get appMapStyle => _appMapStyle;
+  String _appThemeMode = 'light';
+  String get appThemeMode => _appThemeMode;
+  String _appLanguage = 'id';
+  String get appLanguage => _appLanguage;
+  String _appFontSize = 'standard';
+  String get appFontSize => _appFontSize;
+  bool _appDataSaver = false;
+  bool get appDataSaver => _appDataSaver;
+  bool _appBiometricAuth = false;
+  bool get appBiometricAuth => _appBiometricAuth;
+  bool _appPromoNotification = true;
+  bool get appPromoNotification => _appPromoNotification;
 
   // Getters
   List<UserModel> get users => List.unmodifiable(_users);
@@ -298,6 +310,12 @@ class DatabaseService extends ChangeNotifier {
       _appAutoPrintReceipt = prefs.getBool('app_auto_print_receipt') ?? false;
       _appHaptic = prefs.getBool('app_haptic') ?? true;
       _appMapStyle = prefs.getString('app_map_style') ?? 'osm';
+      _appThemeMode = prefs.getString('app_theme_mode') ?? 'light';
+      _appLanguage = prefs.getString('app_language') ?? 'id';
+      _appFontSize = prefs.getString('app_font_size') ?? 'standard';
+      _appDataSaver = prefs.getBool('app_data_saver') ?? false;
+      _appBiometricAuth = prefs.getBool('app_biometric_auth') ?? false;
+      _appPromoNotification = prefs.getBool('app_promo_notification') ?? true;
 
       notifyListeners();
     } catch (e) {
@@ -312,12 +330,24 @@ class DatabaseService extends ChangeNotifier {
     bool? autoPrintReceipt,
     bool? haptic,
     String? mapStyle,
+    String? themeMode,
+    String? language,
+    String? fontSize,
+    bool? dataSaver,
+    bool? biometricAuth,
+    bool? promoNotification,
   }) async {
     if (soundFx != null) _appSoundFx = soundFx;
     if (notifications != null) _appNotifications = notifications;
     if (autoPrintReceipt != null) _appAutoPrintReceipt = autoPrintReceipt;
     if (haptic != null) _appHaptic = haptic;
     if (mapStyle != null) _appMapStyle = mapStyle;
+    if (themeMode != null) _appThemeMode = themeMode;
+    if (language != null) _appLanguage = language;
+    if (fontSize != null) _appFontSize = fontSize;
+    if (dataSaver != null) _appDataSaver = dataSaver;
+    if (biometricAuth != null) _appBiometricAuth = biometricAuth;
+    if (promoNotification != null) _appPromoNotification = promoNotification;
 
     notifyListeners();
 
@@ -328,6 +358,12 @@ class DatabaseService extends ChangeNotifier {
       await prefs.setBool('app_auto_print_receipt', _appAutoPrintReceipt);
       await prefs.setBool('app_haptic', _appHaptic);
       await prefs.setString('app_map_style', _appMapStyle);
+      await prefs.setString('app_theme_mode', _appThemeMode);
+      await prefs.setString('app_language', _appLanguage);
+      await prefs.setString('app_font_size', _appFontSize);
+      await prefs.setBool('app_data_saver', _appDataSaver);
+      await prefs.setBool('app_biometric_auth', _appBiometricAuth);
+      await prefs.setBool('app_promo_notification', _appPromoNotification);
     } catch (e) {
       debugPrint('[DatabaseService] updateAppSettings error: $e');
     }
@@ -340,6 +376,12 @@ class DatabaseService extends ChangeNotifier {
     _appAutoPrintReceipt = false;
     _appHaptic = true;
     _appMapStyle = 'osm';
+    _appThemeMode = 'light';
+    _appLanguage = 'id';
+    _appFontSize = 'standard';
+    _appDataSaver = false;
+    _appBiometricAuth = false;
+    _appPromoNotification = true;
     notifyListeners();
 
     try {
@@ -349,6 +391,12 @@ class DatabaseService extends ChangeNotifier {
       await prefs.remove('app_auto_print_receipt');
       await prefs.remove('app_haptic');
       await prefs.remove('app_map_style');
+      await prefs.remove('app_theme_mode');
+      await prefs.remove('app_language');
+      await prefs.remove('app_font_size');
+      await prefs.remove('app_data_saver');
+      await prefs.remove('app_biometric_auth');
+      await prefs.remove('app_promo_notification');
     } catch (e) {
       debugPrint('[DatabaseService] clearAppCache error: $e');
     }

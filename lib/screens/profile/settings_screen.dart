@@ -34,9 +34,15 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   // Settings Aplikasi
   late bool _soundFx;
   late bool _notifications;
+  late bool _promoNotifications;
   late bool _autoPrint;
   late bool _haptic;
   late String _mapStyle;
+  late String _themeMode;
+  late String _language;
+  late String _fontSize;
+  late bool _dataSaver;
+  late bool _biometric;
   Uint8List? _customImageBytes;
 
   Future<void> _pickProfilePhoto() async {
@@ -85,9 +91,15 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
     _soundFx = widget.db.appSoundFx;
     _notifications = widget.db.appNotifications;
+    _promoNotifications = widget.db.appPromoNotification;
     _autoPrint = widget.db.appAutoPrintReceipt;
     _haptic = widget.db.appHaptic;
     _mapStyle = widget.db.appMapStyle;
+    _themeMode = widget.db.appThemeMode;
+    _language = widget.db.appLanguage;
+    _fontSize = widget.db.appFontSize;
+    _dataSaver = widget.db.appDataSaver;
+    _biometric = widget.db.appBiometricAuth;
   }
 
   @override
@@ -543,7 +555,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                       ),
                       Switch(
                         value: _is2faActive,
-                        activeColor: const Color(0xFFEA580C),
+                        activeThumbColor: const Color(0xFFEA580C),
                         onChanged: (val) {
                           if (val && _phoneCtrl.text.trim().isEmpty) {
                             _showSnackbar('Isi nomor WhatsApp terlebih dahulu untuk mengaktifkan 2FA', isError: true);
@@ -587,322 +599,774 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.tune_rounded, size: 18, color: Color(0xFFEA580C)),
-                    SizedBox(width: 8),
-                    Text(
-                      'Preferensi Fungsional & Suara',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-
-                // Suara Tombol
-                _buildSwitchTile(
-                  icon: Icons.volume_up_outlined,
-                  title: 'Efek Suara Audio',
-                  subtitle: 'Suara feedback saat menekan tombol dan menambah pesanan',
-                  value: _soundFx,
-                  onChanged: (val) {
-                    setState(() => _soundFx = val);
-                    widget.db.updateAppSettings(soundFx: val);
-                  },
-                ),
-                const Divider(height: 20, color: Color(0xFFF1F5F9)),
-
-                // Notifikasi Pesanan
-                _buildSwitchTile(
-                  icon: Icons.notifications_active_outlined,
-                  title: 'Notifikasi Pesanan Masuk',
-                  subtitle: 'Tampilkan peringatan saat status pesanan diperbarui dapur',
-                  value: _notifications,
-                  onChanged: (val) {
-                    setState(() => _notifications = val);
-                    widget.db.updateAppSettings(notifications: val);
-                  },
-                ),
-                const Divider(height: 20, color: Color(0xFFF1F5F9)),
-
-                // Cetak Struk Otomatis
-                _buildSwitchTile(
-                  icon: Icons.print_outlined,
-                  title: 'Cetak Struk Otomatis (Auto-Print)',
-                  subtitle: 'Kirim perintah cetak struk termal segera setelah transaksi lunas',
-                  value: _autoPrint,
-                  onChanged: (val) {
-                    setState(() => _autoPrint = val);
-                    widget.db.updateAppSettings(autoPrintReceipt: val);
-                  },
-                ),
-                const Divider(height: 20, color: Color(0xFFF1F5F9)),
-
-                // Getar Haptik
-                _buildSwitchTile(
-                  icon: Icons.vibration_rounded,
-                  title: 'Umpan Balik Haptik (Getaran)',
-                  subtitle: 'Getar lembut saat aksi penting atau konfirmasi pesanan',
-                  value: _haptic,
-                  onChanged: (val) {
-                    setState(() => _haptic = val);
-                    widget.db.updateAppSettings(haptic: val);
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Pilihan Gaya Peta Driver
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.map_outlined, size: 18, color: Color(0xFFEA580C)),
-                    SizedBox(width: 8),
-                    Text(
-                      'Tipe Tampilan Peta Pelacakan Driver',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                RadioListTile<String>(
-                  value: 'osm',
-                  groupValue: _mapStyle,
-                  activeColor: const Color(0xFFEA580C),
-                  title: const Text('OpenStreetMap Standar (Jalan & Bangunan)', style: TextStyle(fontSize: 13)),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _mapStyle = val);
-                      widget.db.updateAppSettings(mapStyle: val);
-                    }
-                  },
-                ),
-                RadioListTile<String>(
-                  value: 'carto_light',
-                  groupValue: _mapStyle,
-                  activeColor: const Color(0xFFEA580C),
-                  title: const Text('Carto Positron (Minimalis & Ringan)', style: TextStyle(fontSize: 13)),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _mapStyle = val);
-                      widget.db.updateAppSettings(mapStyle: val);
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Konfigurasi Gateway Pembayaran Midtrans ──
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.payment_rounded, size: 18, color: Color(0xFFEA580C)),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Konfigurasi Payment Gateway & Midtrans',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+          // ── 1. TAMPILAN & TEMA APLIKASI ──
+          _buildSettingsCard(
+            icon: Icons.palette_outlined,
+            title: 'Tampilan & Tema',
+            subtitle: 'Sesuaikan kenyamanan visual dan mode aplikasi',
+            children: [
+              const Text(
+                'Mode Tampilan Tema',
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildThemeOption(
+                    label: 'Terang',
+                    icon: Icons.light_mode_outlined,
+                    value: 'light',
+                    isSelected: _themeMode == 'light',
                   ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                  const SizedBox(width: 8),
+                  _buildThemeOption(
+                    label: 'Gelap',
+                    icon: Icons.dark_mode_outlined,
+                    value: 'dark',
+                    isSelected: _themeMode == 'dark',
+                  ),
+                  const SizedBox(width: 8),
+                  _buildThemeOption(
+                    label: 'Sistem',
+                    icon: Icons.brightness_auto_outlined,
+                    value: 'system',
+                    isSelected: _themeMode == 'system',
+                  ),
+                ],
+              ),
+              const Divider(height: 24, color: Color(0xFFF1F5F9)),
+              const Text(
+                'Ukuran Teks & Font',
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildFontSizeOption(
+                    label: 'Standar (100%)',
+                    value: 'standard',
+                    isSelected: _fontSize == 'standard',
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFontSizeOption(
+                    label: 'Besar (115%)',
+                    value: 'large',
+                    isSelected: _fontSize == 'large',
+                  ),
+                ],
+              ),
+              const Divider(height: 24, color: Color(0xFFF1F5F9)),
+              _buildSwitchTile(
+                icon: Icons.data_saver_on_outlined,
+                title: 'Mode Hemat Kuota (Data Saver)',
+                subtitle: 'Gunakan resolusi gambar lebih hemat saat jaringan lambat',
+                value: _dataSaver,
+                onChanged: (val) {
+                  setState(() => _dataSaver = val);
+                  widget.db.updateAppSettings(dataSaver: val);
+                  _showSnackbar('Mode hemat kuota ${val ? "diaktifkan" : "dinonaktifkan"}');
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── 2. BAHASA & DAERAH ──
+          _buildSettingsCard(
+            icon: Icons.language_rounded,
+            title: 'Bahasa & Daerah (Language)',
+            subtitle: 'Pilihan bahasa dan format mata uang lokal',
+            children: [
+              const Text(
+                'Bahasa Antarmuka',
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildLanguageOption(
+                    label: 'Bahasa Indonesia',
+                    flag: 'ID',
+                    value: 'id',
+                    isSelected: _language == 'id',
+                  ),
+                  const SizedBox(width: 8),
+                  _buildLanguageOption(
+                    label: 'English',
+                    flag: 'EN',
+                    value: 'en',
+                    isSelected: _language == 'en',
+                  ),
+                ],
+              ),
+              const Divider(height: 24, color: Color(0xFFF1F5F9)),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.currency_exchange_rounded, size: 18, color: Color(0xFFEA580C)),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.verified_rounded, size: 16, color: Color(0xFF16A34A)),
-                          SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Midtrans Snap BI Gateway: Terhubung',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                          Text(
+                            'Format Mata Uang & Zona Waktu',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Rupiah Indonesia (Rp • IDR) • Waktu Indonesia Barat (WIB)',
+                            style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                           ),
                         ],
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Metode aktif: QRIS Nasional, BCA/Mandiri/BRI/BNI Virtual Account, GoPay, dan DANA Sandbox.',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── 3. NOTIFIKASI & SUARA ──
+          _buildSettingsCard(
+            icon: Icons.notifications_active_outlined,
+            title: 'Notifikasi & Suara',
+            subtitle: 'Pengingat pesanan, promo, dan respons suara aplikasi',
+            children: [
+              _buildSwitchTile(
+                icon: Icons.notifications_outlined,
+                title: 'Status Pesanan & Driver',
+                subtitle: 'Peringatan saat pesanan disiapkan dapur atau driver mengantar',
+                value: _notifications,
+                onChanged: (val) {
+                  setState(() => _notifications = val);
+                  widget.db.updateAppSettings(notifications: val);
+                },
+              ),
+              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+              _buildSwitchTile(
+                icon: Icons.local_offer_outlined,
+                title: 'Promo & Diskon Eksklusif',
+                subtitle: 'Info penawaran voucher mingguan dan flash sale kuliner',
+                value: _promoNotifications,
+                onChanged: (val) {
+                  setState(() => _promoNotifications = val);
+                  widget.db.updateAppSettings(promoNotification: val);
+                },
+              ),
+              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+              _buildSwitchTile(
+                icon: Icons.volume_up_outlined,
+                title: 'Efek Suara Audio',
+                subtitle: 'Umpan balik suara saat klik tombol dan menambah menu ke keranjang',
+                value: _soundFx,
+                onChanged: (val) {
+                  setState(() => _soundFx = val);
+                  widget.db.updateAppSettings(soundFx: val);
+                },
+              ),
+              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+              _buildSwitchTile(
+                icon: Icons.vibration_rounded,
+                title: 'Umpan Balik Haptik (Getar)',
+                subtitle: 'Getaran lembut perangkat saat konfirmasi checkout dan aksi penting',
+                value: _haptic,
+                onChanged: (val) {
+                  setState(() => _haptic = val);
+                  widget.db.updateAppSettings(haptic: val);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── 4. KEAMANAN & PRIVASI ──
+          _buildSettingsCard(
+            icon: Icons.security_rounded,
+            title: 'Keamanan & Privasi',
+            subtitle: 'Perlindungan akun, verifikasi masuk, dan biometrik',
+            children: [
+              _buildSwitchTile(
+                icon: Icons.phonelink_lock_rounded,
+                title: 'Verifikasi 2 Langkah (2FA WhatsApp)',
+                subtitle: 'Minta kode verifikasi OTP WhatsApp setiap kali masuk akun baru',
+                value: _is2faActive,
+                onChanged: (val) {
+                  if (val && _phoneCtrl.text.trim().isEmpty) {
+                    _showSnackbar('Isi nomor telepon terlebih dahulu pada tab profil', isError: true);
+                    return;
+                  }
+                  setState(() => _is2faActive = val);
+                  _handleSaveProfile();
+                },
+              ),
+              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+              _buildSwitchTile(
+                icon: Icons.fingerprint_rounded,
+                title: 'Kunci Biometrik / PIN Transaksi',
+                subtitle: 'Wajibkan sidik jari atau PIN sebelum memproses pembayaran pesanan',
+                value: _biometric,
+                onChanged: (val) {
+                  setState(() => _biometric = val);
+                  widget.db.updateAppSettings(biometricAuth: val);
+                  _showSnackbar('Kunci biometrik transaksi ${val ? "diaktifkan" : "dinonaktifkan"}');
+                },
+              ),
+              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+              InkWell(
+                onTap: _showPrivacyPolicyDialog,
+                borderRadius: BorderRadius.circular(10),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.privacy_tip_outlined, size: 20, color: Color(0xFF64748B)),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Kebijakan Privasi & Perlindungan Data',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                            ),
+                            Text(
+                              'Pelajari bagaimana data nomor dan pesanan Anda dilindungi',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
                       ),
+                      Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                _buildSwitchTile(
-                  icon: Icons.science_outlined,
-                  title: 'Mode Sandbox Pengujian',
-                  subtitle: 'Gunakan sandbox.midtrans.com untuk simulasi transaksi',
-                  value: true,
-                  onChanged: (val) {
-                    _showSnackbar('Mode pengujian Sandbox tetap aktif untuk keamanan');
-                  },
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
-          // ── Konfigurasi Pengantaran & Biaya Resto ──
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
+          // ── 5. PREFERENSI PEMESANAN & PETA ──
+          _buildSettingsCard(
+            icon: Icons.receipt_long_outlined,
+            title: 'Preferensi Pemesanan & Peta',
+            subtitle: 'Pengaturan pencetakan struk dan tampilan navigasi',
+            children: [
+              _buildSwitchTile(
+                icon: Icons.print_outlined,
+                title: 'Cetak Struk Otomatis (Auto-Print)',
+                subtitle: 'Kirim perintah cetak struk termal segera setelah transaksi lunas',
+                value: _autoPrint,
+                onChanged: (val) {
+                  setState(() => _autoPrint = val);
+                  widget.db.updateAppSettings(autoPrintReceipt: val);
+                },
+              ),
+              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+              const Text(
+                'Tipe Tampilan Peta Driver',
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildMapOption(
+                    label: 'OpenStreetMap',
+                    desc: 'Standar jalan & bangunan',
+                    value: 'osm',
+                    isSelected: _mapStyle == 'osm',
+                  ),
+                  const SizedBox(width: 8),
+                  _buildMapOption(
+                    label: 'Carto Positron',
+                    desc: 'Minimalis & hemat data',
+                    value: 'carto_light',
+                    isSelected: _mapStyle == 'carto_light',
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── 6. PENYIMPANAN & PEMELIHARAAN ──
+          _buildSettingsCard(
+            icon: Icons.cleaning_services_outlined,
+            title: 'Penyimpanan & Data Cache',
+            subtitle: 'Kelola file sementara dan reset aplikasi',
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.delivery_dining_rounded, size: 18, color: Color(0xFFEA580C)),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Konfigurasi Pengantaran & Layanan Resto',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    Text('Data Cache Sementara', style: TextStyle(fontSize: 12, color: Color(0xFF475569))),
+                    Text('14.8 MB', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                   ],
                 ),
-                const SizedBox(height: 14),
-                _buildSwitchTile(
-                  icon: Icons.storefront_outlined,
-                  title: 'Layanan Pengantaran Aktif',
-                  subtitle: 'Terima order Take Away & Pengantaran alamat pelanggan',
-                  value: true,
-                  onChanged: (val) {
-                    _showSnackbar('Pengaturan layanan pengantaran disimpan');
-                  },
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF1E293B),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  minimumSize: const Size.fromHeight(40),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                const Divider(height: 20, color: Color(0xFFF1F5F9)),
-                _buildSwitchTile(
-                  icon: Icons.animation_rounded,
-                  title: 'Animasi Loading & Transisi',
-                  subtitle: 'Tampilkan animasi logo Rasantara saat memuat data',
-                  value: true,
-                  onChanged: (val) {
-                    _showSnackbar('Preferensi animasi diperbarui');
-                  },
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                label: const Text('Bersihkan Cache Gambar & Data Sementara', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  _showSnackbar('Cache aplikasi 14.8 MB berhasil dibersihkan');
+                },
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFDC2626),
+                  side: const BorderSide(color: Color(0xFFFCA5A5)),
+                  minimumSize: const Size.fromHeight(40),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-              ],
-            ),
+                icon: const Icon(Icons.restore_rounded, size: 18),
+                label: const Text('Kembalikan Semua Pengaturan ke Default', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: const Text('Reset Pengaturan?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      content: const Text(
+                        'Semua tema, bahasa, suara, dan preferensi aplikasi akan dikembalikan ke pengaturan awal.',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+                        FilledButton(
+                          style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            await widget.db.clearAppCacheAndPreferences();
+                            setState(() {
+                              _soundFx = true;
+                              _notifications = true;
+                              _promoNotifications = true;
+                              _autoPrint = false;
+                              _haptic = true;
+                              _mapStyle = 'osm';
+                              _themeMode = 'light';
+                              _language = 'id';
+                              _fontSize = 'standard';
+                              _dataSaver = false;
+                              _biometric = false;
+                            });
+                            _showSnackbar('Pengaturan aplikasi berhasil direset ke default');
+                          },
+                          child: const Text('Reset'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
-          // Reset Preferensi & Bersihkan Cache
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Pemeliharaan & Data Cache',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Hapus temporary cache gambar dan reset preferensi aplikasi ke pengaturan default pabrik.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 14),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFDC2626),
-                    side: const BorderSide(color: Color(0xFFFCA5A5)),
-                    minimumSize: const Size.fromHeight(42),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          // ── 7. TENTANG APLIKASI & BANTUAN ──
+          _buildSettingsCard(
+            icon: Icons.info_outline_rounded,
+            title: 'Tentang Aplikasi & Bantuan',
+            subtitle: 'Informasi versi dan kontak layanan pelanggan',
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-                  label: const Text('Bersihkan Cache & Reset Pengaturan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: const Text('Reset Pengaturan?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        content: const Text(
-                          'Tindakan ini akan mengembalikan suara, notifikasi, dan preferensi aplikasi ke kondisi awal.',
-                          style: TextStyle(fontSize: 13),
-                        ),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
-                          FilledButton(
-                            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
-                            onPressed: () async {
-                              Navigator.pop(ctx);
-                              await widget.db.clearAppCacheAndPreferences();
-                              setState(() {
-                                _soundFx = true;
-                                _notifications = true;
-                                _autoPrint = false;
-                                _haptic = true;
-                                _mapStyle = 'osm';
-                              });
-                              _showSnackbar('Cache berhasil dibersihkan');
-                            },
-                            child: const Text('Reset'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                  child: const Icon(Icons.restaurant_rounded, color: Color(0xFFEA580C), size: 20),
                 ),
-              ],
+                title: const Text('Rasantara Resto & Cafe', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                subtitle: const Text('Versi 2.4.0 (Official Production)', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text('Terbaru', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF15803D))),
+                ),
+              ),
+              const Divider(height: 16, color: Color(0xFFF1F5F9)),
+              InkWell(
+                onTap: _showHelpSupportDialog,
+                borderRadius: BorderRadius.circular(10),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Icon(Icons.headset_mic_outlined, size: 20, color: Color(0xFF15803D)),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pusat Bantuan & Layanan CS',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                            ),
+                            Text(
+                              'Hubungi layanan pelanggan WhatsApp Rasantara 24 Jam',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  // Helper Card Pembungkus Pengaturan
+  Widget _buildSettingsCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x04000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 18, color: const Color(0xFFEA580C)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  // Opsi Pilihan Tema
+  Widget _buildThemeOption({
+    required String label,
+    required IconData icon,
+    required String value,
+    required bool isSelected,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() => _themeMode = value);
+          widget.db.updateAppSettings(themeMode: value);
+          _showSnackbar('Tema tampilan diubah ke $label');
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFFFF7ED) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+              width: isSelected ? 1.5 : 1.0,
             ),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 20, color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF64748B)),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF475569),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Opsi Pilihan Ukuran Font
+  Widget _buildFontSizeOption({
+    required String label,
+    required String value,
+    required bool isSelected,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() => _fontSize = value);
+          widget.db.updateAppSettings(fontSize: value);
+          _showSnackbar('Ukuran teks diubah ke $label');
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFFFF7ED) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+              width: isSelected ? 1.5 : 1.0,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF475569),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Opsi Pilihan Bahasa
+  Widget _buildLanguageOption({
+    required String label,
+    required String flag,
+    required String value,
+    required bool isSelected,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() => _language = value);
+          widget.db.updateAppSettings(language: value);
+          _showSnackbar('Bahasa diubah ke $label');
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFFFF7ED) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+              width: isSelected ? 1.5 : 1.0,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  flag,
+                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF475569),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Opsi Pilihan Gaya Peta
+  Widget _buildMapOption({
+    required String label,
+    required String desc,
+    required String value,
+    required bool isSelected,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() => _mapStyle = value);
+          widget.db.updateAppSettings(mapStyle: value);
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFFFF7ED) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+              width: isSelected ? 1.5 : 1.0,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                    size: 16,
+                    color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF94A3B8),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF1E293B)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(desc, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)), maxLines: 1, overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Dialog Kebijakan Privasi
+  void _showPrivacyPolicyDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.privacy_tip_outlined, color: Color(0xFFEA580C), size: 22),
+            SizedBox(width: 8),
+            Text('Kebijakan Privasi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Rasantara Restoran menjaga kerahasiaan data pengguna. Nomor telepon dan alamat hanya digunakan untuk kepentingan pengiriman pesanan, notifikasi transaksi via WhatsApp, serta keamanan akun 2FA. Kami tidak pernah membagikan data kepada pihak ketiga.',
+            style: TextStyle(fontSize: 12.5, height: 1.5, color: Color(0xFF475569)),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Saya Mengerti'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Dialog Bantuan & Customer Service
+  void _showHelpSupportDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.headset_mic_rounded, color: Color(0xFF16A34A), size: 22),
+            SizedBox(width: 8),
+            Text('Pusat Bantuan CS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Butuh bantuan seputar pesanan atau pembayaran Anda?',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Layanan Pelanggan Rasantara siap membantu melalui kontak resmi:\n\n• WhatsApp: +62 812-3456-7890\n• Jam Operasional: 08:00 - 22:00 WIB\n• Email: bantuan@rasantara.id',
+              style: TextStyle(fontSize: 12, height: 1.5, color: Color(0xFF475569)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Tutup')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showSnackbar('Membuka chat WhatsApp Layanan Pelanggan...');
+            },
+            child: const Text('Chat WhatsApp CS'),
           ),
         ],
       ),
@@ -931,7 +1395,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
         Switch(
           value: value,
-          activeColor: const Color(0xFFEA580C),
+          activeThumbColor: const Color(0xFFEA580C),
           onChanged: onChanged,
         ),
       ],

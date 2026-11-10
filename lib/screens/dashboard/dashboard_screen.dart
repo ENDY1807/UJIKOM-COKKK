@@ -1073,7 +1073,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   maxCrossAxisExtent: 220,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 0.85,
+                  mainAxisExtent: 195,
                 ),
                 itemCount: displayMenus.length,
                 itemBuilder: (context, i) {
@@ -1130,7 +1130,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
                                   child: SizedBox(
                                     width: double.infinity,
-                                    height: 95,
+                                    height: 84,
                                     child: menu.gambarUrl.isNotEmpty
                                         ? Image.network(
                                             menu.gambarUrl,
