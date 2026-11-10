@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -2849,17 +2850,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text(
-                        '01 : 51 : 43',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
-                      ),
-                    ),
+                    const FlashSaleCountdownTimer(),
                   ],
                 ),
               ),
@@ -3053,6 +3044,92 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Widget countdown timer dinamis untuk banner Flash Sale Rasantara (berjalan real-time per detik)
+class FlashSaleCountdownTimer extends StatefulWidget {
+  const FlashSaleCountdownTimer({super.key});
+
+  @override
+  State<FlashSaleCountdownTimer> createState() => _FlashSaleCountdownTimerState();
+}
+
+class _FlashSaleCountdownTimerState extends State<FlashSaleCountdownTimer> {
+  Timer? _ticker;
+  late int _remainingSeconds;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateRemaining();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      _updateRemaining();
+    });
+  }
+
+  void _updateRemaining() {
+    final now = DateTime.now();
+    // Siklus flash sale 2 jam (7200 detik) tersinkronisasi dengan waktu lokal
+    final totalSecondsToday = (now.hour * 3600) + (now.minute * 60) + now.second;
+    final cycleRemaining = 7200 - (totalSecondsToday % 7200);
+
+    if (mounted) {
+      setState(() {
+        _remainingSeconds = cycleRemaining;
+      });
+    } else {
+      _remainingSeconds = cycleRemaining;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hours = (_remainingSeconds ~/ 3600).toString().padLeft(2, '0');
+    final minutes = ((_remainingSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1F000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.access_time_filled_rounded,
+            size: 11,
+            color: Color(0xFFEA580C),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$hours : $minutes : $seconds',
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFEA580C),
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
       ),
     );
   }
