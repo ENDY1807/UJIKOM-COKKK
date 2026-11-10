@@ -34,7 +34,21 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: Build Android APK
-        run: flutter build apk --release --no-tree-shake-icons --verbose
+        run: |
+          set +e
+          flutter build apk --release --no-tree-shake-icons --verbose 2>&1 | tee build.log
+          STATUS=${PIPESTATUS[0]}
+          if [ $STATUS -ne 0 ]; then
+            echo "## Android Build Failed" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            grep -E -A 10 -B 2 -i "FAILURE:|BUILD FAILED|What went wrong:|Caused by:|e: |error: " build.log | head -n 120 >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "### Last 100 lines:" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 100 build.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit $STATUS
+          fi
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
