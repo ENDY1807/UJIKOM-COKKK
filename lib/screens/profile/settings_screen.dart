@@ -408,7 +408,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                         children: [
                           Text(
                             user?.namaUser ?? 'Pengguna',
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary),
                           ),
                           const SizedBox(height: 4),
                           Container(
@@ -557,17 +557,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     children: [
                       const Icon(Icons.security_rounded, color: Color(0xFF0284C7), size: 22),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Autentikasi 2 Langkah (2FA)',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                              context.t('Autentikasi 2 Langkah (2FA)', 'Two-Factor Authentication (2FA)'),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                             ),
                             Text(
-                              'Minta kode verifikasi WhatsApp OTP saat login',
-                              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                              context.t('Minta kode verifikasi WhatsApp OTP saat login', 'Require WhatsApp OTP verification code upon login'),
+                              style: TextStyle(fontSize: 11, color: context.textSecondary),
                             ),
                           ],
                         ),

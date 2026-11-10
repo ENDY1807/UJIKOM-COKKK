@@ -148,13 +148,13 @@ class _GoFoodTrackingDialogState extends State<GoFoodTrackingDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Pelacakan Driver Take Away',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                      Text(
+                        context.t('Pelacakan Driver Take Away', 'Take Away Driver Tracking'),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                       Text(
-                        'Order #${widget.order.idOrder} • Sisa ${remainingKm.toStringAsFixed(1)} km (~$remainingMins mnt)',
-                        style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                        'Order #${widget.order.idOrder} • ${context.t('Sisa', 'Remaining')} ${remainingKm.toStringAsFixed(1)} km (~$remainingMins ${context.t('mnt', 'mins')})',
+                        style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                       ),
                     ],
                   ),

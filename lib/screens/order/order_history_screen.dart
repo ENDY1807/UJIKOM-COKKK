@@ -97,18 +97,18 @@ class _CustomerOrderHistoryScreenState
                     color: Colors.grey.shade400,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Belum Ada Riwayat Pesanan',
+                  Text(
+                    context.t('Belum Ada Riwayat Pesanan', 'No Order History Yet'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Pesanan yang Anda buat akan tercatat otomatis di sini.',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  Text(
+                    context.t('Pesanan yang Anda buat akan tercatat otomatis di sini.', 'Orders you place will automatically be recorded here.'),
+                    style: TextStyle(fontSize: 12, color: context.textSecondary),
                   ),
                 ],
               ),
@@ -207,7 +207,7 @@ class _CustomerOrderHistoryScreenState
               StatusBadge.fromStatus(order.status.label),
             ],
           ),
-          const Divider(height: 20, color: Color(0xFFF1F5F9)),
+          Divider(height: 20, color: context.borderSubtle),
 
           // Items summary
           ...order.items.map((item) {
@@ -219,18 +219,19 @@ class _CustomerOrderHistoryScreenState
                   Expanded(
                     child: Text(
                       '${item.jumlah}x ${item.menu.namaMasakan}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF334155),
+                        fontWeight: FontWeight.w500,
+                        color: context.textPrimary,
                       ),
                     ),
                   ),
                   Text(
                     _currencyFmt.format(item.subtotal),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E293B),
+                      color: context.textPrimary,
                     ),
                   ),
                 ],
@@ -238,7 +239,7 @@ class _CustomerOrderHistoryScreenState
             );
           }),
 
-          const Divider(height: 20, color: Color(0xFFF1F5F9)),
+          Divider(height: 20, color: context.borderSubtle),
 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

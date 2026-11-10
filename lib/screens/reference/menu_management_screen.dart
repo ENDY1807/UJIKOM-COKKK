@@ -347,7 +347,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                       const SizedBox(height: 6),
                       Text(
                         menu.namaMasakan,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textDark),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.textPrimary),
                       ),
                       if (menu.deskripsi.isNotEmpty) ...[
                         const SizedBox(height: 2),
@@ -355,7 +355,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                           menu.deskripsi,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                          style: TextStyle(fontSize: 12, color: context.textSecondary),
                         ),
                       ],
                       const SizedBox(height: 6),
@@ -461,7 +461,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                   children: [
                     Text(
                       table.nomorMeja,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textDark),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.textPrimary),
                     ),
                     StatusBadge.fromStatus(table.status.label),
                   ],

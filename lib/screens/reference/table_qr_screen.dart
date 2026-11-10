@@ -311,17 +311,17 @@ class _TableQrScreenState extends State<TableQrScreen> {
                     child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFFEA580C), size: 20),
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Kelola & Cetak QR Meja',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary),
                         ),
                         Text(
                           'Cetak QR standing acrylic untuk setiap meja makan',
-                          style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                          style: TextStyle(fontSize: 11, color: context.textSecondary),
                         ),
                       ],
                     ),

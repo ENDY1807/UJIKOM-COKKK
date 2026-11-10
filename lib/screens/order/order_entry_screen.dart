@@ -1693,13 +1693,13 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         const SizedBox(height: 16),
 
                         // 3. METODE PEMBAYARAN (LIST KE BAWAH / VERTICAL SELECT)
-                        const Row(
+                        Row(
                           children: [
                             Icon(Icons.payment_rounded, size: 16, color: Color(0xFFEA580C)),
                             SizedBox(width: 8),
                             Text(
-                              'Pilih Metode Pembayaran:',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                              context.t('Pilih Metode Pembayaran:', 'Select Payment Method:'),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                             ),
                           ],
                         ),
@@ -1795,9 +1795,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Total Pembayaran',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                            Text(
+                              context.t('Total Pembayaran', 'Total Payment'),
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary),
                             ),
                             Text(
                               _currencyFmt.format(_grandTotal),
@@ -2802,14 +2802,14 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     const SizedBox(width: 2),
                     Text(
                       '${(4.7 + (menu.idMasakan % 4) * 0.1).toStringAsFixed(1)} (1rb+) • 100+ terjual',
-                      style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                      style: TextStyle(fontSize: 10.5, color: context.textSecondary, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   menu.deskripsi,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.3),
+                  style: TextStyle(fontSize: 12, color: context.textSecondary, height: 1.3),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),

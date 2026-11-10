@@ -186,7 +186,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           children: [
                             Text(
                               user.namaUser,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textDark),
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
                             ),
                             if (isCurrentUser) ...[
                               const SizedBox(width: 6),

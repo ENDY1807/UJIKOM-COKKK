@@ -150,6 +150,23 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: const Color(0xFF0F172A),
       fontFamily: 'Roboto',
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(color: Colors.white),
+        displayMedium: TextStyle(color: Colors.white),
+        displaySmall: TextStyle(color: Colors.white),
+        headlineLarge: TextStyle(color: Colors.white),
+        headlineMedium: TextStyle(color: Colors.white),
+        headlineSmall: TextStyle(color: Colors.white),
+        titleLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        titleSmall: TextStyle(color: Colors.white),
+        bodyLarge: TextStyle(color: Colors.white),
+        bodyMedium: TextStyle(color: Colors.white),
+        bodySmall: TextStyle(color: Color(0xFFCBD5E1)),
+        labelLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        labelMedium: TextStyle(color: Color(0xFFCBD5E1)),
+        labelSmall: TextStyle(color: Color(0xFFCBD5E1)),
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF1E293B),
         foregroundColor: Colors.white,
@@ -215,7 +232,7 @@ extension ThemeHelper on BuildContext {
   Color get surfaceCard => isDarkMode ? const Color(0xFF1E293B) : Colors.white;
   Color get surfaceBg => isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFFAFAF9);
   Color get textPrimary => isDarkMode ? Colors.white : const Color(0xFF1E293B);
-  Color get textSecondary => isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+  Color get textSecondary => isDarkMode ? const Color(0xFFCBD5E1) : const Color(0xFF64748B);
   Color get borderSubtle => isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
   Color get fillSubtle => isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
 }

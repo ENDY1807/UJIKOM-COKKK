@@ -296,9 +296,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.manage_accounts_outlined, color: AppTheme.textDark),
-                  title: const Text('Ganti Role Akun', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  leading: Icon(Icons.manage_accounts_outlined, color: context.textPrimary),
+                  title: Text(context.t('Ganti Role Akun', 'Switch Account Role'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.textPrimary)),
+                  trailing: Icon(Icons.chevron_right, size: 20, color: context.textSecondary),
                   onTap: () {
                     Navigator.of(ctx).pop();
                     _scaffoldKey.currentState?.openDrawer();

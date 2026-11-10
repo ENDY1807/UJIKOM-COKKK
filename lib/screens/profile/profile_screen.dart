@@ -894,25 +894,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Text(
                             user?.namaUser ?? 'Tamu Rasantara',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.textDark,
+                              color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             user?.displayEmail ?? 'pelanggan@rasantara.resto',
-                            style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                            style: TextStyle(fontSize: 12, color: context.textSecondary),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             user?.telepon.isNotEmpty == true
                                 ? user!.telepon
                                 : (user?.googleEmail ?? 'Akun Terverifikasi'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF64748B),
+                              color: context.textSecondary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -973,16 +973,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Autentikasi Dua Langkah (2-Auth)',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                Text(
+                                  context.t('Autentikasi Dua Langkah (2-Auth)', 'Two-Factor Authentication (2FA)'),
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   is2Fa
-                                      ? 'Aktif via ${user?.twoFactorType ?? "Authenticator App"}'
-                                      : 'Tambahkan proteksi kode verifikasi untuk transaksi dan pesanan.',
-                                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                      ? '${context.t('Aktif via', 'Active via')} ${user?.twoFactorType ?? "Authenticator App"}'
+                                      : context.t('Tambahkan proteksi kode verifikasi untuk transaksi dan pesanan.', 'Add verification code protection for your account.'),
+                                  style: TextStyle(fontSize: 11, color: context.textSecondary),
                                 ),
                               ],
                             ),
@@ -1018,18 +1018,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: const Icon(Icons.lock_reset_rounded, size: 20, color: Color(0xFFEA580C)),
                             ),
                             const SizedBox(width: 14),
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Ubah Kata Sandi',
-                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+                                    context.t('Ubah Kata Sandi', 'Change Password'),
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary),
                                   ),
-                                  SizedBox(height: 2),
+                                  const SizedBox(height: 2),
                                   Text(
-                                    'Perbarui password lokal untuk keamanan login',
-                                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                    context.t('Perbarui password lokal untuk keamanan login', 'Update local password for secure account login'),
+                                    style: TextStyle(fontSize: 11, color: context.textSecondary),
                                   ),
                                 ],
                               ),
@@ -1328,7 +1328,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     const SizedBox(width: 8),
                                     Text(
                                       primaryAddr.label,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.textPrimary),
                                     ),
                                     const SizedBox(width: 6),
                                     Container(
@@ -1519,10 +1519,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF334155),
+          color: context.textPrimary,
         ),
       ),
     );

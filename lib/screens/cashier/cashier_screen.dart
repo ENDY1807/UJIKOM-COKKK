@@ -151,10 +151,10 @@ class _CashierScreenState extends State<CashierScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Antrean Pesanan Belum Dibayar',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                  context.t('Antrean Pesanan Belum Dibayar', 'Unpaid Orders Queue'),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -220,12 +220,12 @@ class _CashierScreenState extends State<CashierScreen> {
                                 children: [
                                   Text(
                                     order.noMeja,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textDark),
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.textPrimary),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
                                     '#${order.idOrder}',
-                                    style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                                    style: TextStyle(fontSize: 12, color: context.textSecondary),
                                   ),
                                 ],
                               ),
@@ -234,13 +234,13 @@ class _CashierScreenState extends State<CashierScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Pelanggan: ${order.namaPelanggan}',
-                            style: const TextStyle(fontSize: 13, color: AppTheme.textDark),
+                            '${context.t('Pelanggan', 'Customer')}: ${order.namaPelanggan}',
+                            style: TextStyle(fontSize: 13, color: context.textPrimary),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${order.totalItem} item makanan/minuman',
-                            style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                            '${order.totalItem} ${context.t('item makanan/minuman', 'food/drink items')}',
+                            style: TextStyle(fontSize: 12, color: context.textSecondary),
                           ),
                           const SizedBox(height: 8),
                           Row(
@@ -310,11 +310,11 @@ class _CashierScreenState extends State<CashierScreen> {
                   children: [
                     Text(
                       'Pembayaran ${order.noMeja}',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
                     ),
                     Text(
                       'Order #${order.idOrder} • Pelanggan: ${order.namaPelanggan}',
-                      style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                      style: TextStyle(fontSize: 12, color: context.textSecondary),
                     ),
                   ],
                 ),
@@ -325,12 +325,12 @@ class _CashierScreenState extends State<CashierScreen> {
                 ),
               ],
             ),
-            const Divider(height: 24, color: AppTheme.borderSubtle),
+            Divider(height: 24, color: context.borderSubtle),
 
             // Itemized Bill Details
-            const Text(
+            Text(
               'Rincian Menu:',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
             ),
             const SizedBox(height: 8),
             Container(
@@ -338,7 +338,7 @@ class _CashierScreenState extends State<CashierScreen> {
               decoration: BoxDecoration(
                 color: context.surfaceBg,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppTheme.borderSubtle),
+                border: Border.all(color: context.borderSubtle),
               ),
               child: Column(
                 children: order.items.map((item) {
@@ -350,12 +350,12 @@ class _CashierScreenState extends State<CashierScreen> {
                         Expanded(
                           child: Text(
                             '${item.jumlah}x ${item.menu.namaMasakan}',
-                            style: const TextStyle(fontSize: 13, color: AppTheme.textDark),
+                            style: TextStyle(fontSize: 13, color: context.textPrimary),
                           ),
                         ),
                         Text(
                           _currencyFormat.format(item.subtotal),
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary),
                         ),
                       ],
                     ),
@@ -369,14 +369,14 @@ class _CashierScreenState extends State<CashierScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.orangeLight,
+                color: context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.3) : AppTheme.orangeLight,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.orangeBorder),
+                border: Border.all(color: context.isDarkMode ? const Color(0xFF7C2D12) : AppTheme.orangeBorder),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total Tagihan:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textDark)),
+                  Text('Total Tagihan:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.textPrimary)),
                   Text(
                     _currencyFormat.format(order.totalHarga),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
@@ -387,7 +387,7 @@ class _CashierScreenState extends State<CashierScreen> {
             const SizedBox(height: 20),
 
             // Payment Method Selector
-            const Text('Metode Pembayaran:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+            Text('Metode Pembayaran:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
             const SizedBox(height: 8),
             Row(
               children: ['Tunai', 'QRIS', 'Debit'].map((method) {
@@ -399,7 +399,7 @@ class _CashierScreenState extends State<CashierScreen> {
                     selected: isSelected,
                     selectedColor: AppTheme.orangePrimary,
                     labelStyle: TextStyle(
-                      color: isSelected ? AppTheme.white : AppTheme.textDark,
+                      color: isSelected ? AppTheme.white : context.textPrimary,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                     onSelected: (_) => setState(() => _selectedPaymentMethod = method),
