@@ -149,24 +149,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             ),
             const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFDCFCE7),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFF0F172A),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 14, color: Color(0xFF15803D)),
-                  const SizedBox(width: 6),
+                  const Icon(Icons.mark_chat_unread_rounded, color: Color(0xFF22C55E), size: 16),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Kode demo/simulasi: $code',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                      'SMS / WhatsApp Masuk: Kode OTP verifikasi adalah $code',
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
-                  ),
-                  InkWell(
-                    onTap: () => otpCtrl.text = code,
-                    child: const Text('Tempel', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF15803D), decoration: TextDecoration.underline)),
                   ),
                 ],
               ),

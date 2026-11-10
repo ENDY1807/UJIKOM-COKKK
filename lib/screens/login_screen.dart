@@ -480,7 +480,7 @@ class _LoginScreenState extends State<LoginScreen>
     final rawPhone = user.phoneNumber.isNotEmpty ? user.phoneNumber : '081234567890';
     
     // Kirim kode OTP WhatsApp nyata
-    await WhatsAppOtpService.instance.sendOtp(
+    final code = await WhatsAppOtpService.instance.sendOtp(
       rawPhone: rawPhone,
       userName: user.namaUser,
       purpose: 'Verifikasi Login 2FA Rasantara',
@@ -505,6 +505,26 @@ class _LoginScreenState extends State<LoginScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.mark_chat_unread_rounded, color: Color(0xFF22C55E), size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'SMS / WhatsApp Masuk: Kode OTP adalah $code',
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Text(
               'Kode OTP autentikasi telah dikirim ke nomor WhatsApp Anda ($rawPhone). Silakan masukkan 6 digit kode keamanan:',
               style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),

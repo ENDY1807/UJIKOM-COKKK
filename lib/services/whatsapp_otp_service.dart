@@ -21,6 +21,8 @@ class WhatsAppOtpService {
   static final WhatsAppOtpService instance = WhatsAppOtpService._();
 
   final Map<String, OtpRecord> _activeOtps = {};
+  String? lastSentCode;
+  String? lastSentPhone;
 
   /// Normalisasi nomor HP ke format internasional WhatsApp (628xxx)
   static String normalizePhoneNumber(String raw) {
@@ -52,6 +54,8 @@ class WhatsAppOtpService {
     final expiry = DateTime.now().add(const Duration(minutes: 5));
 
     _activeOtps[phone] = OtpRecord(code: code, expiresAt: expiry);
+    lastSentCode = code;
+    lastSentPhone = phone;
 
     final message = '''
 Halo *$userName*,
