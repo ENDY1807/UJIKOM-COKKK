@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/transaction_model.dart';
 import '../services/export_report_service.dart';
+import '../theme/app_theme.dart';
 
 class ReceiptDialog extends StatelessWidget {
   final TransactionModel transaction;
@@ -33,8 +34,9 @@ class ReceiptDialog extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 400),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.surfaceCard,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: context.borderSubtle),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x1F000000),
@@ -50,9 +52,9 @@ class ReceiptDialog extends StatelessWidget {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFF7ED),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                decoration: BoxDecoration(
+                  color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFFFF7ED),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 child: Column(
                   children: [
@@ -65,13 +67,13 @@ class ReceiptDialog extends StatelessWidget {
                       child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 28),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
+                    Text(
                       'RASANTARA',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,
-                        color: Color(0xFF1E293B),
+                        color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),

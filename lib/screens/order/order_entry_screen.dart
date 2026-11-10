@@ -1804,9 +1804,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 // Pinned Bottom Bar (Inspirasi Gojek Image 3)
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                  decoration: BoxDecoration(
+                    color: context.surfaceCard,
+                    border: Border(top: BorderSide(color: context.borderSubtle)),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1859,7 +1859,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                       ),
                                       Text(
                                         _currencyFmt.format(_grandTotal),
-                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: context.textPrimary),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),

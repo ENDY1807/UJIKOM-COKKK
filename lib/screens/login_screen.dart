@@ -807,7 +807,7 @@ class _LoginScreenState extends State<LoginScreen>
         );
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8F4F0),
+        backgroundColor: context.surfaceBg,
         body: FadeTransition(
           opacity: _fadeAnimation,
           child: LayoutBuilder(
@@ -833,8 +833,9 @@ class _LoginScreenState extends State<LoginScreen>
         height: h,
         margin: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.surfaceCard,
           borderRadius: BorderRadius.circular(36),
+          border: Border.all(color: context.borderSubtle),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.10),
@@ -1133,7 +1134,7 @@ class _LoginScreenState extends State<LoginScreen>
   // White form area (right for login, left for register in desktop)
   Widget _buildWhiteFormArea({required bool isLogin}) {
     return Container(
-      color: Colors.white,
+      color: context.surfaceCard,
       padding: const EdgeInsets.symmetric(horizontal: 44, vertical: 40),
       child: SingleChildScrollView(
         child: isLogin ? _buildLoginForm() : _buildRegisterForm(),
@@ -1146,12 +1147,12 @@ class _LoginScreenState extends State<LoginScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Masuk',
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.w900,
-            color: Color(0xFF1A1A2E),
+            color: context.textPrimary,
           ),
         ),
         const SizedBox(height: 6),
@@ -1199,12 +1200,12 @@ class _LoginScreenState extends State<LoginScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Daftar Akun',
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.w900,
-            color: Color(0xFF1A1A2E),
+            color: context.textPrimary,
           ),
         ),
         const SizedBox(height: 6),
@@ -1313,15 +1314,15 @@ class _LoginScreenState extends State<LoginScreen>
       keyboardType: keyboardType,
       obscureText: obscure,
       onSubmitted: onSubmit,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
-        color: Color(0xFF1A1A2E),
+        color: context.textPrimary,
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText ?? 'Masukkan $label',
-        labelStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+        labelStyle: TextStyle(color: context.textSecondary, fontSize: 14),
         prefixIcon: Icon(icon, size: 20, color: AppTheme.orangePrimary),
         suffixIcon: isPassword
             ? IconButton(
@@ -1336,14 +1337,14 @@ class _LoginScreenState extends State<LoginScreen>
               )
             : null,
         filled: true,
-        fillColor: const Color(0xFFF8F8F8),
+        fillColor: context.fillSubtle,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+          borderSide: BorderSide(color: context.borderSubtle),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+          borderSide: BorderSide(color: context.borderSubtle),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -1430,9 +1431,9 @@ class _LoginScreenState extends State<LoginScreen>
         borderRadius: BorderRadius.circular(14),
         child: Ink(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.surfaceCard,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE0E0E0), width: 1.2),
+            border: Border.all(color: context.borderSubtle, width: 1.2),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
@@ -1546,25 +1547,26 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Rasantara',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF1A1A2E),
+                    color: context.textPrimary,
                   ),
                 ),
                 Text(
                   'Sistem Kasir & Layanan Meja',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                  style: TextStyle(fontSize: 13, color: context.textSecondary),
                 ),
                 const SizedBox(height: 32),
 
                 // Card
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.surfaceCard,
                     borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: context.borderSubtle),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.08),
@@ -1579,7 +1581,7 @@ class _LoginScreenState extends State<LoginScreen>
                       Container(
                         margin: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
+                          color: context.fillSubtle,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -1744,7 +1746,9 @@ class _LoginScreenState extends State<LoginScreen>
             margin: const EdgeInsets.all(4),
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-              color: isActive ? Colors.white : Colors.transparent,
+              color: isActive
+                  ? (context.isDarkMode ? const Color(0xFF334155) : Colors.white)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
               boxShadow: isActive
                   ? [

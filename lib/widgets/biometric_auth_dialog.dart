@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class BiometricAuthDialog extends StatefulWidget {
   final String title;
@@ -87,7 +88,7 @@ class _BiometricAuthDialogState extends State<BiometricAuthDialog> with SingleTi
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
+      backgroundColor: context.surfaceCard,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Padding(
         padding: const EdgeInsets.all(22),
@@ -97,8 +98,10 @@ class _BiometricAuthDialogState extends State<BiometricAuthDialog> with SingleTi
             // Header Icon
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFF7ED),
+              decoration: BoxDecoration(
+                color: context.isDarkMode
+                    ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                    : const Color(0xFFFFF7ED),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -113,10 +116,10 @@ class _BiometricAuthDialogState extends State<BiometricAuthDialog> with SingleTi
             Text(
               widget.title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
@@ -125,7 +128,7 @@ class _BiometricAuthDialogState extends State<BiometricAuthDialog> with SingleTi
             Text(
               widget.reason,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4),
+              style: TextStyle(fontSize: 12, color: context.textSecondary, height: 1.4),
             ),
 
             if (widget.amountFormatted != null) ...[
@@ -133,14 +136,14 @@ class _BiometricAuthDialogState extends State<BiometricAuthDialog> with SingleTi
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: context.fillSubtle,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: context.borderSubtle),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Total Pembayaran: ', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                    Text('Total Pembayaran: ', style: TextStyle(fontSize: 12, color: context.textSecondary)),
                     Text(
                       widget.amountFormatted!,
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
@@ -219,9 +222,9 @@ class _BiometricAuthDialogState extends State<BiometricAuthDialog> with SingleTi
               ),
             ] else ...[
               // PIN Mode
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Masukkan PIN Transaksi (6-Digit)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                child: Text('Masukkan PIN Transaksi (6-Digit)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary)),
               ),
               const SizedBox(height: 6),
               TextField(
@@ -230,13 +233,21 @@ class _BiometricAuthDialogState extends State<BiometricAuthDialog> with SingleTi
                 maxLength: 6,
                 obscureText: true,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 22, letterSpacing: 8, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 22, letterSpacing: 8, fontWeight: FontWeight.bold, color: context.textPrimary),
                 decoration: InputDecoration(
                   hintText: '••••••',
+                  hintStyle: TextStyle(color: context.textSecondary),
                   counterText: '',
                   filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  fillColor: context.fillSubtle,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: context.borderSubtle),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: context.borderSubtle),
+                  ),
                   focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFFEA580C), width: 2),
                   ),
@@ -275,7 +286,7 @@ class _BiometricAuthDialogState extends State<BiometricAuthDialog> with SingleTi
             ],
 
             const SizedBox(height: 12),
-            const Divider(color: Color(0xFFF1F5F9)),
+            Divider(color: context.borderSubtle),
             const SizedBox(height: 4),
 
             // Cancel Button

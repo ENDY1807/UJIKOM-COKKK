@@ -1101,10 +1101,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.surfaceCard,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: method.isDefault ? const Color(0xFFFED7AA) : const Color(0xFFE2E8F0),
+                        color: method.isDefault ? const Color(0xFFEA580C) : context.borderSubtle,
                         width: method.isDefault ? 1.5 : 1.0,
                       ),
                       boxShadow: const [
@@ -1133,16 +1133,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     children: [
                                       Text(
                                         method.provider.label,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)),
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
                                       ),
                                       if (method.isDefault) ...[
                                         const SizedBox(width: 6),
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFFFF7ED),
+                                            color: context.isDarkMode
+                                                ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                                                : const Color(0xFFFFF7ED),
                                             borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(color: const Color(0xFFFFEDD5)),
+                                            border: Border.all(
+                                              color: context.isDarkMode
+                                                  ? const Color(0xFF7C2D12)
+                                                  : const Color(0xFFFFEDD5),
+                                            ),
                                           ),
                                           child: const Text(
                                             'UTAMA',
@@ -1155,7 +1161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   const SizedBox(height: 2),
                                   Text(
                                     '${method.maskedNumber} • ${method.accountName}',
-                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                    style: TextStyle(fontSize: 11, color: context.textSecondary),
                                   ),
                                 ],
                               ),
@@ -1163,13 +1169,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                const Text('Saldo Aktif', style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                                Text('Saldo Aktif', style: TextStyle(fontSize: 10, color: context.textSecondary)),
                                 Text(
                                   _currencyFmt.format(method.balance),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w800,
-                                    color: Color(0xFF1E293B),
+                                    color: context.textPrimary,
                                   ),
                                 ),
                               ],

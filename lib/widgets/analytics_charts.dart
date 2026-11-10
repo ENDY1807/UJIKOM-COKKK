@@ -31,9 +31,9 @@ class AnalyticsChartsWidget extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.surfaceCard,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: context.borderSubtle),
           boxShadow: const [
             BoxShadow(
               color: Color(0x0A000000),
@@ -186,9 +186,9 @@ class AnalyticsChartsWidget extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.surfaceCard,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: context.borderSubtle),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x0A000000),
@@ -207,12 +207,12 @@ class AnalyticsChartsWidget extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Diagram Penghasilan 7 Hari Terakhir',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E293B),
+                            color: context.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -272,9 +272,9 @@ class AnalyticsChartsWidget extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.surfaceCard,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: context.borderSubtle),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x0A000000),
@@ -286,12 +286,12 @@ class AnalyticsChartsWidget extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Diagram Metode Pembayaran',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -382,9 +382,9 @@ class AnalyticsChartsWidget extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.surfaceCard,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: context.borderSubtle),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x0A000000),
@@ -396,12 +396,12 @@ class AnalyticsChartsWidget extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Distribusi Tipe Layanan Pesanan',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -440,9 +440,9 @@ class AnalyticsChartsWidget extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.surfaceCard,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: context.borderSubtle),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x0A000000),
@@ -454,20 +454,20 @@ class AnalyticsChartsWidget extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.military_tech_rounded,
                     color: Color(0xFFF59E0B),
                     size: 22,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     'Peringkat Menu Nusantara Terlaris',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
+                      color: context.textPrimary,
                     ),
                   ),
                 ],

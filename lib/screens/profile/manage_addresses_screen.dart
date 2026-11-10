@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import '../../models/user_address_model.dart';
 import '../../services/database_service.dart';
+import '../../theme/app_theme.dart';
 
 class ManageAddressesScreen extends StatefulWidget {
   final DatabaseService db;
@@ -67,8 +68,8 @@ class _ManageAddressesScreenState extends State<ManageAddressesScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1E293B),
+        backgroundColor: context.surfaceCard,
+        foregroundColor: context.textPrimary,
         actions: [
           IconButton(
             tooltip: 'Sinkronisasi Alamat',
@@ -96,9 +97,10 @@ class _ManageAddressesScreenState extends State<ManageAddressesScreen> {
             ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
+        decoration: BoxDecoration(
+          color: context.surfaceCard,
+          border: Border(top: BorderSide(color: context.borderSubtle)),
+          boxShadow: const [
             BoxShadow(
               color: Color(0x0D000000),
               blurRadius: 10,
@@ -192,12 +194,12 @@ class _ManageAddressesScreenState extends State<ManageAddressesScreen> {
       borderRadius: BorderRadius.circular(14),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.surfaceCard,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: addr.isPrimary
                 ? const Color(0xFFEA580C)
-                : const Color(0xFFE2E8F0),
+                : context.borderSubtle,
             width: addr.isPrimary ? 1.5 : 1,
           ),
           boxShadow: const [
@@ -217,7 +219,7 @@ class _ManageAddressesScreenState extends State<ManageAddressesScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
+                    color: context.fillSubtle,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -226,15 +228,15 @@ class _ManageAddressesScreenState extends State<ManageAddressesScreen> {
                       Icon(
                         _getLabelIcon(addr.label),
                         size: 13,
-                        color: const Color(0xFF475569),
+                        color: context.textSecondary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         addr.label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF334155),
+                          color: context.textPrimary,
                         ),
                       ),
                     ],
@@ -317,10 +319,10 @@ class _ManageAddressesScreenState extends State<ManageAddressesScreen> {
                 const SizedBox(width: 6),
                 Text(
                   addr.recipientName.isNotEmpty ? addr.recipientName : 'Penerima',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+                    color: context.textPrimary,
                   ),
                 ),
                 if (addr.recipientPhone.isNotEmpty) ...[
@@ -450,7 +452,7 @@ class _ManageAddressesScreenState extends State<ManageAddressesScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.surfaceCard,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -774,7 +776,7 @@ class _AddressFormWidgetState extends State<_AddressFormWidget> {
                 children: [
                   Text(
                     widget.existing != null ? 'Ubah Alamat Pengantaran' : 'Tambah Alamat Baru',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded, size: 20),

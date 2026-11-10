@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/order_model.dart';
 import '../services/database_service.dart';
 import '../services/payment_gateway_service.dart';
+import '../theme/app_theme.dart';
 import 'app_loading_animation.dart';
 import 'receipt_dialog.dart';
 
@@ -136,7 +137,7 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
+      backgroundColor: context.surfaceCard,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
@@ -156,29 +157,29 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
                       const SizedBox(width: 8),
                       Text(
                         'Pembayaran ${widget.providerName}',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF64748B)),
+                    icon: Icon(Icons.close_rounded, size: 20, color: context.textSecondary),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
-              const Divider(height: 16),
+              Divider(height: 16, color: context.borderSubtle),
 
               // Kartu Nominal & Detail
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: context.fillSubtle,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: context.borderSubtle),
                 ),
                 child: Column(
                   children: [
-                    Text('Total Pembayaran ${widget.providerName}', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                    Text('Total Pembayaran ${widget.providerName}', style: TextStyle(fontSize: 12, color: context.textSecondary)),
                     const SizedBox(height: 6),
                     Text(
                       _currencyFmt.format(widget.totalAmount),

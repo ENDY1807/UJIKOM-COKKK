@@ -233,7 +233,7 @@ class _ReportScreenState extends State<ReportScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -241,12 +241,12 @@ class _ReportScreenState extends State<ReportScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.textDark,
+                              color: context.textPrimary,
                             ),
                           ),
                           Text(
                             'Rekapitulasi omzet dan riwayat pembayaran table service',
-                            style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                            style: TextStyle(fontSize: 12, color: context.textSecondary),
                           ),
                         ],
                       ),
@@ -259,7 +259,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -268,12 +268,12 @@ class _ReportScreenState extends State<ReportScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.textDark,
+                              color: context.textPrimary,
                             ),
                           ),
                           Text(
                             'Rekapitulasi omzet dan riwayat pembayaran table service',
-                            style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                            style: TextStyle(fontSize: 12, color: context.textSecondary),
                           ),
                         ],
                       ),
@@ -348,8 +348,9 @@ class _ReportScreenState extends State<ReportScreen> {
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: context.fillSubtle,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.borderSubtle),
               ),
               child: Row(
                 children: [
@@ -361,9 +362,12 @@ class _ReportScreenState extends State<ReportScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
                           color: _showDiagrams
-                              ? Colors.white
+                              ? context.surfaceCard
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
+                          border: _showDiagrams
+                              ? Border.all(color: context.borderSubtle)
+                              : null,
                           boxShadow: _showDiagrams
                               ? const [
                                   BoxShadow(
@@ -382,7 +386,7 @@ class _ReportScreenState extends State<ReportScreen> {
                               size: 16,
                               color: _showDiagrams
                                   ? const Color(0xFFEA580C)
-                                  : const Color(0xFF64748B),
+                                  : context.textSecondary,
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -391,8 +395,8 @@ class _ReportScreenState extends State<ReportScreen> {
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                                 color: _showDiagrams
-                                    ? const Color(0xFFEA580C)
-                                    : const Color(0xFF64748B),
+                                  ? const Color(0xFFEA580C)
+                                  : context.textSecondary,
                               ),
                             ),
                           ],
@@ -409,9 +413,12 @@ class _ReportScreenState extends State<ReportScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
                           color: !_showDiagrams
-                              ? Colors.white
+                              ? context.surfaceCard
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
+                          border: !_showDiagrams
+                              ? Border.all(color: context.borderSubtle)
+                              : null,
                           boxShadow: !_showDiagrams
                               ? const [
                                   BoxShadow(
@@ -430,7 +437,7 @@ class _ReportScreenState extends State<ReportScreen> {
                               size: 16,
                               color: !_showDiagrams
                                   ? const Color(0xFFEA580C)
-                                  : const Color(0xFF64748B),
+                                  : context.textSecondary,
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -439,8 +446,8 @@ class _ReportScreenState extends State<ReportScreen> {
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                                 color: !_showDiagrams
-                                    ? const Color(0xFFEA580C)
-                                    : const Color(0xFF64748B),
+                                  ? const Color(0xFFEA580C)
+                                  : context.textSecondary,
                               ),
                             ),
                           ],
@@ -459,38 +466,39 @@ class _ReportScreenState extends State<ReportScreen> {
               // Top Selling Menu Items
               Card(
                 elevation: 0,
+                color: context.surfaceCard,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppTheme.borderSubtle),
+                  side: BorderSide(color: context.borderSubtle),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.star_outline,
                             color: AppTheme.orangePrimary,
                             size: 20,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
                             'Menu Terlaris (Favorit Pelanggan)',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.textDark,
+                              color: context.textPrimary,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       if (topSelling.isEmpty)
-                        const Text(
+                        Text(
                           'Belum ada data penjualan menu',
-                          style: TextStyle(color: AppTheme.textMuted),
+                          style: TextStyle(color: context.textSecondary),
                         )
                       else
                         Wrap(
@@ -503,10 +511,14 @@ class _ReportScreenState extends State<ReportScreen> {
                                 vertical: 8,
                               ),
                               decoration: BoxDecoration(
-                                color: AppTheme.orangeLight,
+                                color: context.isDarkMode
+                                    ? const Color(0xFF7C2D12).withValues(alpha: 0.35)
+                                    : AppTheme.orangeLight,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: AppTheme.orangeBorder,
+                                  color: context.isDarkMode
+                                      ? const Color(0xFF7C2D12)
+                                      : AppTheme.orangeBorder,
                                 ),
                               ),
                               child: Row(
@@ -514,10 +526,10 @@ class _ReportScreenState extends State<ReportScreen> {
                                 children: [
                                   Text(
                                     entry.key,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 13,
-                                      color: AppTheme.textDark,
+                                      color: context.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -533,7 +545,7 @@ class _ReportScreenState extends State<ReportScreen> {
                                     child: Text(
                                       '${entry.value} Terjual',
                                       style: const TextStyle(
-                                        color: AppTheme.white,
+                                        color: Colors.white,
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -554,31 +566,32 @@ class _ReportScreenState extends State<ReportScreen> {
               // Transaction History Table
               Card(
                 elevation: 0,
+                color: context.surfaceCard,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppTheme.borderSubtle),
+                  side: BorderSide(color: context.borderSubtle),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Riwayat Transaksi Kasir',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.textDark,
+                          color: context.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 12),
                       if (transactions.isEmpty)
-                        const Center(
+                        Center(
                           child: Padding(
-                            padding: EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(24),
                             child: Text(
                               'Belum ada transaksi tercatat',
-                              style: TextStyle(color: AppTheme.textMuted),
+                              style: TextStyle(color: context.textSecondary),
                             ),
                           ),
                         )
@@ -587,9 +600,9 @@ class _ReportScreenState extends State<ReportScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: transactions.length,
-                          separatorBuilder: (context, index) => const Divider(
+                          separatorBuilder: (context, index) => Divider(
                             height: 1,
-                            color: AppTheme.borderSubtle,
+                            color: context.borderSubtle,
                           ),
                           itemBuilder: (context, index) {
                             final trx = transactions[index];
@@ -600,7 +613,9 @@ class _ReportScreenState extends State<ReportScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.orangeLight,
+                                      color: context.isDarkMode
+                                          ? const Color(0xFF7C2D12).withValues(alpha: 0.35)
+                                          : AppTheme.orangeLight,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Icon(
@@ -617,17 +632,17 @@ class _ReportScreenState extends State<ReportScreen> {
                                       children: [
                                         Text(
                                           '#TRX-${trx.idTransaksi.toString().padLeft(4, '0')} • ${trx.order.noMeja}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
-                                            color: AppTheme.textDark,
+                                            color: context.textPrimary,
                                           ),
                                         ),
                                         Text(
                                           'Kasir: ${trx.namaKasir} • ${_dateFormat.format(trx.tanggal)}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: AppTheme.textMuted,
+                                            color: context.textSecondary,
                                           ),
                                         ),
                                       ],
@@ -697,10 +712,14 @@ class _ReportScreenState extends State<ReportScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isPrimary ? AppTheme.orangeBorder : AppTheme.borderSubtle,
+          color: isPrimary
+              ? (context.isDarkMode ? const Color(0xFFEA580C) : AppTheme.orangeBorder)
+              : context.borderSubtle,
         ),
       ),
-      color: isPrimary ? AppTheme.orangeLight : AppTheme.white,
+      color: isPrimary
+          ? (context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : AppTheme.orangeLight)
+          : context.surfaceCard,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -708,12 +727,14 @@ class _ReportScreenState extends State<ReportScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isPrimary ? AppTheme.orangePrimary : AppTheme.surfaceBg,
+                color: isPrimary
+                    ? AppTheme.orangePrimary
+                    : (context.isDarkMode ? const Color(0xFF334155) : AppTheme.surfaceBg),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 icon,
-                color: isPrimary ? AppTheme.white : AppTheme.orangePrimary,
+                color: isPrimary ? Colors.white : AppTheme.orangePrimary,
                 size: 24,
               ),
             ),
@@ -724,9 +745,9 @@ class _ReportScreenState extends State<ReportScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppTheme.textMuted,
+                      color: context.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -737,15 +758,15 @@ class _ReportScreenState extends State<ReportScreen> {
                       fontWeight: FontWeight.bold,
                       color: isPrimary
                           ? AppTheme.orangePrimary
-                          : AppTheme.textDark,
+                          : context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppTheme.textMuted,
+                      color: context.textSecondary,
                     ),
                   ),
                 ],

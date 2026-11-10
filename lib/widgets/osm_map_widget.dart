@@ -223,9 +223,9 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
 
     return Container(
       height: 600,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: context.surfaceCard,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -235,7 +235,7 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: const Color(0xFFCBD5E1),
+              color: context.borderSubtle,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -249,16 +249,16 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
                   child: Container(
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: context.fillSubtle,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: TextField(
                       controller: _searchController,
-                      style: const TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: 13, color: context.textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Cari Alamat',
                         hintStyle: TextStyle(
-                          color: Colors.grey[400],
+                          color: context.textSecondary,
                           fontSize: 13,
                         ),
                         prefixIcon: const Icon(
@@ -320,8 +320,9 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
               margin: const EdgeInsets.symmetric(horizontal: 16),
               constraints: const BoxConstraints(maxHeight: 180),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.surfaceCard,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.borderSubtle),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x1A000000),
@@ -333,7 +334,7 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: _searchResults.length,
-                separatorBuilder: (ctx, i) => const Divider(height: 1),
+                separatorBuilder: (ctx, i) => Divider(height: 1, color: context.borderSubtle),
                 itemBuilder: (ctx, i) {
                   final item = _searchResults[i];
                   final name = item['display_name'] ?? '';
@@ -482,10 +483,10 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
           // Bottom Sheet GoFood Info & Konfirmasi
           Container(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-              boxShadow: [
+            decoration: BoxDecoration(
+              color: context.surfaceCard,
+              border: Border(top: BorderSide(color: context.borderSubtle)),
+              boxShadow: const [
                 BoxShadow(
                   color: Color(0x0F000000),
                   blurRadius: 10,
@@ -504,7 +505,9 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7ED),
+                        color: context.isDarkMode
+                            ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                            : const Color(0xFFFFF7ED),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -518,19 +521,19 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Alamat Pengantaran Terpilih:',
                             style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.textMuted,
+                              color: context.textSecondary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 2),
                           if (_isLoadingAddress)
-                            const Row(
+                            Row(
                               children: [
-                                SizedBox(
+                                const SizedBox(
                                   width: 12,
                                   height: 12,
                                   child: CircularProgressIndicator(
@@ -538,12 +541,12 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
                                     color: Color(0xFFEA580C),
                                   ),
                                 ),
-                                SizedBox(width: 6),
+                                const SizedBox(width: 6),
                                 Text(
                                   'Membaca nama jalan OSM...',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: AppTheme.textMuted,
+                                    color: context.textSecondary,
                                   ),
                                 ),
                               ],
@@ -553,10 +556,10 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
                               _currentAddress,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E293B),
+                                color: context.textPrimary,
                               ),
                             ),
                         ],
@@ -635,9 +638,9 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: context.fillSubtle,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: context.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -649,17 +652,17 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
               const SizedBox(width: 4),
               Text(
                 title,
-                style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                style: TextStyle(fontSize: 10, color: context.textSecondary),
               ),
             ],
           ),
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1E293B),
+              color: context.textPrimary,
             ),
           ),
         ],
@@ -672,8 +675,9 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: context.borderSubtle),
         boxShadow: const [
           BoxShadow(
             color: Color(0x1F000000),
@@ -687,7 +691,7 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: onTap,
-          child: Icon(icon, size: 20, color: const Color(0xFF334155)),
+          child: Icon(icon, size: 20, color: context.textPrimary),
         ),
       ),
     );

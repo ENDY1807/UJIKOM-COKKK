@@ -363,10 +363,10 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                             Expanded(
                                               child: Text(
                                                 widget.order.noMeja,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontWeight: FontWeight.w800,
                                                   fontSize: 13,
-                                                  color: Color(0xFF1E293B),
+                                                  color: context.textPrimary,
                                                 ),
                                               ),
                                             ),
@@ -457,9 +457,9 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: context.surfaceCard,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(color: context.borderSubtle),
                             ),
                             child: Row(
                               children: [
@@ -641,9 +641,9 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: context.fillSubtle,
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  border: Border.all(color: context.borderSubtle),
                                 ),
                                 child: Row(
                                   children: [

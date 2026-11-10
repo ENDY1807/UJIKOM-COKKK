@@ -329,20 +329,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.surfaceCard,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: context.borderSubtle),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.photo_camera_front_outlined, size: 18, color: Color(0xFFEA580C)),
-                    SizedBox(width: 8),
+                    const Icon(Icons.photo_camera_front_outlined, size: 18, color: Color(0xFFEA580C)),
+                    const SizedBox(width: 8),
                     Text(
                       'Foto Profil Pengguna',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.textPrimary),
                     ),
                   ],
                 ),
@@ -451,20 +451,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.surfaceCard,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: context.borderSubtle),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.badge_outlined, size: 18, color: Color(0xFFEA580C)),
-                    SizedBox(width: 8),
+                    const Icon(Icons.badge_outlined, size: 18, color: Color(0xFFEA580C)),
+                    const SizedBox(width: 8),
                     Text(
                       'Informasi & Kredensial Akun',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.textPrimary),
                     ),
                   ],
                 ),
@@ -531,9 +531,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: context.fillSubtle,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: context.borderSubtle),
                   ),
                   child: Row(
                     children: [
@@ -695,7 +695,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   }
                 },
               ),
-              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+              Divider(height: 20, color: context.borderSubtle),
               _buildSwitchTile(
                 icon: Icons.local_offer_outlined,
                 title: 'Promo & Diskon Eksklusif',
@@ -712,7 +712,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   }
                 },
               ),
-              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+              Divider(height: 20, color: context.borderSubtle),
               _buildSwitchTile(
                 icon: Icons.volume_up_outlined,
                 title: 'Efek Suara Audio',
@@ -723,7 +723,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   widget.db.updateAppSettings(soundFx: val);
                 },
               ),
-              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+              Divider(height: 20, color: context.borderSubtle),
               _buildSwitchTile(
                 icon: Icons.vibration_rounded,
                 title: 'Umpan Balik Haptik (Getar)',
@@ -758,7 +758,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   _handleSaveProfile();
                 },
               ),
-              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+              Divider(height: 20, color: context.borderSubtle),
               _buildSwitchTile(
                 icon: Icons.fingerprint_rounded,
                 title: 'Kunci Biometrik / PIN Transaksi',
@@ -781,7 +781,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   }
                 },
               ),
-              const Divider(height: 20, color: Color(0xFFF1F5F9)),
+              Divider(height: 20, color: context.borderSubtle),
               InkWell(
                 onTap: _showPrivacyPolicyDialog,
                 borderRadius: BorderRadius.circular(10),
@@ -831,10 +831,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   widget.db.updateAppSettings(autoPrintReceipt: val);
                 },
               ),
-              const Divider(height: 20, color: Color(0xFFF1F5F9)),
-              const Text(
+              Divider(height: 20, color: context.borderSubtle),
+              Text(
                 'Tipe Tampilan Peta Driver',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: context.textPrimary),
               ),
               const SizedBox(height: 8),
               Row(
@@ -867,23 +867,23 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: context.fillSubtle,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: context.borderSubtle),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Data Cache Sementara', style: TextStyle(fontSize: 12, color: Color(0xFF475569))),
-                    Text(_cacheSize, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                    Text('Data Cache Sementara', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+                    Text(_cacheSize, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary)),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF1E293B),
-                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  foregroundColor: context.textPrimary,
+                  side: BorderSide(color: context.borderSubtle),
                   minimumSize: const Size.fromHeight(40),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -1045,7 +1045,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7ED),
+                  color: context.isDarkMode
+                      ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                      : const Color(0xFFFFF7ED),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, size: 18, color: const Color(0xFFEA580C)),
@@ -1087,7 +1089,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFFF7ED) : context.fillSubtle,
+            color: isSelected
+                ? (context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
+                : context.fillSubtle,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected ? const Color(0xFFEA580C) : context.borderSubtle,
@@ -1133,7 +1137,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFFF7ED) : context.fillSubtle,
+            color: isSelected
+                ? (context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
+                : context.fillSubtle,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected ? const Color(0xFFEA580C) : context.borderSubtle,
@@ -1192,10 +1198,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFFF7ED) : const Color(0xFFF8FAFC),
+            color: isSelected
+                ? (context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
+                : context.fillSubtle,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFCBD5E1),
+              color: isSelected ? const Color(0xFFEA580C) : context.borderSubtle,
               width: isSelected ? 2.0 : 1.0,
             ),
           ),
@@ -1216,7 +1224,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF1E293B),
+                        color: isSelected ? const Color(0xFFEA580C) : context.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1231,7 +1239,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   desc,
                   style: TextStyle(
                     fontSize: 10.5,
-                    color: isSelected ? const Color(0xFFC2410C) : const Color(0xFF64748B),
+                    color: isSelected ? const Color(0xFFEA580C) : context.textSecondary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1257,18 +1265,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF7ED),
+                color: context.isDarkMode
+                    ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                    : const Color(0xFFFFF7ED),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.privacy_tip_outlined, color: Color(0xFFEA580C), size: 22),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Kebijakan Privasi & PDP', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                  Text('UU No. 27/2022 Pelindungan Data Pribadi', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                  Text('Kebijakan Privasi & PDP', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary)),
+                  Text('UU No. 27/2022 Pelindungan Data Pribadi', style: TextStyle(fontSize: 11, color: context.textSecondary)),
                 ],
               ),
             ),
@@ -1285,13 +1295,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: context.fillSubtle,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: context.borderSubtle),
                   ),
-                  child: const Text(
+                  child: Text(
                     'PT Rasantara Kuliner Indonesia ("Rasantara") berkomitmen penuh melindungi privasi, integritas data, dan kenyamanan seluruh pengguna aplikasi Rasantara Resto & Cafe sesuai ketentuan UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi.',
-                    style: TextStyle(fontSize: 11.5, color: Color(0xFF334155), height: 1.45),
+                    style: TextStyle(fontSize: 11.5, color: context.textPrimary, height: 1.45),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -1347,8 +1357,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 width: 22,
                 height: 22,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFF7ED),
+                decoration: BoxDecoration(
+                  color: context.isDarkMode
+                      ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                      : const Color(0xFFFFF7ED),
                   shape: BoxShape.circle,
                 ),
                 child: Text(number, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
@@ -1357,7 +1369,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: context.textPrimary),
                 ),
               ),
             ],
@@ -1365,7 +1377,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.only(left: 30),
-            child: Text(body, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B), height: 1.45)),
+            child: Text(body, style: TextStyle(fontSize: 11.5, color: context.textSecondary, height: 1.45)),
           ),
         ],
       ),
@@ -1389,17 +1401,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Butuh bantuan seputar pesanan atau pembayaran Anda?',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: context.fillSubtle,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: context.borderSubtle),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1408,33 +1420,39 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     children: [
                       Container(
                         padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF15803D).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: const Icon(Icons.phone_rounded, color: Color(0xFF15803D), size: 16),
                       ),
                       const SizedBox(width: 10),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('No Telepon / WhatsApp', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                          Text('+62 8978655469', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                          Text('No Telepon / WhatsApp', style: TextStyle(fontSize: 11, color: context.textSecondary)),
+                          Text('+62 8978655469', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
                         ],
                       ),
                     ],
                   ),
-                  const Divider(height: 16, color: Color(0xFFE2E8F0)),
+                  Divider(height: 16, color: context.borderSubtle),
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: const Icon(Icons.email_outlined, color: Color(0xFF2563EB), size: 16),
                       ),
                       const SizedBox(width: 10),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Email Resmi CS', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                          Text('endymahavira@gmail.com', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                          Text('Email Resmi CS', style: TextStyle(fontSize: 11, color: context.textSecondary)),
+                          Text('endymahavira@gmail.com', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
                         ],
                       ),
                     ],

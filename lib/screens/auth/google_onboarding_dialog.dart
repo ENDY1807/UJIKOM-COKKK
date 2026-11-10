@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../services/whatsapp_otp_service.dart';
+import '../../theme/app_theme.dart';
 
 class GoogleOnboardingDialog extends StatefulWidget {
   final DatabaseService db;
@@ -249,7 +250,7 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
+      backgroundColor: context.surfaceCard,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 460),
@@ -275,24 +276,30 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF7ED),
+                color: context.isDarkMode
+                    ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                    : const Color(0xFFFFF7ED),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFFEDD5)),
+                border: Border.all(
+                  color: context.isDarkMode
+                      ? const Color(0xFF7C2D12)
+                      : const Color(0xFFFFEDD5),
+                ),
               ),
               child: const Icon(Icons.manage_accounts_rounded, color: Color(0xFFEA580C), size: 24),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Konfigurasi Akun Google',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                   ),
                   Text(
                     'Lengkapi profil akun untuk melanjutkan',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                    style: TextStyle(fontSize: 11, color: context.textSecondary),
                   ),
                 ],
               ),
@@ -300,7 +307,7 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
           ],
         ),
         const SizedBox(height: 16),
-        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+        Divider(height: 1, color: context.borderSubtle),
         const SizedBox(height: 16),
 
         // Foto Profil (Pilih dari Galeri)
@@ -379,79 +386,100 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
         ],
 
         // Input Email (Read Only - Sesuai Akun Google)
-        const Text(
+        Text(
           'Email Akun Google (Terkunci)',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: _emailCtrl,
           enabled: false,
-          style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+          style: TextStyle(color: context.textSecondary, fontWeight: FontWeight.w600),
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.lock_outline, size: 18, color: Color(0xFF94A3B8)),
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: context.fillSubtle,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: BorderSide(color: context.borderSubtle),
             ),
           ),
         ),
         const SizedBox(height: 14),
 
         // Input Username
-        const Text(
+        Text(
           'Username Akun',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: _usernameCtrl,
+          style: TextStyle(color: context.textPrimary),
           decoration: InputDecoration(
             hintText: 'contoh: endy_rasantara',
+            hintStyle: TextStyle(color: context.textSecondary),
             prefixIcon: const Icon(Icons.alternate_email, size: 18, color: Color(0xFFEA580C)),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            filled: true,
+            fillColor: context.fillSubtle,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: context.borderSubtle),
+            ),
           ),
         ),
         const SizedBox(height: 14),
 
         // Input Password
-        const Text(
+        Text(
           'Password Akun Baru',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: _passwordCtrl,
           obscureText: _obscurePassword,
+          style: TextStyle(color: context.textPrimary),
           decoration: InputDecoration(
             hintText: 'Buat password untuk login langsung',
+            hintStyle: TextStyle(color: context.textSecondary),
             prefixIcon: const Icon(Icons.vpn_key_outlined, size: 18, color: Color(0xFFEA580C)),
             suffixIcon: IconButton(
               icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, size: 18),
               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
             ),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            filled: true,
+            fillColor: context.fillSubtle,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: context.borderSubtle),
+            ),
           ),
         ),
         const SizedBox(height: 14),
 
         // Input Nomor Telepon / WhatsApp (Bersih, TANPA TOMBOL OTP)
-        const Text(
+        Text(
           'Nomor Telepon / WhatsApp',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: _phoneCtrl,
           keyboardType: TextInputType.phone,
+          style: TextStyle(color: context.textPrimary),
           decoration: InputDecoration(
             hintText: '081234567890',
+            hintStyle: TextStyle(color: context.textSecondary),
             prefixIcon: const Icon(Icons.phone_android, size: 18, color: Color(0xFFEA580C)),
             helperText: 'Kode OTP akan otomatis dikirimkan ke nomor ini saat konfirmasi',
-            helperStyle: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            helperStyle: TextStyle(fontSize: 11, color: context.textSecondary),
+            filled: true,
+            fillColor: context.fillSubtle,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: context.borderSubtle),
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -600,19 +628,19 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
           maxLength: 6,
           autofocus: true,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+          style: TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold, color: context.textPrimary),
           decoration: InputDecoration(
             counterText: '',
             hintText: '••••••',
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: context.fillSubtle,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: BorderSide(color: context.borderSubtle),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFEA580C), width: 2),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderSide: BorderSide(color: Color(0xFFEA580C), width: 2),
             ),
           ),
           onChanged: (val) {

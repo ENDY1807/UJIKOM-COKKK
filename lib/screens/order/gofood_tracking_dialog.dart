@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/order_model.dart';
+import '../../theme/app_theme.dart';
 
 /// Dialog Tracking Pengantaran Driver ala GoFood / GrabFood dengan Live Map
 class GoFoodTrackingDialog extends StatefulWidget {
@@ -107,9 +108,9 @@ class _GoFoodTrackingDialogState extends State<GoFoodTrackingDialog> {
     final remainingMins = ((1.0 - _progress) * 18).round().clamp(1, 25);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: context.surfaceCard,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.90,
@@ -272,7 +273,7 @@ class _GoFoodTrackingDialogState extends State<GoFoodTrackingDialog> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.95),
+                              color: context.surfaceCard.withValues(alpha: 0.95),
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6)],
                             ),
@@ -285,7 +286,7 @@ class _GoFoodTrackingDialogState extends State<GoFoodTrackingDialog> {
                                     _progress >= 1.0
                                         ? 'Driver telah tiba di alamat tujuan!'
                                         : 'Driver sedang mengantar (${remainingKm.toStringAsFixed(1)} km lagi)',
-                                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: context.textPrimary),
                                   ),
                                 ),
                                 Container(
@@ -312,9 +313,11 @@ class _GoFoodTrackingDialogState extends State<GoFoodTrackingDialog> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
+                      color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFFFF7ED),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFFFEDD5)),
+                      border: Border.all(
+                        color: context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFFFEDD5),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -324,13 +327,13 @@ class _GoFoodTrackingDialogState extends State<GoFoodTrackingDialog> {
                           child: Icon(Icons.person, color: Colors.white, size: 24),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Budi Santoso (Driver Rasantara)',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.textPrimary),
                               ),
                               SizedBox(height: 2),
                               Row(
@@ -412,9 +415,9 @@ class _GoFoodTrackingDialogState extends State<GoFoodTrackingDialog> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.fillSubtle,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: context.borderSubtle),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,11 +428,11 @@ class _GoFoodTrackingDialogState extends State<GoFoodTrackingDialog> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Alamat Pengantaran:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                              Text('Alamat Pengantaran:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: context.textPrimary)),
                               const SizedBox(height: 2),
                               Text(
                                 widget.destinationAddress,
-                                style: const TextStyle(fontSize: 11, color: Color(0xFF475569)),
+                                style: TextStyle(fontSize: 11, color: context.textSecondary),
                               ),
                             ],
                           ),

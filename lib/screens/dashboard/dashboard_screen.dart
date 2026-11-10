@@ -754,9 +754,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFFED7AA), width: 1.5),
+        border: Border.all(
+          color: context.isDarkMode ? const Color(0xFF7C2D12) : const Color(0xFFFED7AA),
+          width: 1.5,
+        ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
@@ -770,22 +773,24 @@ class _DashboardScreenState extends State<DashboardScreen>
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFF7ED),
+            decoration: BoxDecoration(
+              color: context.isDarkMode
+                  ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                  : const Color(0xFFFFF7ED),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.add_circle_outline_rounded, size: 32, color: Color(0xFFEA580C)),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Kelola & Buat Event Baru',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.textPrimary),
           ),
           const SizedBox(height: 3),
-          const Text(
+          Text(
             'Khusus Owner: Terbitkan promo & diskon baru ke seluruh pelanggan',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+            style: TextStyle(fontSize: 11, color: context.textSecondary),
           ),
           const SizedBox(height: 10),
           FilledButton.icon(
@@ -937,9 +942,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.surfaceCard,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: context.borderSubtle),
           boxShadow: const [
             BoxShadow(
               color: Color(0x06000000),
@@ -971,7 +976,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               style: TextStyle(
                 fontSize: m.value.length > 10 ? 16 : 22,
                 fontWeight: FontWeight.w900,
-                color: const Color(0xFF1A1A2E),
+                color: context.textPrimary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -982,13 +987,13 @@ class _DashboardScreenState extends State<DashboardScreen>
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
+                color: context.textSecondary,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               m.sub,
-              style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+              style: TextStyle(fontSize: 11, color: context.textSecondary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1091,7 +1096,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   maxCrossAxisExtent: 220,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  mainAxisExtent: 232,
+                  mainAxisExtent: 252,
                 ),
                 itemCount: displayMenus.length,
                 itemBuilder: (context, i) {
@@ -1354,9 +1359,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7ED),
+                        color: context.isDarkMode
+                            ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                            : const Color(0xFFFFF7ED),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFFEDD5)),
+                        border: Border.all(
+                          color: context.isDarkMode
+                              ? const Color(0xFF7C2D12)
+                              : const Color(0xFFFFEDD5),
+                        ),
                       ),
                       child: const Icon(
                         Icons.confirmation_num_rounded,
@@ -1413,22 +1424,32 @@ class _DashboardScreenState extends State<DashboardScreen>
 
           // ── List Voucher Hemat ──
           ...vouchers.map((v) {
+            final isGreen = v['tag'] == 'GRATIS';
+            final cardBg = context.isDarkMode
+                ? (isGreen
+                    ? const Color(0xFF064E3B).withValues(alpha: 0.3)
+                    : const Color(0xFF7C2D12).withValues(alpha: 0.25))
+                : (v['bg'] as Color);
+            final cardBorder = context.isDarkMode
+                ? (isGreen ? const Color(0xFF065F46) : const Color(0xFF7C2D12))
+                : (v['border'] as Color);
+
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: v['bg'] as Color,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: v['border'] as Color),
+                border: Border.all(color: cardBorder),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: v['border'] as Color),
+                      border: Border.all(color: cardBorder),
                     ),
                     child: Text(
                       v['tag'] as String,
@@ -1446,10 +1467,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                       children: [
                         Text(
                           v['title'] as String,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E293B),
+                            color: context.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1457,9 +1478,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                         const SizedBox(height: 2),
                         Text(
                           '${v['desc']} · Kode: ${v['code']}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: Color(0xFF64748B),
+                            color: context.textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1498,9 +1519,9 @@ class _DashboardScreenState extends State<DashboardScreen>
             );
           }),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Divider(color: Color(0xFFE2E8F0)),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Divider(color: context.borderSubtle),
           ),
 
           // ── Header Kategori Pilihan ──
@@ -1509,9 +1530,15 @@ class _DashboardScreenState extends State<DashboardScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7ED),
+                  color: context.isDarkMode
+                      ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                      : const Color(0xFFFFF7ED),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFFFEDD5)),
+                  border: Border.all(
+                    color: context.isDarkMode
+                        ? const Color(0xFF7C2D12)
+                        : const Color(0xFFFFEDD5),
+                  ),
                 ),
                 child: const Icon(
                   Icons.restaurant_menu_rounded,
@@ -1570,8 +1597,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFF7ED),
+                      decoration: BoxDecoration(
+                        color: context.isDarkMode
+                            ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                            : const Color(0xFFFFF7ED),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -1628,9 +1657,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: context.borderSubtle),
         boxShadow: const [
           BoxShadow(
             color: Color(0x06000000),
@@ -1650,17 +1679,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Antrean Pesanan',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A1A2E),
+                        color: context.textPrimary,
                       ),
                     ),
                     Text(
                       '${activeOrders.length} pesanan berjalan',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      style: TextStyle(fontSize: 12, color: context.textSecondary),
                     ),
                   ],
                 ),
@@ -1776,7 +1805,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: math.min(activeOrders.length, 6),
                 separatorBuilder: (context, index) =>
-                    Divider(height: 1, color: Colors.grey[100], thickness: 1),
+                    Divider(height: 1, color: context.borderSubtle, thickness: 1),
                 itemBuilder: (context, i) {
                   final order = activeOrders[i];
                   return Padding(
@@ -1812,10 +1841,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 children: [
                                   Text(
                                     '${order.noMeja} · #${order.idOrder}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
-                                      color: Color(0xFF1A1A2E),
+                                      color: context.textPrimary,
                                     ),
                                   ),
                                   StatusBadge.fromStatus(order.status.label),

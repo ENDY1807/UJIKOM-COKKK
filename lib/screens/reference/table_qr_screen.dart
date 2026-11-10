@@ -108,8 +108,9 @@ class _TableQrScreenState extends State<TableQrScreen> {
           width: 360,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.surfaceCard,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: context.borderSubtle),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -286,23 +287,25 @@ class _TableQrScreenState extends State<TableQrScreen> {
     final tables = widget.db.tables;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: context.surfaceBg,
       body: SafeArea(
         child: Column(
           children: [
             // Top Bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+              decoration: BoxDecoration(
+                color: context.surfaceCard,
+                border: Border(bottom: BorderSide(color: context.borderSubtle)),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
+                      color: context.isDarkMode
+                          ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                          : const Color(0xFFFFF7ED),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFFEA580C), size: 20),
@@ -410,20 +413,20 @@ class _TableQrScreenState extends State<TableQrScreen> {
                         ),
                         const SizedBox(height: 20),
                       ],
-                      const Text(
+                      Text(
                         'Daftar Seluruh Meja Restoran:',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                       const SizedBox(height: 8),
                       ...tables.map((t) => Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: context.surfaceCard,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: _selectedTableNo == t.nomorMeja
                                     ? const Color(0xFFEA580C)
-                                    : const Color(0xFFE2E8F0),
+                                    : context.borderSubtle,
                               ),
                             ),
                             child: ListTile(
@@ -468,10 +471,12 @@ class _TableQrScreenState extends State<TableQrScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFFFFF7ED) : Colors.white,
+              color: isSelected
+                  ? (context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
+                  : context.surfaceCard,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+                color: isSelected ? const Color(0xFFEA580C) : context.borderSubtle,
               ),
             ),
             child: Row(
@@ -491,12 +496,12 @@ class _TableQrScreenState extends State<TableQrScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                          color: isSelected ? const Color(0xFFEA580C) : AppTheme.textDark,
+                          color: isSelected ? const Color(0xFFEA580C) : context.textPrimary,
                         ),
                       ),
                       Text(
                         '${t.kapasitas} Kursi',
-                        style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
                       ),
                     ],
                   ),

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/order_model.dart';
 import '../services/database_service.dart';
 import '../services/payment_gateway_service.dart';
+import '../theme/app_theme.dart';
 import 'app_loading_animation.dart';
 import 'receipt_dialog.dart';
 
@@ -132,7 +133,7 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
+      backgroundColor: context.surfaceCard,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
@@ -146,26 +147,26 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.account_balance_rounded, color: Color(0xFF4338CA), size: 24),
-                      SizedBox(width: 8),
+                      const Icon(Icons.account_balance_rounded, color: Color(0xFF4338CA), size: 24),
+                      const SizedBox(width: 8),
                       Text(
                         'Virtual Account M-Banking',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF64748B)),
+                    icon: Icon(Icons.close_rounded, size: 20, color: context.textSecondary),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
-              const Divider(height: 16),
+              Divider(height: 16, color: context.borderSubtle),
 
               // Pilihan Bank
-              const Text('Pilih Bank Tujuan:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+              Text('Pilih Bank Tujuan:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary)),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -174,11 +175,15 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
                   return ChoiceChip(
                     label: Text(bank),
                     selected: isSel,
-                    selectedColor: const Color(0xFFEEF2FF),
+                    selectedColor: context.isDarkMode
+                        ? const Color(0xFF4338CA).withValues(alpha: 0.3)
+                        : const Color(0xFFEEF2FF),
                     labelStyle: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: isSel ? const Color(0xFF4338CA) : const Color(0xFF64748B),
+                      color: isSel
+                          ? (context.isDarkMode ? Colors.white : const Color(0xFF4338CA))
+                          : context.textSecondary,
                     ),
                     onSelected: (val) {
                       if (val) {
@@ -195,13 +200,13 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: context.fillSubtle,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: context.borderSubtle),
                 ),
                 child: Column(
                   children: [
-                    Text('Nomor Virtual Account ($_selectedBank)', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                    Text('Nomor Virtual Account ($_selectedBank)', style: TextStyle(fontSize: 12, color: context.textSecondary)),
                     const SizedBox(height: 6),
                     if (_isLoading)
                       const Padding(
@@ -211,7 +216,7 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
                     else
                       SelectableText(
                         _vaNumber,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2.0, color: Color(0xFF1E293B)),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2.0, color: context.textPrimary),
                       ),
                     const SizedBox(height: 8),
                     FilledButton.tonalIcon(

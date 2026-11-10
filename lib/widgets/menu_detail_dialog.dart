@@ -571,9 +571,15 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                     children: tags.map((t) => Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFF7ED),
+                            color: context.isDarkMode
+                                ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                                : const Color(0xFFFFF7ED),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFFFEDD5)),
+                            border: Border.all(
+                              color: context.isDarkMode
+                                  ? const Color(0xFF7C2D12)
+                                  : const Color(0xFFFFEDD5),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -595,13 +601,13 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                   const SizedBox(height: 20),
 
                   // ── DESKRIPSI MAKANAN ──
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.description_outlined, color: Color(0xFFEA580C), size: 18),
-                      SizedBox(width: 8),
+                      const Icon(Icons.description_outlined, color: Color(0xFFEA580C), size: 18),
+                      const SizedBox(width: 8),
                       Text(
                         'Deskripsi Makanan',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                     ],
                   ),
@@ -610,15 +616,15 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
+                      color: context.fillSubtle,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: context.borderSubtle),
                     ),
                     child: Text(
                       menu.deskripsi.isNotEmpty
                           ? menu.deskripsi
                           : 'Hidangan istimewa autentik nusantara dengan cita rasa rempah khas warisan kuliner Indonesia. Dimasak menggunakan racikan bumbu pilihan berkualitas tinggi untuk menciptakan kenikmatan rasa yang tiada tara.',
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF334155), height: 1.5),
+                      style: TextStyle(fontSize: 13, color: context.textPrimary, height: 1.5),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -658,9 +664,15 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                   // Stepper Qty (- / +)
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
+                      color: context.isDarkMode
+                          ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                          : const Color(0xFFFFF7ED),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFFEDD5)),
+                      border: Border.all(
+                        color: context.isDarkMode
+                            ? const Color(0xFF7C2D12)
+                            : const Color(0xFFFFEDD5),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

@@ -5,6 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../models/order_model.dart';
 import '../services/database_service.dart';
 import '../services/payment_gateway_service.dart';
+import '../theme/app_theme.dart';
 import 'receipt_dialog.dart';
 
 /// Modal Pembayaran QRIS Dinamis Standar Nasional (ASPI / Bank Indonesia SNAP BI)
@@ -151,8 +152,9 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
       child: Container(
         width: 400,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.surfaceCard,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: context.borderSubtle),
           boxShadow: const [
             BoxShadow(
               color: Color(0x33000000),

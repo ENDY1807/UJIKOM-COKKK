@@ -404,9 +404,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF7ED),
+                    color: context.isDarkMode
+                        ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                        : const Color(0xFFFFF7ED),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFFFEDD5)),
+                    border: Border.all(
+                      color: context.isDarkMode
+                          ? const Color(0xFF7C2D12)
+                          : const Color(0xFFFFEDD5),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
