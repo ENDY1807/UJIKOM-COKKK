@@ -9,7 +9,6 @@ import '../models/user_model.dart';
 import '../services/database_service.dart';
 import '../services/desktop_oauth_service.dart';
 import '../services/supabase_config.dart';
-import '../services/supabase_service.dart';
 import '../services/web_oauth_helper.dart';
 import '../services/whatsapp_otp_service.dart';
 import '../theme/app_theme.dart';
@@ -375,24 +374,9 @@ class _LoginScreenState extends State<LoginScreen>
       }
 
       // 2. Mobile platform: Jika native Google Play Services tidak tersedia / belum dikonfigurasi SHA-1,
-      // coba Supabase OAuth flow via custom tab/browser dengan redirect deep link
+      // buka dialog otentikasi Google yang aman dan terhubung langsung ke wizard onboarding
       if (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS) {
-        try {
-          final launched = await SupabaseService().signInWithGoogleOAuth(
-            customRedirect: SupabaseConfig.redirectUrl,
-          );
-          if (launched) {
-            if (mounted) {
-              setState(() => _isGoogleLoading = false);
-            }
-            return;
-          }
-        } catch (oauthErr) {
-          debugPrint('[GoogleOAuth] Supabase mobile OAuth fallback: $oauthErr');
-        }
-
-        // Tawarkan dialog autentikasi akun Google
         if (mounted) {
           setState(() => _isGoogleLoading = false);
           _showGoogleFallbackDialog();
