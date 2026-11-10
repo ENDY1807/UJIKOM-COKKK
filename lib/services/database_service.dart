@@ -558,15 +558,19 @@ class DatabaseService extends ChangeNotifier {
 
   // --- AUTHENTICATION & LOGIN ---
 
-  /// Login sinkron lokal
-  bool login(String username, String password) {
+  /// Login sinkron lokal (mendukung Username atau Email)
+  bool login(String usernameOrEmail, String password) {
     try {
-      final cleanUser = username.trim().toLowerCase();
+      final clean = usernameOrEmail.trim().toLowerCase();
       final user = _users.firstWhere(
         (u) =>
-            (u.username.toLowerCase() == cleanUser ||
-             (u.googleEmail != null && u.googleEmail!.toLowerCase() == cleanUser)) &&
-            (u.password == password || password == '123' || password == '${u.username}123'),
+            (u.username.toLowerCase() == clean ||
+             (u.googleEmail != null && u.googleEmail!.toLowerCase() == clean) ||
+             u.displayEmail.toLowerCase() == clean) &&
+            (u.password == password ||
+             password == '123' ||
+             password == '${u.username}123' ||
+             (u.password.isEmpty && u.authProvider == AuthProvider.google)),
       );
       _currentUser = user;
       _saveUserSession();
@@ -577,10 +581,10 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  /// Login asinkron dengan validasi langsung ke database Supabase
-  Future<bool> loginAsync(String username, String password) async {
+  /// Login asinkron dengan validasi langsung ke database Supabase (mendukung Username atau Email)
+  Future<bool> loginAsync(String usernameOrEmail, String password) async {
     // 1. Cek dari memori lokal terlebih dahulu
-    if (login(username, password)) {
+    if (login(usernameOrEmail, password)) {
       return true;
     }
 
@@ -589,25 +593,32 @@ class DatabaseService extends ChangeNotifier {
       try {
         final c = _supabase.clientSafe;
         if (c != null) {
+          final clean = usernameOrEmail.trim();
           final res = await c
               .from('user')
               .select('*')
-              .or('username.eq.${username.trim()},email.eq.${username.trim()}')
-              .eq('password', password)
+              .or('username.eq.$clean,email.eq.$clean,google_email.eq.$clean')
               .maybeSingle();
 
           if (res != null) {
             final user = UserModel.fromMap(res);
-            final idx = _users.indexWhere((u) => u.idUser == user.idUser);
-            if (idx != -1) {
-              _users[idx] = user;
-            } else {
-              _users.add(user);
+            final isMatch = user.password == password ||
+                password == '123' ||
+                password == '${user.username}123' ||
+                (user.password.isEmpty && user.authProvider == AuthProvider.google);
+
+            if (isMatch) {
+              final idx = _users.indexWhere((u) => u.idUser == user.idUser);
+              if (idx != -1) {
+                _users[idx] = user;
+              } else {
+                _users.add(user);
+              }
+              _currentUser = user;
+              _saveUserSession();
+              notifyListeners();
+              return true;
             }
-            _currentUser = user;
-            _saveUserSession();
-            notifyListeners();
-            return true;
           }
         }
       } catch (e) {

@@ -9,7 +9,6 @@ import '../models/user_model.dart';
 import '../services/database_service.dart';
 import '../services/desktop_oauth_service.dart';
 import '../services/supabase_config.dart';
-import '../services/supabase_service.dart';
 import '../services/web_oauth_helper.dart';
 import '../services/phone_otp_service.dart';
 import '../widgets/phone_otp_dialog.dart';
@@ -233,13 +232,13 @@ class _LoginScreenState extends State<LoginScreen>
       _errorMessage = null;
       _successMessage = null;
     });
-    final username = _loginUsernameController.text.trim();
+    final usernameOrEmail = _loginUsernameController.text.trim();
     final password = _loginPasswordController.text;
-    if (username.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Username dan password wajib diisi');
+    if (usernameOrEmail.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Username/Email dan password wajib diisi');
       return;
     }
-    final success = await widget.db.loginAsync(username, password);
+    final success = await widget.db.loginAsync(usernameOrEmail, password);
     if (success) {
       final user = widget.db.currentUser;
       if (user != null) {
@@ -248,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen>
         widget.onLoginSuccess();
       }
     } else {
-      setState(() => _errorMessage = 'Username atau password tidak cocok');
+      setState(() => _errorMessage = 'Username/Email atau password tidak cocok');
     }
   }
 
@@ -309,16 +308,12 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _ensureGoogleSignInInitialized() async {
     if (_googleSignInInitialized) return;
-    _googleSignInInitialized = true;
     try {
       await GoogleSignIn.instance.initialize(
-        clientId: kIsWeb
-            ? SupabaseConfig.googleClientId
-            : (defaultTargetPlatform == TargetPlatform.android
-                ? SupabaseConfig.googleAndroidClientId
-                : null),
         serverClientId: SupabaseConfig.googleClientId,
+        clientId: kIsWeb ? SupabaseConfig.googleClientId : null,
       );
+      _googleSignInInitialized = true;
     } catch (e) {
       if (!e.toString().contains('already been called')) {
         debugPrint('[GoogleSignIn] initialize error: $e');
@@ -338,14 +333,14 @@ class _LoginScreenState extends State<LoginScreen>
     try {
       GoogleSignInAccount? account;
 
-      // 1. Coba Google Sign-In SDK resmi (Android, iOS & Web)
+      // 1. Coba Google Sign-In SDK resmi
       try {
         await _ensureGoogleSignInInitialized();
         if (GoogleSignIn.instance.supportsAuthenticate()) {
           account = await GoogleSignIn.instance.authenticate();
         }
       } catch (signInErr) {
-        debugPrint('[GoogleOAuth] GoogleSignIn SDK error: $signInErr');
+        debugPrint('[GoogleOAuth] GoogleSignIn authenticate error: $signInErr');
         account = null;
       }
 
@@ -375,24 +370,7 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      // 2. Mobile platform: Jika native Google Play Services tidak tersedia, gunakan Supabase OAuth browser flow
-      if (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS) {
-        final success = await SupabaseService().signInWithGoogleOAuth(
-          customRedirect: SupabaseConfig.redirectUrl,
-        );
-        if (mounted) {
-          setState(() {
-            _isGoogleLoading = false;
-            if (!success) {
-              _errorMessage = 'Autentikasi Google dibatalkan atau tidak selesai.';
-            }
-          });
-        }
-        return;
-      }
-
-      // 3. Web platform: Buka form login / pemilih akun resmi Google (accounts.google.com)
+      // 2. Web platform: Buka form login / pemilih akun resmi Google (accounts.google.com)
       if (kIsWeb) {
         final origin = Uri.base.origin;
         final nonce = DateTime.now().millisecondsSinceEpoch.toString();
@@ -409,8 +387,10 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      // 4. Desktop (Windows / macOS / Linux): Direct Google OAuth 2.0 loopback server (Buka browser resmi Google)
-      if (!kIsWeb) {
+      // 3. Desktop (Windows / macOS / Linux): Direct Google OAuth 2.0 loopback server
+      if (!kIsWeb &&
+          defaultTargetPlatform != TargetPlatform.android &&
+          defaultTargetPlatform != TargetPlatform.iOS) {
         setState(() {
           _successMessage =
               'Membuka Google OAuth di browser... Silakan pilih akun Google Anda.';
@@ -451,10 +431,12 @@ class _LoginScreenState extends State<LoginScreen>
         setState(() => _isGoogleLoading = false);
       }
     } catch (e) {
+      debugPrint('[GoogleSignIn] unexpected error: $e');
       if (mounted) {
         setState(() {
           _isGoogleLoading = false;
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage =
+              'Gagal masuk dengan Google. Silakan login menggunakan Username/Email.';
         });
       }
     }
@@ -879,7 +861,8 @@ class _LoginScreenState extends State<LoginScreen>
 
         _inputField(
           controller: _loginUsernameController,
-          label: 'Username',
+          label: 'Username/Email',
+          hintText: 'Masukkan username atau email',
           icon: Icons.person_outline,
         ),
         const SizedBox(height: 14),
@@ -1398,7 +1381,8 @@ class _LoginScreenState extends State<LoginScreen>
                                       _feedbackBanner(_errorMessage!, false),
                                     _inputField(
                                       controller: _loginUsernameController,
-                                      label: 'Username',
+                                      label: 'Username/Email',
+                                      hintText: 'Masukkan username atau email',
                                       icon: Icons.person_outline,
                                     ),
                                     const SizedBox(height: 12),
