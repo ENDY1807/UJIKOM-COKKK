@@ -86,11 +86,17 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = _db.appThemeMode == 'dark'
+        ? ThemeMode.dark
+        : (_db.appThemeMode == 'light' ? ThemeMode.light : ThemeMode.system);
+
     if (_showSplash) {
       return MaterialApp(
         title: 'Rasantara · Restoran Masakan Nusantara',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
         home: SplashScreen(
           db: _db,
           onFinish: () => setState(() => _showSplash = false),
@@ -102,6 +108,8 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> {
       title: 'Rasantara · Restoran Masakan Nusantara',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       home: _db.currentUser == null
           ? LoginScreen(
               db: _db,

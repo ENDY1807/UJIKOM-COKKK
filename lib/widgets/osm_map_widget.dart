@@ -29,12 +29,14 @@ class OsmLocationResult {
 class OsmMapWidget extends StatefulWidget {
   final double initialLat;
   final double initialLng;
+  final String mapStyle;
   final Function(OsmLocationResult) onLocationSelected;
 
   const OsmMapWidget({
     super.key,
     this.initialLat = -6.9431,
     this.initialLng = 107.6542,
+    this.mapStyle = 'osm',
     required this.onLocationSelected,
   });
 
@@ -730,7 +732,9 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
                 width: 256,
                 height: 256,
                 child: Image.network(
-                  'https://tile.openstreetmap.org/$_zoom/$tileX/$tileY.png',
+                  widget.mapStyle == 'carto_light'
+                      ? 'https://a.basemaps.cartocdn.com/light_all/$_zoom/$tileX/$tileY.png'
+                      : 'https://tile.openstreetmap.org/$_zoom/$tileX/$tileY.png',
                   fit: BoxFit.cover,
                   headers: const {'User-Agent': 'Rasantara-Restoran-App/1.0'},
                   errorBuilder: (ctx, err, stack) {

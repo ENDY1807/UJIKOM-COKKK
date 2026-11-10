@@ -16,6 +16,7 @@ import '../profile/manage_addresses_screen.dart';
 import 'gofood_tracking_dialog.dart';
 import 'qr_scanner_dialog.dart';
 import '../../widgets/app_loading_animation.dart';
+import '../../widgets/biometric_auth_dialog.dart';
 
 enum OrderServiceType {
   dineIn('Makan di Tempat', Icons.table_restaurant_rounded),
@@ -572,6 +573,26 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       }
     }
 
+    // Proteksi Keamanan Kunci Biometrik / PIN Transaksi jika diaktifkan di Pengaturan
+    if (widget.db.appBiometricAuth) {
+      final isAuth = await BiometricAuthDialog.authenticate(
+        context: context,
+        title: 'Verifikasi Pembayaran Pesanan',
+        reason: 'Otorisasi sidik jari atau PIN diperlukan untuk memproses pesanan Anda.',
+        amountFormatted: _currencyFmt.format(_grandTotal),
+      );
+      if (!isAuth) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pembayaran dibatalkan: Otorisasi biometrik / PIN ditolak.'),
+            backgroundColor: Color(0xFFDC2626),
+          ),
+        );
+        return;
+      }
+    }
+
     final custName = _customerNameController.text.trim().isEmpty
         ? 'Pelanggan'
         : _customerNameController.text.trim();
@@ -675,6 +696,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       _serviceType = OrderServiceType.takeAway; // Kembali ke tampilan awal (Take Away & Self Pick-Up)
     });
 
+    if (!mounted) return;
     AppLoadingAnimation.show(context, message: 'Menyiapkan transaksi pesanan...');
     await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;

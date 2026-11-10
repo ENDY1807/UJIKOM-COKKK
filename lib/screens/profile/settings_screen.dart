@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../services/database_service.dart';
 import '../../services/whatsapp_otp_service.dart';
 import '../../widgets/app_loading_animation.dart';
+import '../../widgets/biometric_auth_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   final DatabaseService db;
@@ -40,9 +41,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   String _mapStyle = 'osm';
   String _themeMode = 'light';
   String _language = 'id';
-  String _fontSize = 'standard';
-  bool _dataSaver = false;
   bool _biometric = false;
+  String _cacheSize = '14.8 MB';
   Uint8List? _customImageBytes;
 
   Future<void> _pickProfilePhoto() async {
@@ -94,12 +94,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     _promoNotifications = widget.db.appPromoNotification;
     _autoPrint = widget.db.appAutoPrintReceipt;
     _haptic = widget.db.appHaptic;
-    _mapStyle = widget.db.appMapStyle;
-    _themeMode = widget.db.appThemeMode;
-    _language = widget.db.appLanguage;
-    _fontSize = widget.db.appFontSize;
-    _dataSaver = widget.db.appDataSaver;
+    _mapStyle = (widget.db.appMapStyle == 'carto_light') ? 'carto_light' : 'osm';
+    _themeMode = (widget.db.appThemeMode == 'dark' || widget.db.appThemeMode == 'system') ? widget.db.appThemeMode : 'light';
+    _language = (widget.db.appLanguage == 'en') ? 'en' : 'id';
     _biometric = widget.db.appBiometricAuth;
+    _cacheSize = '14.8 MB';
   }
 
   @override
@@ -634,39 +633,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   ),
                 ],
               ),
-              const Divider(height: 24, color: Color(0xFFF1F5F9)),
-              const Text(
-                'Ukuran Teks & Font',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _buildFontSizeOption(
-                    label: 'Standar (100%)',
-                    value: 'standard',
-                    isSelected: _fontSize == 'standard',
-                  ),
-                  const SizedBox(width: 8),
-                  _buildFontSizeOption(
-                    label: 'Besar (115%)',
-                    value: 'large',
-                    isSelected: _fontSize == 'large',
-                  ),
-                ],
-              ),
-              const Divider(height: 24, color: Color(0xFFF1F5F9)),
-              _buildSwitchTile(
-                icon: Icons.data_saver_on_outlined,
-                title: 'Mode Hemat Kuota (Data Saver)',
-                subtitle: 'Gunakan resolusi gambar lebih hemat saat jaringan lambat',
-                value: _dataSaver,
-                onChanged: (val) {
-                  setState(() => _dataSaver = val);
-                  widget.db.updateAppSettings(dataSaver: val);
-                  _showSnackbar('Mode hemat kuota ${val ? "diaktifkan" : "dinonaktifkan"}');
-                },
-              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -813,10 +779,21 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 title: 'Kunci Biometrik / PIN Transaksi',
                 subtitle: 'Wajibkan sidik jari atau PIN sebelum memproses pembayaran pesanan',
                 value: _biometric,
-                onChanged: (val) {
-                  setState(() => _biometric = val);
-                  widget.db.updateAppSettings(biometricAuth: val);
-                  _showSnackbar('Kunci biometrik transaksi ${val ? "diaktifkan" : "dinonaktifkan"}');
+                onChanged: (val) async {
+                  final isVerified = await BiometricAuthDialog.authenticate(
+                    context: context,
+                    title: val ? 'Aktivasi Kunci Biometrik' : 'Nonaktifkan Kunci Biometrik',
+                    reason: val
+                        ? 'Verifikasi sidik jari atau PIN keamanan untuk mengaktifkan proteksi transaksi pesanan.'
+                        : 'Verifikasi sidik jari atau PIN keamanan Anda untuk menonaktifkan proteksi transaksi.',
+                  );
+                  if (isVerified) {
+                    setState(() => _biometric = val);
+                    widget.db.updateAppSettings(biometricAuth: val);
+                    _showSnackbar('Kunci biometrik transaksi ${val ? "berhasil diaktifkan" : "berhasil dinonaktifkan"}');
+                  } else {
+                    _showSnackbar('Verifikasi dibatalkan. Pengaturan biometrik tidak diubah.', isError: true);
+                  }
                 },
               ),
               const Divider(height: 20, color: Color(0xFFF1F5F9)),
@@ -909,11 +886,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Data Cache Sementara', style: TextStyle(fontSize: 12, color: Color(0xFF475569))),
-                    Text('14.8 MB', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                    const Text('Data Cache Sementara', style: TextStyle(fontSize: 12, color: Color(0xFF475569))),
+                    Text(_cacheSize, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                   ],
                 ),
               ),
@@ -928,7 +905,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 icon: const Icon(Icons.delete_outline_rounded, size: 18),
                 label: const Text('Bersihkan Cache Gambar & Data Sementara', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 onPressed: () {
-                  _showSnackbar('Cache aplikasi 14.8 MB berhasil dibersihkan');
+                  PaintingBinding.instance.imageCache.clear();
+                  PaintingBinding.instance.imageCache.clearLiveImages();
+                  setState(() => _cacheSize = '0.0 MB');
+                  _showSnackbar('Cache gambar & data sementara berhasil dibersihkan (0.0 MB)');
                 },
               ),
               const SizedBox(height: 8),
@@ -948,7 +928,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       title: const Text('Reset Pengaturan?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       content: const Text(
-                        'Semua tema, bahasa, suara, dan preferensi aplikasi akan dikembalikan ke pengaturan awal.',
+                        'Semua tema, bahasa, suara, dan preferensi aplikasi akan dikembalikan ke pengaturan awal pabrik.',
                         style: TextStyle(fontSize: 13),
                       ),
                       actions: [
@@ -957,6 +937,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                           style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
                           onPressed: () async {
                             Navigator.pop(ctx);
+                            PaintingBinding.instance.imageCache.clear();
+                            PaintingBinding.instance.imageCache.clearLiveImages();
                             await widget.db.clearAppCacheAndPreferences();
                             setState(() {
                               _soundFx = true;
@@ -967,9 +949,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                               _mapStyle = 'osm';
                               _themeMode = 'light';
                               _language = 'id';
-                              _fontSize = 'standard';
-                              _dataSaver = false;
                               _biometric = false;
+                              _cacheSize = '0.0 MB';
                             });
                             _showSnackbar('Pengaturan aplikasi berhasil direset ke default');
                           },
@@ -1031,7 +1012,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                             ),
                             Text(
-                              'Hubungi layanan pelanggan WhatsApp Rasantara 24 Jam',
+                              'Hotline CS: +62 8978655469 • Email: endymahavira@gmail.com',
                               style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                             ),
                           ],
@@ -1149,44 +1130,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
-  // Opsi Pilihan Ukuran Font
-  Widget _buildFontSizeOption({
-    required String label,
-    required String value,
-    required bool isSelected,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: () {
-          setState(() => _fontSize = value);
-          widget.db.updateAppSettings(fontSize: value);
-          _showSnackbar('Ukuran teks diubah ke $label');
-        },
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFFF7ED) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
-              width: isSelected ? 1.5 : 1.0,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF475569),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   // Opsi Pilihan Bahasa
   Widget _buildLanguageOption({
     required String label,
@@ -1258,16 +1201,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         onTap: () {
           setState(() => _mapStyle = value);
           widget.db.updateAppSettings(mapStyle: value);
+          _showSnackbar('Tipe tampilan peta diubah ke $label');
         },
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isSelected ? const Color(0xFFFFF7ED) : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
-              width: isSelected ? 1.5 : 1.0,
+              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFCBD5E1),
+              width: isSelected ? 2.0 : 1.0,
             ),
           ),
           child: Column(
@@ -1277,14 +1221,18 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 children: [
                   Icon(
                     isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                    size: 16,
+                    size: 18,
                     color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF94A3B8),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       label,
-                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF1E293B)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF1E293B),
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1292,7 +1240,18 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 ],
               ),
               const SizedBox(height: 4),
-              Text(desc, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Padding(
+                padding: const EdgeInsets.only(left: 26),
+                child: Text(
+                  desc,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    color: isSelected ? const Color(0xFFC2410C) : const Color(0xFF64748B),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
         ),
@@ -1305,25 +1264,123 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+        title: Row(
           children: [
-            Icon(Icons.privacy_tip_outlined, color: Color(0xFFEA580C), size: 22),
-            SizedBox(width: 8),
-            Text('Kebijakan Privasi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7ED),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.privacy_tip_outlined, color: Color(0xFFEA580C), size: 22),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Kebijakan Privasi & PDP', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                  Text('UU No. 27/2022 Pelindungan Data Pribadi', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                ],
+              ),
+            ),
           ],
         ),
-        content: const SingleChildScrollView(
-          child: Text(
-            'Rasantara Restoran menjaga kerahasiaan data pengguna. Nomor telepon dan alamat hanya digunakan untuk kepentingan pengiriman pesanan, notifikasi transaksi via WhatsApp, serta keamanan akun 2FA. Kami tidak pernah membagikan data kepada pihak ketiga.',
-            style: TextStyle(fontSize: 12.5, height: 1.5, color: Color(0xFF475569)),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 420,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: const Text(
+                    'PT Rasantara Kuliner Indonesia ("Rasantara") berkomitmen penuh melindungi privasi, integritas data, dan kenyamanan seluruh pengguna aplikasi Rasantara Resto & Cafe sesuai ketentuan UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi.',
+                    style: TextStyle(fontSize: 11.5, color: Color(0xFF334155), height: 1.45),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _buildPolicySection(
+                  number: '1',
+                  title: 'Informasi & Data yang Dikumpulkan',
+                  body: 'Kami mengumpulkan data profil pengguna (nama lengkap, username, foto profil), data kontak resmi (nomor WhatsApp untuk pengiriman OTP), data alamat pengantaran makanan dan koordinat peta OpenStreetMap, serta riwayat pemesanan menu kuliner Anda.',
+                ),
+                _buildPolicySection(
+                  number: '2',
+                  title: 'Tujuan Pemrosesan & Penggunaan Data',
+                  body: 'Data digunakan secara sah untuk verifikasi identitas masuk akun (2FA WhatsApp OTP), memproses pesanan makanan di dapur restoran, navigasi pengantaran pesanan oleh kurir/driver, perhitungan promo dan kupon diskon, serta integrasi resmi payment gateway Midtrans Snap BI.',
+                ),
+                _buildPolicySection(
+                  number: '3',
+                  title: 'Keamanan, Enkripsi & Penyimpanan',
+                  body: 'Semua lalu lintas komunikasi dilindungi enkripsi protokol TLS 1.3. Data akun dan alamat tersimpan terenkripsi pada infrastruktur cloud Supabase Enterprise PostgreSQL. Kami tidak pernah merekam ataupun menyimpan PIN transaksi atau data kartu perbankan Anda di server lokal.',
+                ),
+                _buildPolicySection(
+                  number: '4',
+                  title: 'Pembagian Data kepada Pihak Ketiga',
+                  body: 'Informasi hanya diteruskan ke mitra pengemudi (nama depan dan alamat antar) saat pesanan aktif, serta lembaga gerbang pembayaran berizin Bank Indonesia untuk kliring transaksi pembayaran. Rasantara menjamin data Anda tidak pernah dijual atau disewakan kepada pihak manapun.',
+                ),
+                _buildPolicySection(
+                  number: '5',
+                  title: 'Hak Pemilik Data & Layanan Pengaduan',
+                  body: 'Sesuai UU PDP, Anda berhak melihat, memperbarui profil, mengubah izin notifikasi, dan mengajukan penghapusan akun beserta riwayat pesanan dengan menghubungi Petugas Perlindungan Data (DPO) resmi kami:\n• Email: endymahavira@gmail.com\n• WhatsApp Resmi: +62 8978655469',
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Saya Mengerti'),
+            child: const Text('Saya Mengerti & Setuju'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPolicySection({required String number, required String title, required String body}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 22,
+                height: 22,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF7ED),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(number, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 30),
+            child: Text(body, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B), height: 1.45)),
           ),
         ],
       ),
@@ -1343,30 +1400,78 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             Text('Pusat Bantuan CS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Butuh bantuan seputar pesanan atau pembayaran Anda?',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
             ),
-            SizedBox(height: 8),
-            Text(
-              'Layanan Pelanggan Rasantara siap membantu melalui kontak resmi:\n\n• WhatsApp: +62 812-3456-7890\n• Jam Operasional: 08:00 - 22:00 WIB\n• Email: bantuan@rasantara.id',
-              style: TextStyle(fontSize: 12, height: 1.5, color: Color(0xFF475569)),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(8)),
+                        child: const Icon(Icons.phone_rounded, color: Color(0xFF15803D), size: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('No Telepon / WhatsApp', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                          Text('+62 8978655469', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 16, color: Color(0xFFE2E8F0)),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(8)),
+                        child: const Icon(Icons.email_outlined, color: Color(0xFF2563EB), size: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Email Resmi CS', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                          Text('endymahavira@gmail.com', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Tutup')),
-          FilledButton(
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Tutup', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
+            icon: const Icon(Icons.chat_bubble_outline, size: 16),
             onPressed: () {
               Navigator.pop(ctx);
-              _showSnackbar('Membuka chat WhatsApp Layanan Pelanggan...');
+              _showSnackbar('Menghubungi Customer Service WhatsApp (+62 8978655469)...');
             },
-            child: const Text('Chat WhatsApp CS'),
+            label: const Text('Chat WhatsApp CS'),
           ),
         ],
       ),
