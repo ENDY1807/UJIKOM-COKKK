@@ -12,6 +12,7 @@ import '../../widgets/status_badge.dart';
 import '../../widgets/analytics_charts.dart';
 import '../../widgets/menu_detail_dialog.dart';
 import '../../widgets/order_tracker_sheet.dart';
+import '../../services/audio_notification_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   final DatabaseService db;
@@ -41,6 +42,18 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Sinkronkan data event terkini langsung dari Supabase saat membuka Beranda
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.db.refreshEvents();
+      if (mounted && widget.db.appPromoNotification && widget.db.events.isNotEmpty) {
+        final ev = widget.db.events.first;
+        AudioNotificationService().playEventPromoSound(enabled: widget.db.appSoundFx);
+        AudioNotificationService.showBanner(
+          context,
+          title: 'Promo Spesial: ${ev.judulEvent}',
+          message: 'Dapatkan diskon ${ev.diskonPersen}% dengan kode ${ev.kodePromo}',
+          icon: Icons.campaign_rounded,
+          color: const Color(0xFFEA580C),
+          onTap: () => widget.onNavigateToTab(1, couponCode: ev.kodePromo),
+        );
+      }
     });
     _entryController = AnimationController(
       vsync: this,
@@ -1000,8 +1013,9 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.borderSubtle),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -1018,31 +1032,31 @@ class _DashboardScreenState extends State<DashboardScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.local_fire_department_rounded, color: Color(0xFFEA580C), size: 20),
-                          SizedBox(width: 6),
+                          const Icon(Icons.local_fire_department_rounded, color: Color(0xFFEA580C), size: 20),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               'Menu Best Seller & Rekomendasi',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF1A1A2E),
+                                color: context.textPrimary,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         'Paling banyak dipesan pelanggan Rasantara',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -1063,7 +1077,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               Container(
                 padding: const EdgeInsets.all(24),
                 alignment: Alignment.center,
-                child: const Text('Belum ada menu masakan tersedia', style: TextStyle(color: Color(0xFF64748B))),
+                child: Text('Belum ada menu masakan tersedia', style: TextStyle(color: context.textSecondary)),
               )
             else
               GridView.builder(
@@ -1073,7 +1087,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   maxCrossAxisExtent: 220,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  mainAxisExtent: 195,
+                  mainAxisExtent: 215,
                 ),
                 itemCount: displayMenus.length,
                 itemBuilder: (context, i) {
@@ -1109,9 +1123,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.surfaceCard,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(color: context.borderSubtle),
                           boxShadow: const [
                             BoxShadow(
                               color: Color(0x06000000),
@@ -1176,7 +1190,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       children: [
                                         Text(
                                           menu.namaMasakan,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B)),
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: context.textPrimary),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -1304,9 +1318,9 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: context.borderSubtle),
         boxShadow: const [
           BoxShadow(
             color: Color(0x06000000),
@@ -1340,7 +1354,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1349,14 +1363,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF1E293B),
+                              color: context.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             'Klaim voucher spesial pesanan Anda',
-                            style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                            style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -1495,7 +1509,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1504,14 +1518,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1E293B),
+                        color: context.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       'Jelajahi beragam cita rasa kuliner Nusantara',
-                      style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                      style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1537,9 +1551,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: context.fillSubtle,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: context.borderSubtle),
                 ),
                 child: Row(
                   children: [
@@ -1562,10 +1576,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                         children: [
                           Text(
                             c['title'] as String,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E293B),
+                              color: context.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1573,7 +1587,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           const SizedBox(height: 2),
                           Text(
                             c['desc'] as String,
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            style: TextStyle(fontSize: 11, color: context.textSecondary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),

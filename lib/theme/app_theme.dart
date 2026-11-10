@@ -180,3 +180,13 @@ class AppTheme {
     );
   }
 }
+
+extension ThemeHelper on BuildContext {
+  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+  Color get surfaceCard => isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+  Color get surfaceBg => isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFFAFAF9);
+  Color get textPrimary => isDarkMode ? Colors.white : const Color(0xFF1E293B);
+  Color get textSecondary => isDarkMode ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+  Color get borderSubtle => isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+  Color get fillSubtle => isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
+}

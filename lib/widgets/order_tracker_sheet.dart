@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/order_model.dart';
 import '../models/transaction_model.dart';
+import '../screens/order/gofood_tracking_dialog.dart';
 import '../services/database_service.dart';
 import '../services/order_simulation_service.dart';
 import 'receipt_dialog.dart';
@@ -811,6 +812,39 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                         ),
 
                         const SizedBox(height: 16),
+
+                        // ── Tombol Lacak Driver (Live GPS Map) ──
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 14),
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF16A34A),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 1,
+                            ),
+                            onPressed: () {
+                              String dest = widget.order.keterangan.isNotEmpty
+                                  ? widget.order.keterangan
+                                  : 'Jl. Sudirman No. 45, Jakarta';
+                              if (dest.contains('Alamat Antar:')) {
+                                dest = dest.split('Alamat Antar:').last.split('\n').first.trim();
+                              }
+                              GoFoodTrackingDialog.show(
+                                context,
+                                order: widget.order,
+                                destinationAddress: dest,
+                              );
+                            },
+                            icon: const Icon(Icons.two_wheeler_rounded, size: 20),
+                            label: const Text(
+                              'Lacak Lokasi Driver (Live Map & GPS)',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
 
                         // ── E. Tombol Aksi Bawah ──
                         Row(

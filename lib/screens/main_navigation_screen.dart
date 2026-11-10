@@ -206,7 +206,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void _showUserAccountModal(BuildContext context, UserModel? user, UserRole role) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.surfaceCard,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -223,7 +223,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE2E8F0),
+                      color: context.borderSubtle,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -250,11 +250,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         children: [
                           Text(
                             user?.namaUser ?? 'Pengguna',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                           ),
                           Text(
-                            'Role: ${role.label}',
-                            style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                            (user?.username.isNotEmpty ?? false) && user?.username != 'pelanggan'
+                                ? '@${user!.username}'
+                                : 'Pelanggan Rasantara Terverifikasi',
+                            style: TextStyle(fontSize: 12, color: context.textSecondary),
                           ),
                         ],
                       ),
@@ -355,11 +357,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             key: _scaffoldKey,
           drawer: _buildDrawer(currentUser, role, destinations),
           appBar: AppBar(
-            backgroundColor: AppTheme.white,
+            backgroundColor: context.surfaceCard,
             elevation: 0.5,
             titleSpacing: 0,
             leading: IconButton(
-              icon: const Icon(Icons.menu_rounded, color: Color(0xFF1E293B), size: 24),
+              icon: Icon(Icons.menu_rounded, color: context.textPrimary, size: 24),
               tooltip: 'Menu Sidebar',
               onPressed: () {
                 if (!isDesktop) {
@@ -388,10 +390,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   child: const Icon(Icons.restaurant_menu, color: Color(0xFFEA580C), size: 16),
                 ),
                 const SizedBox(width: 6),
-                const Flexible(
+                Flexible(
                   child: Text(
                     'Rasantara',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -447,9 +449,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     if (_isDesktopSidebarVisible)
                       Container(
                         width: 220,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.white,
-                          border: Border(right: BorderSide(color: AppTheme.borderSubtle)),
+                        decoration: BoxDecoration(
+                          color: context.surfaceCard,
+                          border: Border(right: BorderSide(color: context.borderSubtle)),
                         ),
                       child: Column(
                         children: [
@@ -488,7 +490,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                             style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                              color: isSelected ? const Color(0xFFEA580C) : AppTheme.textDark,
+                                              color: isSelected ? const Color(0xFFEA580C) : context.textPrimary,
                                             ),
                                           ),
                                         ),
@@ -658,12 +660,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   ) {
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.surfaceCard,
         border: Border(
-          top: BorderSide(color: Color(0xFFF1F5F9), width: 1.2),
+          top: BorderSide(color: context.borderSubtle, width: 1.2),
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
             blurRadius: 10,
@@ -847,12 +849,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     List<NavDestinationItem> destinations,
   ) {
     return Drawer(
-      backgroundColor: AppTheme.white,
+      backgroundColor: context.surfaceCard,
       child: Column(
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFF7ED),
+            decoration: BoxDecoration(
+              color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFFFF7ED),
             ),
             child: Row(
               children: [
@@ -870,14 +872,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'Rasantara',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textDark),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.textPrimary),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
+                      Text(
                         'Cita Rasa Kuliner Nusantara',
-                        style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
                       ),
                       const SizedBox(height: 6),
                       Container(
@@ -920,7 +922,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? const Color(0xFFEA580C) : AppTheme.textDark,
+                      color: isSelected ? const Color(0xFFEA580C) : context.textPrimary,
                     ),
                   ),
                   onTap: () {
@@ -934,7 +936,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ListTile(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             leading: const Icon(Icons.settings_outlined, color: AppTheme.textMuted),
-            title: const Text('Pengaturan Aplikasi', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textDark)),
+            title: Text('Pengaturan Aplikasi', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: context.textPrimary)),
             onTap: () {
               Navigator.of(context).pop();
               Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen(db: widget.db)));

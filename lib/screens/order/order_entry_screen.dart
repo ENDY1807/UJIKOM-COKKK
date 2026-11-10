@@ -18,6 +18,8 @@ import 'gofood_tracking_dialog.dart';
 import 'qr_scanner_dialog.dart';
 import '../../widgets/app_loading_animation.dart';
 import '../../widgets/biometric_auth_dialog.dart';
+import '../../services/audio_notification_service.dart';
+import '../../theme/app_theme.dart';
 
 enum OrderServiceType {
   dineIn('Makan di Tempat', Icons.table_restaurant_rounded),
@@ -688,6 +690,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     if (savedAddress.isNotEmpty) {
       widget.db.saveTakeAwayAddress(savedAddress);
     }
+
+    // Mainkan efek audio pesanan diterima
+    AudioNotificationService().playOrderReceivedSound(enabled: widget.db.appSoundFx);
 
     setState(() {
       _cart.clear();
@@ -1947,33 +1952,43 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       return matchCat && matchSearch;
     }).toList();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: Column(
-        children: [
-          // ── 1. Tab Selector Tipe Layanan (Disembunyikan jika Makan di Tempat via scan QR) ──
-          if (_serviceType != OrderServiceType.dineIn)
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [OrderServiceType.takeAway, OrderServiceType.selfPickUp].map((type) {
-                    final isSelected = _serviceType == type;
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _serviceType = type),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFEA580C) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+    return PopScope(
+      canPop: _serviceType != OrderServiceType.dineIn,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _serviceType == OrderServiceType.dineIn) {
+          setState(() {
+            _selectedTableNo = null;
+            _serviceType = OrderServiceType.takeAway;
+          });
+        }
+      },
+      child: Scaffold(
+        backgroundColor: context.surfaceBg,
+        body: Column(
+          children: [
+            // ── 1. Tab Selector Tipe Layanan (Disembunyikan jika Makan di Tempat via scan QR) ──
+            if (_serviceType != OrderServiceType.dineIn)
+              Container(
+                color: context.surfaceCard,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: context.fillSubtle,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [OrderServiceType.takeAway, OrderServiceType.selfPickUp].map((type) {
+                      final isSelected = _serviceType == type;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _serviceType = type),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isSelected ? const Color(0xFFEA580C) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -2041,8 +2056,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
       // ── 5. Bottom Sticky Floating Cart Bar ──
       bottomSheet: _cart.isNotEmpty ? _buildFloatingCartBar() : null,
-    );
-  }
+    ),
+  );
+}
 
   // ── Widget Card Pengaturan Layanan Sesuai Tipe ──
   Widget _buildServiceConfigCard() {
@@ -2096,31 +2112,70 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                       icon: const Icon(Icons.qr_code_scanner, size: 14),
                       label: const Text('Scan Ulang', style: TextStyle(fontSize: 11)),
                     ),
+                    const SizedBox(width: 6),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        foregroundColor: const Color(0xFF64748B),
+                        side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _selectedTableNo = null;
+                          _serviceType = OrderServiceType.takeAway;
+                        });
+                      },
+                      icon: const Icon(Icons.arrow_back_rounded, size: 14),
+                      label: const Text('Ke Take Away', style: TextStyle(fontSize: 11)),
+                    ),
                   ],
                 )
               else
-                InkWell(
-                  onTap: _scanTableQr,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFEA580C)),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C), size: 18),
-                        SizedBox(width: 8),
-                        Text(
-                          'Pindai QR di Meja Anda untuk Memesan',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: _scanTableQr,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFEA580C)),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C), size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Pindai QR di Meja Anda',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        foregroundColor: const Color(0xFF64748B),
+                        side: const BorderSide(color: Color(0xFFCBD5E1)),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _selectedTableNo = null;
+                          _serviceType = OrderServiceType.takeAway;
+                        });
+                      },
+                      icon: const Icon(Icons.arrow_back_rounded, size: 14),
+                      label: const Text('Take Away', style: TextStyle(fontSize: 11)),
+                    ),
+                  ],
                 ),
             ] else if (_serviceType == OrderServiceType.takeAway) ...[
               Row(

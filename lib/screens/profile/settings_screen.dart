@@ -6,6 +6,7 @@ import '../../services/database_service.dart';
 import '../../services/whatsapp_otp_service.dart';
 import '../../widgets/app_loading_animation.dart';
 import '../../widgets/biometric_auth_dialog.dart';
+import '../../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   final DatabaseService db;
@@ -270,25 +271,25 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: context.surfaceBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.surfaceCard,
         elevation: 0.5,
         titleSpacing: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E293B)),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Pengaturan',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
             ),
             Text(
               'Kelola Akun & Preferensi Aplikasi',
-              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+              style: TextStyle(fontSize: 11, color: context.textSecondary),
             ),
           ],
         ),
@@ -297,7 +298,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           indicatorColor: const Color(0xFFEA580C),
           indicatorWeight: 3,
           labelColor: const Color(0xFFEA580C),
-          unselectedLabelColor: const Color(0xFF64748B),
+          unselectedLabelColor: context.textSecondary,
           labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           tabs: const [
             Tab(icon: Icon(Icons.person_outline, size: 20), text: 'Profil Akun'),
@@ -641,7 +642,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           _buildSettingsCard(
             icon: Icons.language_rounded,
             title: 'Bahasa & Daerah (Language)',
-            subtitle: 'Pilihan bahasa dan format mata uang lokal',
+            subtitle: 'Pilihan bahasa antarmuka aplikasi',
             children: [
               const Text(
                 'Bahasa Antarmuka',
@@ -664,37 +665,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     isSelected: _language == 'en',
                   ),
                 ],
-              ),
-              const Divider(height: 24, color: Color(0xFFF1F5F9)),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.currency_exchange_rounded, size: 18, color: Color(0xFFEA580C)),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Format Mata Uang & Zona Waktu',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Rupiah Indonesia (Rp • IDR) • Waktu Indonesia Barat (WIB)',
-                            style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),
@@ -1041,9 +1011,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: context.borderSubtle),
         boxShadow: const [
           BoxShadow(
             color: Color(0x04000000),
@@ -1070,8 +1040,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(subtitle, style: TextStyle(fontSize: 11, color: context.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
@@ -1102,23 +1072,23 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFFF7ED) : const Color(0xFFF8FAFC),
+            color: isSelected ? const Color(0xFFFFF7ED) : context.fillSubtle,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+              color: isSelected ? const Color(0xFFEA580C) : context.borderSubtle,
               width: isSelected ? 1.5 : 1.0,
             ),
           ),
           child: Column(
             children: [
-              Icon(icon, size: 20, color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF64748B)),
+              Icon(icon, size: 20, color: isSelected ? const Color(0xFFEA580C) : context.textSecondary),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF475569),
+                  color: isSelected ? const Color(0xFFEA580C) : context.textSecondary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -1148,10 +1118,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFFF7ED) : const Color(0xFFF8FAFC),
+            color: isSelected ? const Color(0xFFFFF7ED) : context.fillSubtle,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+              color: isSelected ? const Color(0xFFEA580C) : context.borderSubtle,
               width: isSelected ? 1.5 : 1.0,
             ),
           ),
@@ -1176,7 +1146,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF475569),
+                    color: isSelected ? const Color(0xFFEA580C) : context.textSecondary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1487,14 +1457,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: const Color(0xFF64748B)),
+        Icon(icon, size: 20, color: context.textSecondary),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-              Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+              Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
+              Text(subtitle, style: TextStyle(fontSize: 11, color: context.textSecondary)),
             ],
           ),
         ),
