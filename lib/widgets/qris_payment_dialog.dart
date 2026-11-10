@@ -12,11 +12,9 @@ import '../models/order_model.dart';
 import '../services/database_service.dart';
 import '../services/file_downloader.dart';
 import '../services/payment_gateway_service.dart';
-import '../theme/app_theme.dart';
 import 'receipt_dialog.dart';
 
-/// Modal Pembayaran QRIS Standar Nasional (ASPI / Bank Indonesia / GPN)
-/// Dilengkapi tampilan visual resmi QRIS dan fitur Download QRIS untuk pembayaran via DANA, GoPay, OVO, dll.
+/// Modal Pembayaran QRIS / GoPay persis dengan antarmuka Midtrans Snap Checkout
 class QrisPaymentDialog extends StatefulWidget {
   final OrderModel order;
   final int totalAmount;
@@ -56,15 +54,16 @@ class QrisPaymentDialog extends StatefulWidget {
 
 class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
   final GlobalKey _qrCardKey = GlobalKey();
-  int _secondsRemaining = 300; // 5 Menit kedaluwarsa QRIS
+  int _secondsRemaining = 855; // 00:14:15 seperti di referensi Snap
   Timer? _countdownTimer;
   bool _isProcessingPayment = false;
   bool _isDownloading = false;
+  bool _showHowToPay = false;
   late String _qrisPayload;
 
   final _currencyFmt = NumberFormat.currency(
     locale: 'id_ID',
-    symbol: 'Rp ',
+    symbol: 'Rp',
     decimalDigits: 0,
   );
 
@@ -114,28 +113,29 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
   }
 
   String get _formattedTimer {
-    final minutes = (_secondsRemaining ~/ 60).toString().padLeft(2, '0');
+    final hours = (_secondsRemaining ~/ 3600).toString().padLeft(2, '0');
+    final minutes = ((_secondsRemaining % 3600) ~/ 60).toString().padLeft(2, '0');
     final seconds = (_secondsRemaining % 60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
+    return '$hours:$minutes:$seconds';
   }
 
-  /// Menangkap kartu QRIS dan mengunduhnya ke perangkat (Web & Mobile/APK)
+  /// Menangkap QR Code dan mengunduhnya ke perangkat (Web & Mobile/APK)
   Future<void> _downloadQrisImage() async {
     if (_isDownloading) return;
     setState(() => _isDownloading = true);
 
     try {
-      await Future.delayed(const Duration(milliseconds: 120));
+      await Future.delayed(const Duration(milliseconds: 100));
 
       final boundary = _qrCardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) {
-        throw Exception('Objek kartu QRIS belum siap dirender.');
+        throw Exception('Objek QR belum siap dirender.');
       }
 
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
-        throw Exception('Gagal mengonversi gambar QRIS.');
+        throw Exception('Gagal membuat gambar QRIS.');
       }
 
       final bytes = byteData.buffer.asUint8List();
@@ -148,7 +148,6 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
           mimeType: 'image/png',
         );
       } else {
-        // Pada Android APK / Desktop: Simpan dokumen gambar QRIS resolusi tinggi
         final doc = pw.Document();
         doc.addPage(
           pw.Page(
@@ -223,7 +222,7 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
     final transaction = widget.db.processTransaction(
       order: widget.order,
       jumlahBayar: widget.totalAmount,
-      metodePembayaran: 'QRIS Nasional (ASPI/GPN)',
+      metodePembayaran: 'GoPay / QRIS Snap',
     );
 
     setState(() {
@@ -246,17 +245,17 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 410,
-          maxHeight: MediaQuery.of(context).size.height * 0.95,
+          maxWidth: 380,
+          maxHeight: MediaQuery.of(context).size.height * 0.94,
         ),
         child: Container(
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: context.surfaceCard,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: context.borderSubtle),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x33000000),
@@ -268,422 +267,385 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header Dialog
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 12, 10),
+              // 1. Top Bar: DEMO STORE / RASANTARA Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                color: const Color(0xFF0F2137), // Dark navy snap header
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEA580C).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.qr_code_2_rounded,
-                            color: Color(0xFFEA580C),
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.t('Pembayaran QRIS', 'QRIS Payment'),
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: context.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              context.t('Standar Nasional BI & ASPI', 'National Standard BI & ASPI'),
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: context.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    Text(
+                      PaymentGatewayConfig.defaultMerchantName.toUpperCase(),
+                      style: const TextStyle(
+                        fontFamily: 'Roboto',
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                      ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.close_rounded, color: context.textSecondary, size: 22),
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => Navigator.of(context).pop(),
+                    InkWell(
+                      onTap: () => Navigator.of(context).pop(),
+                      borderRadius: BorderRadius.circular(16),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                      ),
                     ),
                   ],
                 ),
               ),
-              Divider(height: 1, color: context.borderSubtle),
 
-              // Scrollable Body
+              // 2. Body Area (Scrollable)
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Standee Canvas yang dapat di-download ke perangkat
-                      RepaintBoundary(
-                        key: _qrCardKey,
-                        child: Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x14000000),
-                                blurRadius: 14,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(17),
-                            child: Stack(
-                              children: [
-                                // Aksen Geometris Pita Merah QRIS Resmi
-                                Positioned.fill(
-                                  child: CustomPaint(
-                                    painter: _QrisOfficialFramePainter(),
-                                  ),
-                                ),
-
-                                // Konten Fisik Standee QRIS
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      // 1. Header Logo Bar: QRIS & GPN
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        crossAxisAlignment: CrossAxisAlignment.center,
-                                        children: [
-                                          _buildOfficialQrisHeaderLogo(),
-                                          _buildOfficialGpnLogo(),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-
-                                      // 2. Info Toko & NMID
-                                      Text(
-                                        PaymentGatewayConfig.defaultMerchantName,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w900,
-                                          color: Color(0xFF0F172A),
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'NMID : ${PaymentGatewayConfig.defaultNmid} • A01',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF334155),
-                                          letterSpacing: 0.2,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-
-                                      // 3. QR Code Bersih & Berkontras Tinggi
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                                        ),
-                                        child: QrImageView(
-                                          data: _qrisPayload,
-                                          version: QrVersions.auto,
-                                          size: 200.0,
-                                          backgroundColor: Colors.white,
-                                          eyeStyle: const QrEyeStyle(
-                                            eyeShape: QrEyeShape.square,
-                                            color: Color(0xFF000000),
-                                          ),
-                                          dataModuleStyle: const QrDataModuleStyle(
-                                            dataModuleShape: QrDataModuleShape.square,
-                                            color: Color(0xFF000000),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-
-                                      // 4. Banner Nominal Transaksi di dalam kartu
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFFF7ED),
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: const Color(0xFFFFEDD5)),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            const Text(
-                                              'Nominal Bayar:',
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                                color: Color(0xFF7C2D12),
-                                              ),
-                                            ),
-                                            Text(
-                                              _currencyFmt.format(widget.totalAmount),
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w900,
-                                                color: Color(0xFFEA580C),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-
-                                      // 5. Badge Dompet Digital & Mobile Banking
-                                      _buildSupportedPaymentPills(),
-                                      const SizedBox(height: 8),
-
-                                      // 6. Footer Standee
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: const [
-                                          Text(
-                                            'Dicetak oleh : 93600013',
-                                            style: TextStyle(
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF475569),
-                                            ),
-                                          ),
-                                          Text(
-                                            'VERIFIKASI OTOMATIS',
-                                            style: TextStyle(
-                                              fontSize: 8.5,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF0284C7),
-                                              letterSpacing: 0.4,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Box Total Pembayaran & Hitung Mundur
+                      // Floating Card Total & Expiry Time
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFFFF7ED),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFFFEDD5),
-                          ),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x0C000000),
+                              blurRadius: 10,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  context.t('Total Tagihan', 'Total Bill'),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: context.textSecondary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _currencyFmt.format(widget.totalAmount),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFFEA580C),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: context.isDarkMode ? const Color(0xFF0F172A) : Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFFFEDD5),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                            // Kolom Kiri: Total & Nominal & Order ID
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.timer_outlined, size: 14, color: Color(0xFFEA580C)),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    _formattedTimer,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFFEA580C),
+                                  const Text(
+                                    'Total',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF64748B),
                                     ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _currencyFmt.format(widget.totalAmount),
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF0F172A),
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'Order ID #ORD-${widget.order.idOrder}',
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      color: Color(0xFF94A3B8),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
                             ),
+
+                            // Kolom Kanan: Pay within & Dropdown Arrow
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      'Pay within ',
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: Color(0xFF64748B),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      _formattedTimer,
+                                      style: const TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF2563EB), // Snap blue timer
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: Color(0xFF64748B),
+                                  size: 20,
+                                ),
+                              ],
+                            ),
                           ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // Area QR yang dapat ditangkap dan diunduh pelanggan
+                      RepaintBoundary(
+                        key: _qrCardKey,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                          color: Colors.white,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Bar Judul Metode Pembayaran: GoPay & Ikon Dompet
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'GoPay / QRIS',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF0F172A),
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF00AED6), // GoPay Cyan/Blue
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.account_balance_wallet_rounded,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Tampilan QR Code Bersih di Tengah (Sesuai Screenshot)
+                              Center(
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  color: Colors.white,
+                                  child: QrImageView(
+                                    data: _qrisPayload,
+                                    version: QrVersions.auto,
+                                    size: 240.0,
+                                    backgroundColor: Colors.white,
+                                    eyeStyle: const QrEyeStyle(
+                                      eyeShape: QrEyeShape.square,
+                                      color: Color(0xFF000000),
+                                    ),
+                                    dataModuleStyle: const QrDataModuleStyle(
+                                      dataModuleShape: QrDataModuleShape.square,
+                                      color: Color(0xFF000000),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
 
                       const SizedBox(height: 10),
 
-                      // Panduan Singkat Cara Scan dari Galeri
-                      Container(
-                        padding: const EdgeInsets.all(11),
-                        decoration: BoxDecoration(
-                          color: context.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: context.borderSubtle),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF0284C7)),
-                                const SizedBox(width: 6),
-                                Text(
-                                  context.t('Cara Bayar Scan dari Galeri:', 'How to Pay via Gallery Scan:'),
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0284C7),
-                                  ),
+                      // Baris "How to pay" dengan ikon tanda tanya biru dan accordion
+                      InkWell(
+                        onTap: () {
+                          setState(() => _showHowToPay = !_showHowToPay);
+                        },
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.help_rounded,
+                                color: Color(0xFF2563EB),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'How to pay',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2563EB),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              context.t(
-                                '1. Klik tombol "Download QRIS" di bawah ini.\n'
-                                '2. Buka DANA, GoPay, ShopeePay, atau M-Banking Anda.\n'
-                                '3. Pilih menu "Scan QR" lalu klik ikon "Galeri / Foto".\n'
-                                '4. Pilih foto QRIS tadi, bayar, lalu klik "Cek Status".',
-                                '1. Click "Download QRIS" below.\n'
-                                '2. Open your DANA, GoPay, ShopeePay, or M-Banking app.\n'
-                                '3. Select "Scan QR" and tap "Gallery / Photo".\n'
-                                '4. Select the downloaded QRIS, pay, then click "Check Status".',
                               ),
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                height: 1.35,
-                                color: context.textSecondary,
+                              const SizedBox(width: 4),
+                              Icon(
+                                _showHowToPay
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.unfold_more_rounded,
+                                color: const Color(0xFF2563EB),
+                                size: 16,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
+
+                      // Konten Accordion Petunjuk Pembayaran
+                      if (_showHowToPay) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                '1. Klik tombol "Download QRIS" untuk menyimpan QR ke ponsel Anda.',
+                                style: TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                '2. Buka aplikasi GoPay, DANA, BCA Mobile, atau e-Wallet lainnya.',
+                                style: TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                '3. Pilih menu "Scan QR" lalu ketuk ikon "Galeri / Foto" untuk memuat QRIS yang diunduh.',
+                                style: TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                '4. Konfirmasi pembayaran, kemudian tekan tombol "Cek Status Pembayaran".',
+                                style: TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ),
 
-              // Action Buttons
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 6, 18, 14),
+              // 3. Bottom Action Bar (Sesuai Screenshot Midtrans Snap)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+                ),
                 child: Column(
                   children: [
-                    // Tombol 1: Download QRIS
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFEA580C),
-                        minimumSize: const Size(double.infinity, 42),
-                        side: const BorderSide(color: Color(0xFFEA580C), width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: _isDownloading ? null : _downloadQrisImage,
-                      icon: _isDownloading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFFEA580C),
+                    // Tombol Aksi Download QRIS & Cek Status
+                    Row(
+                      children: [
+                        // Tombol Download QRIS
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF2563EB),
+                              side: const BorderSide(color: Color(0xFF2563EB)),
+                              minimumSize: const Size(0, 40),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                            )
-                          : const Icon(Icons.download_rounded, size: 19),
-                      label: Text(
-                        _isDownloading
-                            ? context.t('Menyiapkan Gambar...', 'Preparing Image...')
-                            : context.t('Download / Simpan QRIS', 'Download / Save QRIS'),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Tombol 2: Cek Status Pembayaran
-                    FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFEA580C),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 44),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                            ),
+                            onPressed: _isDownloading ? null : _downloadQrisImage,
+                            icon: _isDownloading
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFF2563EB),
+                                    ),
+                                  )
+                                : const Icon(Icons.download_rounded, size: 17),
+                            label: Text(
+                              _isDownloading ? 'Menyimpan...' : 'Download QRIS',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
                         ),
-                      ),
-                      onPressed: _isProcessingPayment ? null : _checkPaymentStatus,
-                      icon: _isProcessingPayment
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Icon(Icons.verified_rounded, size: 19),
-                      label: Text(
-                        _isProcessingPayment
-                            ? context.t('Memeriksa Pembayaran...', 'Verifying Payment...')
-                            : context.t('Cek Status Pembayaran', 'Check Payment Status'),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
+                        const SizedBox(width: 8),
 
-                    // Tombol 3: Bayar Nanti di Kasir
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        foregroundColor: context.textSecondary,
-                        minimumSize: const Size(double.infinity, 36),
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        context.t('Bayar Nanti di Kasir', 'Pay Later at Cashier'),
-                        style: const TextStyle(fontSize: 12),
+                        // Tombol Cek Status Pembayaran
+                        Expanded(
+                          child: FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFF16A34A),
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(0, 40),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: _isProcessingPayment ? null : _checkPaymentStatus,
+                            icon: _isProcessingPayment
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.check_circle_outline_rounded, size: 17),
+                            label: Text(
+                              _isProcessingPayment ? 'Memeriksa...' : 'Cek Status',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Tombol "Back to merchant" (Sesuai Screenshot: Hitam / Charcoal Elegan)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF232A34), // Charcoal black snap button
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text(
+                          'Back to merchant',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -695,176 +657,4 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
       ),
     );
   }
-
-  /// Badges logo e-wallet & m-banking yang didukung
-  Widget _buildSupportedPaymentPills() {
-    final badges = [
-      {'name': 'DANA', 'color': const Color(0xFF118EEA)},
-      {'name': 'GOPAY', 'color': const Color(0xFF00AED6)},
-      {'name': 'OVO', 'color': const Color(0xFF4C3494)},
-      {'name': 'SHOPEEPAY', 'color': const Color(0xFFEE4D2D)},
-      {'name': 'BCA', 'color': const Color(0xFF003D79)},
-      {'name': 'MANDIRI', 'color': const Color(0xFF003366)},
-    ];
-
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 4,
-      runSpacing: 4,
-      children: badges.map((b) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-          decoration: BoxDecoration(
-            color: (b['color'] as Color).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: (b['color'] as Color).withValues(alpha: 0.3)),
-          ),
-          child: Text(
-            b['name'] as String,
-            style: TextStyle(
-              fontSize: 8,
-              fontWeight: FontWeight.w800,
-              color: b['color'] as Color,
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  /// Official QRIS Logo & Text (Standar Bank Indonesia / ASPI)
-  Widget _buildOfficialQrisHeaderLogo() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black, width: 2.2),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 11,
-                height: 11,
-                color: Colors.black,
-              ),
-              Positioned(
-                bottom: 1,
-                right: 1,
-                child: Container(
-                  width: 4.5,
-                  height: 4.5,
-                  color: Colors.black,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text(
-              'QRIS',
-              style: TextStyle(
-                fontFamily: 'Roboto',
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                color: Colors.black,
-                letterSpacing: 0.5,
-                height: 1.0,
-              ),
-            ),
-            SizedBox(height: 2),
-            Text(
-              'QR Code Standar\nPembayaran Nasional',
-              style: TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                height: 1.1,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// Official GPN Logo (Garuda Merah & Tulisan GPN Biru)
-  Widget _buildOfficialGpnLogo() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.flight_takeoff_rounded, color: Color(0xFFDC2626), size: 17),
-          ],
-        ),
-        const Text(
-          'GPN',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF005BAC),
-            letterSpacing: 1.1,
-            height: 1.1,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// CustomPainter untuk aksen grafis merah bersudut resmi QRIS Standar Nasional
-class _QrisOfficialFramePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFDC2626)
-      ..style = PaintingStyle.fill;
-
-    // 1. Aksen Sisi Kiri
-    final leftPath = Path();
-    final leftTop = size.height * 0.17;
-    final leftArrowHeight = 22.0;
-    final leftWidth = 14.0;
-    final leftArrowWidth = 34.0;
-    final leftBottom = size.height * 0.56;
-
-    leftPath.moveTo(0, leftTop);
-    leftPath.lineTo(leftArrowWidth, leftTop + leftArrowHeight);
-    leftPath.lineTo(leftWidth, leftTop + leftArrowHeight);
-    leftPath.lineTo(leftWidth, leftBottom);
-    leftPath.lineTo(0, leftBottom - 18.0);
-    leftPath.close();
-
-    canvas.drawPath(leftPath, paint);
-
-    // 2. Aksen Sudut Kanan-Bawah
-    final rightPath = Path();
-    final rightWidth = 14.0;
-    final rightTop = size.height * 0.79;
-    final bottomCutLength = 54.0;
-
-    rightPath.moveTo(size.width, rightTop);
-    rightPath.lineTo(size.width - rightWidth, rightTop + 16.0);
-    rightPath.lineTo(size.width - rightWidth, size.height - rightWidth);
-    rightPath.lineTo(size.width - bottomCutLength, size.height - rightWidth);
-    rightPath.lineTo(size.width - bottomCutLength - 16.0, size.height);
-    rightPath.lineTo(size.width, size.height);
-    rightPath.close();
-
-    canvas.drawPath(rightPath, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
