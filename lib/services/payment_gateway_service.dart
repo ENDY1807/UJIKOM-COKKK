@@ -8,9 +8,14 @@ class PaymentGatewayConfig {
     defaultValue: '',
   ).isNotEmpty
       ? const String.fromEnvironment('MIDTRANS_SERVER_KEY')
-      : utf8.decode(base64Decode('U0ItTWlkLXNlcnZlci1Ka3R2Qi45UjR3NlZ3VTZ1SXI1bWhMbF8='));
-  static String midtransClientKey = '';
-  static String midtransMerchantId = 'M710893933';
+      : 'SB-Mid-server-1qXg_L-prRL3tDX24-LHab11';
+  static String midtransClientKey = const String.fromEnvironment(
+    'MIDTRANS_CLIENT_KEY',
+    defaultValue: '',
+  ).isNotEmpty
+      ? const String.fromEnvironment('MIDTRANS_CLIENT_KEY')
+      : 'Mid-client-T1FTbyHbPE24XCqH';
+  static String midtransMerchantId = 'G710893933';
   static bool isProduction = false;
 
   static const String defaultNmid = 'ID1020260081928';

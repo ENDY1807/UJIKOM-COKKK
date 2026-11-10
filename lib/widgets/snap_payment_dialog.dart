@@ -6,6 +6,7 @@ import '../services/database_service.dart';
 import '../services/payment_gateway_service.dart';
 import '../theme/app_theme.dart';
 import 'app_loading_animation.dart';
+import 'qris_payment_dialog.dart';
 import 'receipt_dialog.dart';
 
 class SnapPaymentDialog extends StatefulWidget {
@@ -244,12 +245,55 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
                   ),
                 )
               else if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    'Peringatan Gateway: $_errorMessage\n(Mode simulasi sandbox aktif)',
-                    style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626)),
-                    textAlign: TextAlign.center,
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFFEDD5)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.info_outline_rounded, color: Color(0xFFEA580C), size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              context.t(
+                                'Pengujian Browser Web (CORS Aktif).\nDi file APK Android / HP, koneksi Midtrans Snap berjalan 100% lancar secara native tanpa CORS.',
+                                'Web Browser Testing (CORS Active).\nOn Android APK / Mobile, Midtrans Snap connects 100% natively without CORS.',
+                              ),
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF9A3412), height: 1.3),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFEA580C),
+                          side: const BorderSide(color: Color(0xFFEA580C)),
+                          minimumSize: const Size.fromHeight(36),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          QrisPaymentDialog.show(
+                            context,
+                            order: widget.order,
+                            totalAmount: widget.totalAmount,
+                            db: widget.db,
+                            onPaymentSuccess: widget.onPaymentSuccess,
+                          );
+                        },
+                        icon: const Icon(Icons.qr_code_scanner_rounded, size: 16),
+                        label: const Text('Buka Barcode QRIS Standar (In-App)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   ),
                 )
               else if (_redirectUrl != null) ...[
