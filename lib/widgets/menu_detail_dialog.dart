@@ -413,9 +413,7 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
     final menu = widget.menu;
     final info = _getNutritionAndIngredients(menu);
 
-    final ingredients = info['ingredients'] as List<String>;
     final tags = info['tags'] as List<String>;
-    final allergen = info['allergen'] as String;
 
     final photoUrl = menu.gambarUrl.isNotEmpty
         ? menu.gambarUrl
@@ -595,13 +593,13 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                   ),
                   const SizedBox(height: 20),
 
-                  // ── KOMPOSISI & BAHAN MAKANAN (INGREDIENTS) ──
+                  // ── DESKRIPSI MAKANAN ──
                   const Row(
                     children: [
-                      Icon(Icons.restaurant_rounded, color: Color(0xFFEA580C), size: 18),
+                      Icon(Icons.description_outlined, color: Color(0xFFEA580C), size: 18),
                       SizedBox(width: 8),
                       Text(
-                        'Komposisi & Bahan Makanan',
+                        'Deskripsi Makanan',
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                       ),
                     ],
@@ -611,65 +609,15 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: ingredients.map((item) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Padding(
-                                  padding: EdgeInsets.only(top: 2),
-                                  child: Icon(Icons.check_circle_outline_rounded, size: 14, color: Color(0xFF16A34A)),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    item,
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.3),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Alergen Warning Box
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFEE2E2)),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFDC2626)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Perhatian Alergen:',
-                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF991B1B)),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                allergen,
-                                style: const TextStyle(fontSize: 11, color: Color(0xFF7F1D1D)),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      menu.deskripsi.isNotEmpty
+                          ? menu.deskripsi
+                          : 'Hidangan istimewa autentik nusantara dengan cita rasa rempah khas warisan kuliner Indonesia. Dimasak menggunakan racikan bumbu pilihan berkualitas tinggi untuk menciptakan kenikmatan rasa yang tiada tara.',
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF334155), height: 1.5),
                     ),
                   ),
                   const SizedBox(height: 18),

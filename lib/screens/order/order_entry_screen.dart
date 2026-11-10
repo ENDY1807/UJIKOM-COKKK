@@ -10,7 +10,6 @@ import '../../services/database_service.dart';
 import '../../widgets/osm_map_widget.dart';
 import '../../widgets/qris_payment_dialog.dart';
 import '../../widgets/menu_detail_dialog.dart';
-import '../profile/manage_payments_screen.dart';
 import '../profile/manage_addresses_screen.dart';
 import 'gofood_tracking_dialog.dart';
 import 'qr_scanner_dialog.dart';
@@ -176,14 +175,24 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     return raw > 0 ? raw : 0;
   }
 
+  void _clearCoupon() {
+    _couponCode = '';
+    _couponDiscount = 0;
+    _couponStatusMsg = null;
+    _couponInputCtrl.clear();
+  }
+
   void _applyCoupon(String code) {
     final clean = code.trim().toUpperCase();
-    if (clean.isEmpty) return;
+    if (clean.isEmpty) {
+      _clearCoupon();
+      return;
+    }
 
     if (clean == 'RASANTARA10') {
       _couponCode = clean;
       _couponDiscount = (_cartTotalHarga * 0.10).round().clamp(0, 25000);
-      _couponStatusMsg = 'Kupon 10% berhasil diterapkan';
+      _couponStatusMsg = 'Kupon Event 10% berhasil diterapkan';
     } else if (clean == 'DISKONMEMBER') {
       _couponCode = clean;
       _couponDiscount = 15000.clamp(0, _cartTotalHarga);
@@ -191,15 +200,15 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     } else if (clean == 'HEMAT20') {
       _couponCode = clean;
       _couponDiscount = (_cartTotalHarga * 0.20).round().clamp(0, 30000);
-      _couponStatusMsg = 'Kupon Hemat 20% diterapkan';
+      _couponStatusMsg = 'Kupon Pesta Kuliner 20% diterapkan';
     } else if (clean == 'MAKANENAK') {
       _couponCode = clean;
       _couponDiscount = 10000.clamp(0, _cartTotalHarga);
-      _couponStatusMsg = 'Kupon Rp 10.000 diterapkan';
+      _couponStatusMsg = 'Kupon Santap Nikmat Rp 10.000 diterapkan';
     } else {
       _couponCode = '';
       _couponDiscount = 0;
-      _couponStatusMsg = 'Kode kupon tidak valid';
+      _couponStatusMsg = 'Kode kupon "$code" tidak valid';
     }
   }
 
@@ -469,10 +478,16 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         return;
       }
       paymentMethodName = 'Saldo Rasantara';
+    } else if (payId == 'dana') {
+      paymentMethodName = 'DANA (Direct Debit)';
+    } else if (payId == 'gopay') {
+      paymentMethodName = 'GoPay';
+    } else if (payId == 'm_banking') {
+      paymentMethodName = 'M-Banking Virtual Account';
     } else if (payId == 'qris') {
-      paymentMethodName = 'QRIS';
+      paymentMethodName = 'QRIS Dinamis';
     } else if (payId == 'tunai') {
-      paymentMethodName = 'Tunai';
+      paymentMethodName = 'Tunai Kasir';
     } else {
       connectedMethod = widget.db.connectedPaymentMethods
           .where((p) => p.id == payId)
@@ -830,6 +845,79 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     );
   }
 
+  // ── Helper Tile Pilihan Pembayaran Vertikal ──
+  Widget _buildPaymentRadioTile({
+    required String id,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFFF7ED) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF94A3B8),
+                  width: isSelected ? 6 : 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Bottom Sheet Ringkasan Keranjang & Checkout ──
   void _openCheckoutSheet() {
     showModalBottomSheet(
@@ -841,734 +929,521 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (sheetContext, setModalState) {
+          final availableCouponsList = [
+            {'code': '', 'label': 'Tidak Menggunakan Kupon (Default)', 'desc': 'Tanpa potongan kupon promo'},
+            {'code': 'RASANTARA10', 'label': 'Event Nusantara 10%', 'desc': 'Diskon 10% s.d. Rp 25.000'},
+            {'code': 'DISKONMEMBER', 'label': 'Kupon Member Spesial', 'desc': 'Potongan langsung Rp 15.000'},
+            {'code': 'HEMAT20', 'label': 'Kupon Pesta Kuliner 20%', 'desc': 'Diskon 20% s.d. Rp 30.000'},
+            {'code': 'MAKANENAK', 'label': 'Kupon Santap Nikmat', 'desc': 'Potongan langsung Rp 10.000'},
+          ];
+
           return Container(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.85,
+              maxHeight: MediaQuery.of(context).size.height * 0.90,
             ),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header Drag Handle & Title
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFCBD5E1),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Rincian Pesanan Rasantara',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E293B),
-                          ),
-                        ),
-                        Text(
-                          _serviceType.label,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFFEA580C),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B)),
-                      onPressed: () => Navigator.of(ctx).pop(),
-                    ),
-                  ],
-                ),
-                const Divider(height: 24),
-
-                // Item List
-                if (_cart.isEmpty)
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'Keranjang pesanan kosong',
-                        style: TextStyle(color: Color(0xFF94A3B8)),
-                      ),
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: _cart.values.length,
-                      separatorBuilder: (context, index) => const Divider(height: 16),
-                      itemBuilder: (c, idx) {
-                        final item = _cart.values.elementAt(idx);
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: item.menu.gambarUrl.isNotEmpty
-                                  ? Image.network(
-                                      item.menu.gambarUrl,
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => _menuImageFallback(),
-                                    )
-                                  : _menuImageFallback(),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.menu.namaMasakan,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                  Text(
-                                    _currencyFmt.format(item.menu.harga),
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF64748B),
-                                    ),
-                                  ),
-                                  if (item.catatan.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 2),
-                                      child: Text(
-                                        'Catatan: "${item.catatan}"',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontStyle: FontStyle.italic,
-                                          color: Color(0xFFD97706),
-                                        ),
-                                      ),
-                                    ),
-                                  InkWell(
-                                    onTap: () {
-                                      _openItemNoteDialog(item);
-                                      setModalState(() {});
-                                    },
-                                    child: const Padding(
-                                      padding: EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        '+ Tambah/Ubah Catatan',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: Color(0xFFEA580C),
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  visualDensity: VisualDensity.compact,
-                                  icon: const Icon(Icons.remove_circle_outline, size: 20, color: Color(0xFFEA580C)),
-                                  onPressed: () {
-                                    setState(() => _decrementCart(item.menu));
-                                    setModalState(() {});
-                                  },
-                                ),
-                                Text(
-                                  '${item.jumlah}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                ),
-                                IconButton(
-                                  visualDensity: VisualDensity.compact,
-                                  icon: const Icon(Icons.add_circle, size: 20, color: Color(0xFFEA580C)),
-                                  onPressed: () {
-                                    setState(() => _addToCart(item.menu));
-                                    setModalState(() {});
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-
-                const Divider(height: 20),
-
-                // Pilihan Metode Pembayaran Terkoneksi Nyata (Tanpa teks oranye di baris judul)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Pilih Metode Pembayaran:',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () {
-                        Navigator.of(ctx).pop();
-                        ManagePaymentsScreen.navigate(context, widget.db);
-                      },
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        child: Row(
-                          children: [
-                            Icon(Icons.tune_rounded, size: 13, color: Color(0xFF0284C7)),
-                            SizedBox(width: 4),
-                            Text(
-                              'Manage payments >',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0284C7),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                SizedBox(
-                  height: 90,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
+                // Header (Fixed)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
+                  child: Column(
                     children: [
-                      // Saldo Rasantara
-                      GestureDetector(
-                        onTap: () {
-                          setModalState(() => _selectedPaymentMethodId = 'saldo_rasantara');
-                          setState(() => _selectedPaymentMethodId = 'saldo_rasantara');
-                        },
+                      Center(
                         child: Container(
-                          width: 145,
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.all(10),
+                          width: 40,
+                          height: 4,
                           decoration: BoxDecoration(
-                            color: _selectedPaymentMethodId == 'saldo_rasantara' ? const Color(0xFFECFDF5) : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _selectedPaymentMethodId == 'saldo_rasantara' ? const Color(0xFF059669) : const Color(0xFFCBD5E1),
-                              width: _selectedPaymentMethodId == 'saldo_rasantara' ? 1.5 : 1.0,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF059669).withValues(alpha: 0.10),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF059669), size: 18),
-                                  ),
-                                  if (_selectedPaymentMethodId == 'saldo_rasantara')
-                                    const Icon(Icons.check_circle_rounded, size: 18, color: Color(0xFF059669)),
-                                ],
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Saldo',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B)),
-                                    maxLines: 1,
-                                  ),
-                                  Text(
-                                    _currencyFmt.format(widget.db.userBalance),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: widget.db.userBalance >= _grandTotal ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                            color: const Color(0xFFCBD5E1),
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
                       ),
-                      ...widget.db.connectedPaymentMethods.map((method) {
-                        final isSelected = _selectedPaymentMethodId == method.id;
-                        final isEnough = method.balance >= _grandTotal;
-                        return GestureDetector(
-                          onTap: () {
-                            setModalState(() => _selectedPaymentMethodId = method.id);
-                            setState(() => _selectedPaymentMethodId = method.id);
-                          },
-                          child: Container(
-                            width: 145,
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFFFFF7ED) : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFCBD5E1),
-                                width: isSelected ? 1.5 : 1.0,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                        color: method.provider.brandColor.withValues(alpha: 0.10),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(method.provider.icon, color: method.provider.brandColor, size: 18),
-                                    ),
-                                    if (isSelected)
-                                      const Icon(Icons.check_circle_rounded, size: 18, color: Color(0xFFEA580C)),
-                                  ],
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      method.provider.label,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B)),
-                                      maxLines: 1,
-                                    ),
-                                    Text(
-                                      _currencyFmt.format(method.balance),
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: isEnough ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                      GestureDetector(
-                        onTap: () {
-                          setModalState(() => _selectedPaymentMethodId = 'qris');
-                          setState(() => _selectedPaymentMethodId = 'qris');
-                        },
-                        child: Container(
-                          width: 120,
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: _selectedPaymentMethodId == 'qris' ? const Color(0xFFFFF7ED) : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _selectedPaymentMethodId == 'qris' ? const Color(0xFFEA580C) : const Color(0xFFCBD5E1),
-                              width: _selectedPaymentMethodId == 'qris' ? 1.5 : 1.0,
-                            ),
-                          ),
-                          child: Column(
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEA580C).withValues(alpha: 0.10),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFFEA580C), size: 18),
-                                  ),
-                                  if (_selectedPaymentMethodId == 'qris')
-                                    const Icon(Icons.check_circle_rounded, size: 18, color: Color(0xFFEA580C)),
-                                ],
+                              const Text(
+                                'Rincian Pesanan Rasantara',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E293B),
+                                ),
                               ),
-                              const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('QRIS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B))),
-                                  Text('DANA H2H / All Pay', style: TextStyle(fontSize: 9.5, color: Color(0xFF64748B))),
-                                ],
+                              Text(
+                                _serviceType.label,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFFEA580C),
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          setModalState(() => _selectedPaymentMethodId = 'tunai');
-                          setState(() => _selectedPaymentMethodId = 'tunai');
-                        },
-                        child: Container(
-                          width: 120,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: _selectedPaymentMethodId == 'tunai' ? const Color(0xFFFFF7ED) : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _selectedPaymentMethodId == 'tunai' ? const Color(0xFFEA580C) : const Color(0xFFCBD5E1),
-                              width: _selectedPaymentMethodId == 'tunai' ? 1.5 : 1.0,
-                            ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B)),
+                            onPressed: () => Navigator.of(ctx).pop(),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF16A34A).withValues(alpha: 0.10),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(Icons.payments_outlined, color: Color(0xFF16A34A), size: 18),
-                                  ),
-                                  if (_selectedPaymentMethodId == 'tunai')
-                                    const Icon(Icons.check_circle_rounded, size: 18, color: Color(0xFFEA580C)),
-                                ],
-                              ),
-                              const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Tunai Kasir', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B))),
-                                  Text('Bayar langsung', style: TextStyle(fontSize: 9.5, color: Color(0xFF64748B))),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
                 ),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
 
-                // Indikator Saldo Kurang & Quick Top-Up Otomatis (Gaya GoFood / GrabFood)
-                Builder(builder: (ctx) {
-                  final curPay = widget.db.connectedPaymentMethods
-                      .where((p) => p.id == _selectedPaymentMethodId)
-                      .firstOrNull;
-                  if (curPay != null && curPay.balance < _grandTotal) {
-                    final defNeed = _grandTotal - curPay.balance;
-                    return Container(
-                      margin: const EdgeInsets.only(top: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFECACA)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.info_outline, size: 18, color: Color(0xFFDC2626)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Saldo ${curPay.provider.label} kurang ${_currencyFmt.format(defNeed)}',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+                // Scrollable Body (Mencegah seluruh bug overflow layar)
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 1. DAFTAR ITEM PESANAN
+                        const Text(
+                          'Menu yang Dipesan:',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                        ),
+                        const SizedBox(height: 8),
+                        if (_cart.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: Center(
+                              child: Text(
+                                'Keranjang pesanan kosong',
+                                style: TextStyle(color: Color(0xFF94A3B8)),
+                              ),
                             ),
-                          ),
-                          InkWell(
-                            onTap: () {
-                              final topUpAmt = ((defNeed / 10000).ceil() * 10000);
-                              widget.db.topUpPaymentMethod(curPay.id, topUpAmt);
-                              setModalState(() {});
-                              setState(() {});
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: const Color(0xFF16A34A),
-                                  content: Text('Berhasil Top Up Cepat ${_currencyFmt.format(topUpAmt)} ke ${curPay.provider.label}!'),
-                                ),
+                          )
+                        else
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _cart.values.length,
+                            separatorBuilder: (context, index) => const Divider(height: 16),
+                            itemBuilder: (c, idx) {
+                              final item = _cart.values.elementAt(idx);
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: item.menu.gambarUrl.isNotEmpty
+                                        ? Image.network(
+                                            item.menu.gambarUrl,
+                                            width: 48,
+                                            height: 48,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) => _menuImageFallback(),
+                                          )
+                                        : _menuImageFallback(),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.menu.namaMasakan,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF1E293B),
+                                          ),
+                                        ),
+                                        Text(
+                                          _currencyFmt.format(item.menu.harga),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFF64748B),
+                                          ),
+                                        ),
+                                        if (item.catatan.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 2),
+                                            child: Text(
+                                              'Catatan: "${item.catatan}"',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontStyle: FontStyle.italic,
+                                                color: Color(0xFFD97706),
+                                              ),
+                                            ),
+                                          ),
+                                        InkWell(
+                                          onTap: () {
+                                            _openItemNoteDialog(item);
+                                            setModalState(() {});
+                                          },
+                                          child: const Padding(
+                                            padding: EdgeInsets.only(top: 3),
+                                            child: Text(
+                                              '+ Tambah/Ubah Catatan',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Color(0xFFEA580C),
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        icon: const Icon(Icons.remove_circle_outline, size: 20, color: Color(0xFFEA580C)),
+                                        onPressed: () {
+                                          setState(() => _decrementCart(item.menu));
+                                          setModalState(() {});
+                                        },
+                                      ),
+                                      Text(
+                                        '${item.jumlah}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      ),
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        icon: const Icon(Icons.add_circle, size: 20, color: Color(0xFFEA580C)),
+                                        onPressed: () {
+                                          setState(() => _addToCart(item.menu));
+                                          setModalState(() {});
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               );
                             },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEA580C),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                '+ Top Up Cepat',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                            ),
                           ),
-                        ],
-                      ),
-                    );
-                  } else if (curPay != null && curPay.provider == PaymentMethodProvider.dana) {
-                    return Container(
-                      margin: const EdgeInsets.only(top: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFBFDBFE)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.verified_rounded, size: 14, color: Color(0xFF2563EB)),
-                          SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'DANA Gateway H2H Terhubung (Channel: 95221 • Store: ae70d112)',
-                              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Color(0xFF1E40AF)),
-                            ),
+
+                        const SizedBox(height: 18),
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        const SizedBox(height: 16),
+
+                        // 2. KUPON, EVENT & POIN PELANGGAN
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
                           ),
-                        ],
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                }),
-
-                const Divider(height: 20),
-
-                // ── VOUCHER, EVENT & POIN PELANGGAN ──
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.local_offer_outlined, size: 16, color: Color(0xFFEA580C)),
-                          SizedBox(width: 8),
-                          Text(
-                            'Diskon Event, Kupon & Poin Loyalitas',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-
-                      // 1. Selector Event Restoran (jika ada event aktif)
-                      if (widget.db.events.isNotEmpty) ...[
-                        const Text('Pilih Promo Event:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
-                        const SizedBox(height: 6),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: widget.db.events.where((e) => e.isActive).map((ev) {
-                              final isSelected = _selectedEventId == ev.idEvent;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: ChoiceChip(
-                                  label: Text('${ev.judulEvent} (${ev.diskonPersen}%)'),
-                                  selected: isSelected,
-                                  selectedColor: const Color(0xFFFFEDD5),
-                                  labelStyle: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF475569),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.confirmation_number_outlined, size: 16, color: Color(0xFFEA580C)),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Pilih Kupon Promo & Event Restoran',
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                                   ),
-                                  onSelected: (val) {
-                                    setModalState(() {
-                                      _selectedEventId = val ? ev.idEvent : null;
-                                    });
-                                    setState(() {
-                                      _selectedEventId = val ? ev.idEvent : null;
-                                    });
-                                  },
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+
+                              // Dropdown Selector Kupon (Default Kosong)
+                              DropdownButtonFormField<String>(
+                                initialValue: availableCouponsList.any((c) => c['code'] == _couponCode) ? _couponCode : '',
+                                isExpanded: true,
+                                decoration: InputDecoration(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                  filled: true,
+                                  fillColor: Colors.white,
                                 ),
-                              );
-                            }).toList(),
+                                items: availableCouponsList.map((c) {
+                                  return DropdownMenuItem<String>(
+                                    value: c['code'],
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(c['label']!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                        Text(c['desc']!, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (code) {
+                                  setModalState(() {
+                                    _applyCoupon(code ?? '');
+                                  });
+                                  setState(() {
+                                    _applyCoupon(code ?? '');
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 10),
+
+                              // Input Manual Kode Promo
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 38,
+                                      child: TextField(
+                                        controller: _couponInputCtrl,
+                                        style: const TextStyle(fontSize: 12),
+                                        textCapitalization: TextCapitalization.characters,
+                                        decoration: InputDecoration(
+                                          hintText: 'Punya kode promo lain? (cth: RASANTARA10)',
+                                          hintStyle: const TextStyle(fontSize: 11),
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                          filled: true,
+                                          fillColor: Colors.white,
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  FilledButton(
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: const Color(0xFFEA580C),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    ),
+                                    onPressed: () {
+                                      setModalState(() {
+                                        _applyCoupon(_couponInputCtrl.text);
+                                      });
+                                      setState(() {
+                                        _applyCoupon(_couponInputCtrl.text);
+                                      });
+                                    },
+                                    child: const Text('Terapkan', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                              if (_couponStatusMsg != null) ...[
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _couponStatusMsg!,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: _couponDiscount > 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                                        ),
+                                      ),
+                                    ),
+                                    if (_couponDiscount > 0)
+                                      InkWell(
+                                        onTap: () {
+                                          setModalState(() => _clearCoupon());
+                                          setState(() => _clearCoupon());
+                                        },
+                                        child: const Text('Hapus', style: TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
+                                      ),
+                                  ],
+                                ),
+                              ],
+
+                              const SizedBox(height: 12),
+
+                              // 3. Poin Pelanggan (1 Poin = Rp 1 Potongan)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Checkbox(
+                                      value: _usePointsDiscount,
+                                      activeColor: const Color(0xFFEA580C),
+                                      onChanged: widget.db.userPoints > 0
+                                          ? (val) {
+                                              setModalState(() => _usePointsDiscount = val ?? false);
+                                              setState(() => _usePointsDiscount = val ?? false);
+                                            }
+                                          : null,
+                                    ),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Gunakan Poin Kuliner (${widget.db.userPoints} Poin)',
+                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                          ),
+                                          const Text(
+                                            '1 Poin = Rp 1 Potongan langsung harga makanan',
+                                            style: TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (_usePointsDiscount && _potonganPoinAmount > 0)
+                                      Text(
+                                        '- ${_currencyFmt.format(_potonganPoinAmount)}',
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
+
+                        const SizedBox(height: 18),
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        const SizedBox(height: 16),
+
+                        // 3. METODE PEMBAYARAN (LIST KE BAWAH / VERTICAL SELECT)
+                        const Row(
+                          children: [
+                            Icon(Icons.payment_rounded, size: 16, color: Color(0xFFEA580C)),
+                            SizedBox(width: 8),
+                            Text(
+                              'Pilih Metode Pembayaran:',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Vertical List of Payment Options (List ke Bawah dengan Select)
+                        Column(
+                          children: [
+                            _buildPaymentRadioTile(
+                              id: 'dana',
+                              title: 'DANA (Direct Debit SNAP BI)',
+                              subtitle: 'Terkoneksi resmi • Saldo otomatis 1-klik',
+                              icon: Icons.account_balance_wallet_rounded,
+                              iconColor: const Color(0xFF118EEA),
+                              isSelected: _selectedPaymentMethodId == 'dana',
+                              onTap: () {
+                                setModalState(() => _selectedPaymentMethodId = 'dana');
+                                setState(() => _selectedPaymentMethodId = 'dana');
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            _buildPaymentRadioTile(
+                              id: 'gopay',
+                              title: 'GoPay',
+                              subtitle: 'E-Wallet instant payment terintegrasi',
+                              icon: Icons.wallet_rounded,
+                              iconColor: const Color(0xFF00AED6),
+                              isSelected: _selectedPaymentMethodId == 'gopay',
+                              onTap: () {
+                                setModalState(() => _selectedPaymentMethodId = 'gopay');
+                                setState(() => _selectedPaymentMethodId = 'gopay');
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            _buildPaymentRadioTile(
+                              id: 'm_banking',
+                              title: 'M-Banking (BCA / Mandiri / BRI / BNI)',
+                              subtitle: 'Virtual Account & Transfer Bank Otomatis',
+                              icon: Icons.account_balance_rounded,
+                              iconColor: const Color(0xFF4338CA),
+                              isSelected: _selectedPaymentMethodId == 'm_banking',
+                              onTap: () {
+                                setModalState(() => _selectedPaymentMethodId = 'm_banking');
+                                setState(() => _selectedPaymentMethodId = 'm_banking');
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            _buildPaymentRadioTile(
+                              id: 'qris',
+                              title: 'QRIS Dinamis (All Payment)',
+                              subtitle: 'Scan dari seluruh E-Wallet & M-Banking',
+                              icon: Icons.qr_code_2_rounded,
+                              iconColor: const Color(0xFFEA580C),
+                              isSelected: _selectedPaymentMethodId == 'qris',
+                              onTap: () {
+                                setModalState(() => _selectedPaymentMethodId = 'qris');
+                                setState(() => _selectedPaymentMethodId = 'qris');
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            _buildPaymentRadioTile(
+                              id: 'tunai',
+                              title: 'Bayar Tunai di Kasir',
+                              subtitle: 'Pelunasan langsung di kasir restoran',
+                              icon: Icons.payments_outlined,
+                              iconColor: const Color(0xFF16A34A),
+                              isSelected: _selectedPaymentMethodId == 'tunai',
+                              onTap: () {
+                                setModalState(() => _selectedPaymentMethodId = 'tunai');
+                                setState(() => _selectedPaymentMethodId = 'tunai');
+                              },
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 18),
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        const SizedBox(height: 14),
+
+                        // 4. RINGKASAN BIAYA
+                        _buildCostRow('Subtotal Hidangan ($_cartTotalItems item)', _currencyFmt.format(_cartTotalHarga)),
+                        if (_diskonEventAmount > 0)
+                          _buildCostRow('Diskon Event Promo', '- ${_currencyFmt.format(_diskonEventAmount)}', isHighlight: true),
+                        if (_couponDiscount > 0)
+                          _buildCostRow('Diskon Kupon ($_couponCode)', '- ${_currencyFmt.format(_couponDiscount)}', isHighlight: true),
+                        if (_potonganPoinAmount > 0)
+                          _buildCostRow('Potongan Poin Kuliner', '- ${_currencyFmt.format(_potonganPoinAmount)}', isHighlight: true),
+                        if (_packagingFee > 0)
+                          _buildCostRow('Biaya Kemasan Higienis', _currencyFmt.format(_packagingFee)),
+                        if (_currentDeliveryFee > 0)
+                          _buildCostRow('Ongkir Pengantaran (${_deliveryDistanceKm.toStringAsFixed(1)} km)', _currencyFmt.format(_currentDeliveryFee)),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Total Pembayaran',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                            ),
+                            Text(
+                              _currencyFmt.format(_grandTotal),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFEA580C)),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 10),
                       ],
-
-                      // 2. Input Kupon Promo
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 38,
-                              child: TextField(
-                                controller: _couponInputCtrl,
-                                style: const TextStyle(fontSize: 12),
-                                textCapitalization: TextCapitalization.characters,
-                                decoration: InputDecoration(
-                                  hintText: 'Kode Kupon (cth: RASANTARA10)',
-                                  hintStyle: const TextStyle(fontSize: 11),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFFEA580C),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            ),
-                            onPressed: () {
-                              setModalState(() {
-                                _applyCoupon(_couponInputCtrl.text);
-                              });
-                              setState(() {
-                                _applyCoupon(_couponInputCtrl.text);
-                              });
-                            },
-                            child: const Text('Terapkan', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                      if (_couponStatusMsg != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          _couponStatusMsg!,
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
-                            color: _couponDiscount > 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                          ),
-                        ),
-                      ],
-
-                      const SizedBox(height: 10),
-
-                      // 3. Poin Pelanggan (1 Poin = Rp 1 Potongan)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Row(
-                          children: [
-                            Checkbox(
-                              value: _usePointsDiscount,
-                              activeColor: const Color(0xFFEA580C),
-                              onChanged: widget.db.userPoints > 0
-                                  ? (val) {
-                                      setModalState(() => _usePointsDiscount = val ?? false);
-                                      setState(() => _usePointsDiscount = val ?? false);
-                                    }
-                                  : null,
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Gunakan Poin Kuliner (${widget.db.userPoints} Poin)',
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                                  ),
-                                  const Text(
-                                    '1 Poin = Rp 1 Potongan langsung harga makanan',
-                                    style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (_usePointsDiscount && _potonganPoinAmount > 0)
-                              Text(
-                                '- ${_currencyFmt.format(_potonganPoinAmount)}',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Divider(height: 20),
-
-                // Biaya Rincian
-                Column(
-                  children: [
-                    _buildCostRow('Subtotal Hidangan ($_cartTotalItems item)', _currencyFmt.format(_cartTotalHarga)),
-                    if (_diskonEventAmount > 0)
-                      _buildCostRow('Diskon Event Promo', '- ${_currencyFmt.format(_diskonEventAmount)}', isHighlight: true),
-                    if (_couponDiscount > 0)
-                      _buildCostRow('Diskon Kupon ($_couponCode)', '- ${_currencyFmt.format(_couponDiscount)}', isHighlight: true),
-                    if (_potonganPoinAmount > 0)
-                      _buildCostRow('Potongan Poin Kuliner', '- ${_currencyFmt.format(_potonganPoinAmount)}', isHighlight: true),
-                    if (_packagingFee > 0)
-                      _buildCostRow('Biaya Kemasan Higienis', _currencyFmt.format(_packagingFee)),
-                    if (_currentDeliveryFee > 0)
-                      _buildCostRow('Ongkir Pengantaran OSM (${_deliveryDistanceKm.toStringAsFixed(1)} km)', _currencyFmt.format(_currentDeliveryFee)),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Total Pembayaran',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E293B),
-                          ),
-                        ),
-                        Text(
-                          _currencyFmt.format(_grandTotal),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFFEA580C),
-                          ),
-                        ),
-                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Tombol Eksekusi Order
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFEA580C),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: _cart.isEmpty
-                      ? null
-                      : () {
-                          Navigator.of(ctx).pop();
-                          _confirmAndSubmitOrder(paymentMethodId: _selectedPaymentMethodId);
-                        },
-                  child: Text(
-                    'Kirim Pesanan Sekarang • ${_currencyFmt.format(_grandTotal)}',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+
+                // Pinned Bottom Bar
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                  ),
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFEA580C),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _cart.isEmpty
+                        ? null
+                        : () {
+                            Navigator.of(ctx).pop();
+                            _confirmAndSubmitOrder(paymentMethodId: _selectedPaymentMethodId);
+                          },
+                    child: Text(
+                      'Kirim Pesanan Sekarang • ${_currencyFmt.format(_grandTotal)}',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],

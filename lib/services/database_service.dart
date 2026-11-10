@@ -350,11 +350,12 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  /// Update data profil pengguna (Username, Nama, WhatsApp, Foto, 2FA)
+  /// Update data profil pengguna (Username, Nama, WhatsApp, Foto, 2FA, Password)
   Future<bool> updateUserProfile({
     required int idUser,
     String? namaUser,
     String? username,
+    String? password,
     String? phoneNumber,
     String? fotoProfil,
     bool? isTwoFactorEnabled,
@@ -367,6 +368,7 @@ class DatabaseService extends ChangeNotifier {
     final updated = old.copyWith(
       namaUser: namaUser ?? old.namaUser,
       username: username ?? old.username,
+      password: password ?? old.password,
       phoneNumber: phoneNumber ?? old.phoneNumber,
       fotoProfil: fotoProfil ?? old.fotoProfil,
       isTwoFactorEnabled: isTwoFactorEnabled ?? old.isTwoFactorEnabled,

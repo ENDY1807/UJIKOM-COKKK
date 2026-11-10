@@ -21,15 +21,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
 
-  int _tipIndex = 0;
-  final List<String> _loadingTips = [
-    'Menyiapkan bumbu dan rempah autentik Nusantara...',
-    'Menghubungkan ke Cloud Ecosystem Rasantara...',
-    'Memeriksa integritas sistem & proteksi keamanan 2FA...',
-    'Menyajikan pengalaman restoran digital terbaik untuk Anda...',
-  ];
-  Timer? _tipTimer;
-
   @override
   void initState() {
     super.initState();
@@ -45,13 +36,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
     );
 
-    _tipTimer = Timer.periodic(const Duration(milliseconds: 650), (t) {
-      if (!mounted) return;
-      setState(() {
-        _tipIndex = (_tipIndex + 1) % _loadingTips.length;
-      });
-    });
-
     // Panggil onFinish setelah animasi splash selesai (2.2 detik)
     Future.delayed(const Duration(milliseconds: 2200), () {
       if (!mounted) return;
@@ -62,7 +46,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void dispose() {
     _animController.dispose();
-    _tipTimer?.cancel();
     super.dispose();
   }
 
@@ -173,21 +156,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       minHeight: 4,
                       backgroundColor: Color(0xFFFFEDD5),
                       valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEA580C)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Rotating tips
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    _loadingTips[_tipIndex],
-                    key: ValueKey<int>(_tipIndex),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: Color(0xFF64748B),
                     ),
                   ),
                 ),

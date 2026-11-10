@@ -480,7 +480,7 @@ class _LoginScreenState extends State<LoginScreen>
     final rawPhone = user.phoneNumber.isNotEmpty ? user.phoneNumber : '081234567890';
     
     // Kirim kode OTP WhatsApp nyata
-    final sentCode = await WhatsAppOtpService.instance.sendOtp(
+    await WhatsAppOtpService.instance.sendOtp(
       rawPhone: rawPhone,
       userName: user.namaUser,
       purpose: 'Verifikasi Login 2FA Rasantara',
@@ -506,32 +506,8 @@ class _LoginScreenState extends State<LoginScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Kode OTP resmi telah dikirim ke WhatsApp akun ${user.namaUser} ($rawPhone).',
+              'Kode OTP autentikasi telah dikirim ke nomor WhatsApp Anda ($rawPhone). Silakan masukkan 6 digit kode keamanan:',
               style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFDCFCE7),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFF15803D)),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Simulasi/Demo OTP: $sentCode',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => codeCtrl.text = sentCode,
-                    child: const Text('Isi', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF15803D), decoration: TextDecoration.underline)),
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 14),
             TextField(
