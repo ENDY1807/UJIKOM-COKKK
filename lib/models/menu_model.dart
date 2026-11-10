@@ -8,6 +8,22 @@ enum MenuCategory {
   final String label;
   const MenuCategory(this.label);
 
+  String localizedLabel(bool isEnglish) {
+    if (!isEnglish) return label;
+    switch (this) {
+      case MenuCategory.semua:
+        return 'All';
+      case MenuCategory.paket:
+        return 'Special Combos';
+      case MenuCategory.makanan:
+        return 'Food';
+      case MenuCategory.minuman:
+        return 'Drinks';
+      case MenuCategory.addon:
+        return 'Snacks & Extras';
+    }
+  }
+
   static MenuCategory fromString(String val) {
     final v = val.trim().toLowerCase();
     if (v.contains('paket')) return MenuCategory.paket;
@@ -26,6 +42,16 @@ enum MenuStatus {
 
   final String label;
   const MenuStatus(this.label);
+
+  String localizedLabel(bool isEnglish) {
+    if (!isEnglish) return label;
+    switch (this) {
+      case MenuStatus.tersedia:
+        return 'Available';
+      case MenuStatus.habis:
+        return 'Sold Out';
+    }
+  }
 
   static MenuStatus fromString(String val) {
     return MenuStatus.values.firstWhere(

@@ -102,7 +102,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     // 1. Dashboard Utama: Seluruh role
     list.add(NavDestinationItem(
-      label: 'Beranda',
+      label: context.t('Beranda', 'Home'),
       icon: Icons.dashboard_outlined,
       screen: DashboardScreen(
         db: widget.db,
@@ -113,7 +113,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // 2. Order Entry: Admin, Waiter, Pelanggan
     if (role.canCreateOrder) {
       list.add(NavDestinationItem(
-        label: role == UserRole.pelanggan ? 'Pesan Menu' : 'Entri Order',
+        label: role == UserRole.pelanggan
+            ? context.t('Pesan Menu', 'Order Menu')
+            : context.t('Entri Order', 'Order Entry'),
         icon: Icons.restaurant_menu_rounded,
         screen: OrderEntryScreen(
           key: ValueKey('order-$_scannedTableFromQr-${_selectedCategoryForOrder?.name}-$_searchQueryForOrder-$_autoApplyCouponForOrder'),
@@ -139,7 +141,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // 2b. Riwayat Pesanan Saya: Khusus Pelanggan
     if (role == UserRole.pelanggan) {
       list.add(NavDestinationItem(
-        label: 'Riwayat',
+        label: context.t('Riwayat', 'History'),
         icon: Icons.receipt_long_rounded,
         screen: CustomerOrderHistoryScreen(db: widget.db),
       ));
@@ -148,7 +150,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // 3. Transaksi Kasir: Admin, Kasir
     if (role.canProcessTransactions) {
       list.add(NavDestinationItem(
-        label: 'Kasir & Tagihan',
+        label: context.t('Kasir & Tagihan', 'Cashier & Billing'),
         icon: Icons.point_of_sale_rounded,
         screen: CashierScreen(db: widget.db),
       ));
@@ -157,7 +159,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // 4. Entri Referensi: Admin only
     if (role.canManageReferences) {
       list.add(NavDestinationItem(
-        label: 'Referensi Menu',
+        label: context.t('Referensi Menu', 'Menu Master'),
         icon: Icons.inventory_2_outlined,
         screen: MenuManagementScreen(db: widget.db),
       ));
@@ -166,7 +168,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // 5. Generate Laporan: Admin, Waiter, Kasir, Owner
     if (role.canViewReports) {
       list.add(NavDestinationItem(
-        label: 'Laporan',
+        label: context.t('Laporan', 'Reports'),
         icon: Icons.analytics_outlined,
         screen: ReportScreen(db: widget.db),
       ));
@@ -175,7 +177,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // 6. Registrasi & Manajemen User: Admin, Waiter, Kasir
     if (role.canRegisterUsers) {
       list.add(NavDestinationItem(
-        label: role == UserRole.administrator ? 'Kelola User' : 'Registrasi',
+        label: role == UserRole.administrator
+            ? context.t('Kelola User', 'Users')
+            : context.t('Registrasi', 'Registration'),
         icon: Icons.people_outline,
         screen: UserManagementScreen(db: widget.db),
       ));
@@ -184,7 +188,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // 7. Cetak & Buat QR Meja: Admin, Kasir, Owner
     if (role == UserRole.administrator || role == UserRole.kasir || role == UserRole.owner) {
       list.add(NavDestinationItem(
-        label: 'QR Meja',
+        label: context.t('QR Meja', 'Table QR'),
         icon: Icons.qr_code_2_rounded,
         screen: TableQrScreen(db: widget.db),
       ));
@@ -192,7 +196,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     // 8. Profil & Pengaturan Akun: Semua Role
     list.add(NavDestinationItem(
-      label: 'Profil',
+      label: context.t('Profil', 'Profile'),
       icon: Icons.person_outline_rounded,
       screen: ProfileScreen(
         db: widget.db,
@@ -691,7 +695,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 child: _buildNavItem(
                   icon: Icons.dashboard_outlined,
                   activeIcon: Icons.dashboard_rounded,
-                  label: 'Beranda',
+                  label: context.t('Beranda', 'Home'),
                   isSelected: _currentIndex == 0,
                   onTap: () => setState(() => _currentIndex = 0),
                 ),
@@ -702,7 +706,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 child: _buildNavItem(
                   icon: Icons.restaurant_menu_outlined,
                   activeIcon: Icons.restaurant_menu_rounded,
-                  label: 'Pesan',
+                  label: context.t('Pesan', 'Order'),
                   isSelected: _currentIndex == 1 && destinations.length > 1,
                   onTap: () {
                     if (destinations.length > 1) {
@@ -747,9 +751,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             ),
                           ),
                           const SizedBox(height: 3),
-                          const Text(
-                            'PINDAI',
-                            style: TextStyle(
+                          Text(
+                            context.t('PINDAI', 'SCAN'),
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.3,
@@ -768,7 +772,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 child: _buildNavItem(
                   icon: Icons.receipt_long_outlined,
                   activeIcon: Icons.receipt_long_rounded,
-                  label: destinations.length > 2 ? destinations[2].label.split(' ').first : 'Aktivitas',
+                  label: destinations.length > 2 ? destinations[2].label.split(' ').first : context.t('Riwayat', 'History'),
                   isSelected: _currentIndex == 2 && destinations.length > 2,
                   onTap: () {
                     if (destinations.length > 2) {
@@ -783,10 +787,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 child: _buildNavItem(
                   icon: Icons.person_outline_rounded,
                   activeIcon: Icons.person_rounded,
-                  label: 'Akun',
-                  isSelected: _currentIndex == destinations.indexWhere((d) => d.label.contains('Profil')),
+                  label: context.t('Akun', 'Account'),
+                  isSelected: _currentIndex == destinations.indexWhere((d) => d.label.contains('Profil') || d.label.contains('Profile')),
                   onTap: () {
-                    final pIdx = destinations.indexWhere((d) => d.label.contains('Profil'));
+                    final pIdx = destinations.indexWhere((d) => d.label.contains('Profil') || d.label.contains('Profile'));
                     if (pIdx != -1) {
                       setState(() => _currentIndex = pIdx);
                     } else {

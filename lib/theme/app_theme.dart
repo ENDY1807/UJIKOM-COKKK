@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+export '../services/app_localization.dart';
 
 class AppTheme {
   // Brand Palette: Orange and White

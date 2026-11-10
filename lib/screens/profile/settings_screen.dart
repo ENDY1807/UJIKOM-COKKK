@@ -259,12 +259,30 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   void _showSnackbar(String msg, {bool isError = false}) {
     if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
-        backgroundColor: isError ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+        content: Text(
+          msg,
+          style: const TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: isError
+            ? const Color(0xFFDC2626)
+            : (context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF0F172A)),
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(
+            color: isError
+                ? const Color(0xFFB91C1C)
+                : (context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFEA580C)),
+          ),
+        ),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -285,11 +303,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Pengaturan',
+              context.t('Pengaturan', 'Settings'),
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
             ),
             Text(
-              'Kelola Akun & Preferensi Aplikasi',
+              context.t('Kelola Akun & Preferensi Aplikasi', 'Manage Account & App Preferences'),
               style: TextStyle(fontSize: 11, color: context.textSecondary),
             ),
           ],
@@ -301,9 +319,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           labelColor: const Color(0xFFEA580C),
           unselectedLabelColor: context.textSecondary,
           labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-          tabs: const [
-            Tab(icon: Icon(Icons.person_outline, size: 20), text: 'Profil Akun'),
-            Tab(icon: Icon(Icons.tune_rounded, size: 20), text: 'Sistem Aplikasi'),
+          tabs: [
+            Tab(icon: const Icon(Icons.person_outline, size: 20), text: context.t('Profil Akun', 'Account Profile')),
+            Tab(icon: const Icon(Icons.tune_rounded, size: 20), text: context.t('Sistem Aplikasi', 'System Settings')),
           ],
         ),
       ),
@@ -603,32 +621,32 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           // ── 1. TAMPILAN & TEMA APLIKASI ──
           _buildSettingsCard(
             icon: Icons.palette_outlined,
-            title: 'Tampilan & Tema',
-            subtitle: 'Sesuaikan kenyamanan visual dan mode aplikasi',
+            title: context.t('Tampilan & Tema', 'Theme & Appearance'),
+            subtitle: context.t('Sesuaikan kenyamanan visual dan mode aplikasi', 'Customize visual comfort and theme mode'),
             children: [
-              const Text(
-                'Mode Tampilan Tema',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              Text(
+                context.t('Mode Tampilan Tema', 'Theme Mode'),
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: context.textPrimary),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   _buildThemeOption(
-                    label: 'Terang',
+                    label: context.t('Terang', 'Light'),
                     icon: Icons.light_mode_outlined,
                     value: 'light',
                     isSelected: _themeMode == 'light',
                   ),
                   const SizedBox(width: 8),
                   _buildThemeOption(
-                    label: 'Gelap',
+                    label: context.t('Gelap', 'Dark'),
                     icon: Icons.dark_mode_outlined,
                     value: 'dark',
                     isSelected: _themeMode == 'dark',
                   ),
                   const SizedBox(width: 8),
                   _buildThemeOption(
-                    label: 'Sistem',
+                    label: context.t('Sistem', 'System'),
                     icon: Icons.brightness_auto_outlined,
                     value: 'system',
                     isSelected: _themeMode == 'system',
@@ -642,12 +660,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           // ── 2. BAHASA & DAERAH ──
           _buildSettingsCard(
             icon: Icons.language_rounded,
-            title: 'Bahasa & Daerah (Language)',
-            subtitle: 'Pilihan bahasa antarmuka aplikasi',
+            title: context.t('Bahasa & Daerah', 'Language & Region'),
+            subtitle: context.t('Pilihan bahasa antarmuka aplikasi', 'Choose app interface language'),
             children: [
-              const Text(
-                'Bahasa Antarmuka',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              Text(
+                context.t('Bahasa Antarmuka', 'Interface Language'),
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: context.textPrimary),
               ),
               const SizedBox(height: 8),
               Row(
@@ -674,49 +692,38 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           // ── 3. NOTIFIKASI & SUARA ──
           _buildSettingsCard(
             icon: Icons.notifications_active_outlined,
-            title: 'Notifikasi & Suara',
-            subtitle: 'Pengingat pesanan, promo, dan respons suara aplikasi',
+            title: context.t('Notifikasi & Suara', 'Notifications & Sound'),
+            subtitle: context.t('Pengingat pesanan, promo, dan respons suara aplikasi', 'Order alerts, promos, and audio responses'),
             children: [
               _buildSwitchTile(
                 icon: Icons.notifications_outlined,
-                title: 'Notifikasi Langsung ke HP / Windows',
-                subtitle: 'Muncul di bilah status notifikasi HP & Windows Action Center (Toast OS)',
+                title: context.t('Notifikasi Langsung ke HP / Windows', 'Push Notifications to Device / Windows'),
+                subtitle: context.t('Muncul di bilah status notifikasi HP & Windows Action Center (Toast OS)', 'Appear in phone status bar & Windows Action Center'),
                 value: _notifications,
                 onChanged: (val) async {
                   setState(() => _notifications = val);
                   widget.db.updateAppSettings(notifications: val);
                   if (val) {
                     await AudioNotificationService.requestSystemNotificationPermission();
-                    AudioNotificationService.showSystemNotification(
-                      title: 'Notifikasi Rasantara Aktif',
-                      message: 'Status pesanan dan info promo akan muncul langsung di perangkat Anda.',
-                    );
-                    _showSnackbar('Izin notifikasi sistem aktif ke Windows / HP');
                   }
                 },
               ),
               Divider(height: 20, color: context.borderSubtle),
               _buildSwitchTile(
                 icon: Icons.local_offer_outlined,
-                title: 'Promo & Diskon Eksklusif',
-                subtitle: 'Info penawaran voucher mingguan dan flash sale kuliner',
+                title: context.t('Promo & Diskon Eksklusif', 'Promos & Exclusive Deals'),
+                subtitle: context.t('Info penawaran voucher mingguan dan flash sale kuliner', 'Weekly voucher discounts and flash sale specials'),
                 value: _promoNotifications,
                 onChanged: (val) {
                   setState(() => _promoNotifications = val);
                   widget.db.updateAppSettings(promoNotification: val);
-                  if (val) {
-                    AudioNotificationService.showSystemNotification(
-                      title: 'Promo Rasantara Aktif',
-                      message: 'Anda akan menerima pemberitahuan diskon dan voucher hemat kuliner.',
-                    );
-                  }
                 },
               ),
               Divider(height: 20, color: context.borderSubtle),
               _buildSwitchTile(
                 icon: Icons.volume_up_outlined,
-                title: 'Efek Suara Audio',
-                subtitle: 'Umpan balik suara saat klik tombol dan menambah menu ke keranjang',
+                title: context.t('Efek Suara Audio', 'Sound Effects'),
+                subtitle: context.t('Umpan balik suara saat klik tombol dan menambah menu ke keranjang', 'Audio feedback on button click and adding items to cart'),
                 value: _soundFx,
                 onChanged: (val) {
                   setState(() => _soundFx = val);
@@ -726,8 +733,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               Divider(height: 20, color: context.borderSubtle),
               _buildSwitchTile(
                 icon: Icons.vibration_rounded,
-                title: 'Umpan Balik Haptik (Getar)',
-                subtitle: 'Getaran lembut perangkat saat konfirmasi checkout dan aksi penting',
+                title: context.t('Umpan Balik Haptik (Getar)', 'Haptic Feedback (Vibration)'),
+                subtitle: context.t('Getaran lembut perangkat saat konfirmasi checkout dan aksi penting', 'Gentle device vibration on checkout and key actions'),
                 value: _haptic,
                 onChanged: (val) {
                   setState(() => _haptic = val);
@@ -741,17 +748,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           // ── 4. KEAMANAN & PRIVASI ──
           _buildSettingsCard(
             icon: Icons.security_rounded,
-            title: 'Keamanan & Privasi',
-            subtitle: 'Perlindungan akun, verifikasi masuk, dan biometrik',
+            title: context.t('Keamanan & Privasi', 'Security & Privacy'),
+            subtitle: context.t('Perlindungan akun, verifikasi masuk, dan biometrik', 'Account protection, 2FA sign-in, and biometrics'),
             children: [
               _buildSwitchTile(
                 icon: Icons.phonelink_lock_rounded,
-                title: 'Verifikasi 2 Langkah (2FA WhatsApp)',
-                subtitle: 'Minta kode verifikasi OTP WhatsApp setiap kali masuk akun baru',
+                title: context.t('Verifikasi 2 Langkah (2FA WhatsApp)', '2-Step Verification (WhatsApp 2FA)'),
+                subtitle: context.t('Minta kode verifikasi OTP WhatsApp setiap kali masuk akun baru', 'Require WhatsApp OTP verification code on new sign-ins'),
                 value: _is2faActive,
                 onChanged: (val) {
                   if (val && _phoneCtrl.text.trim().isEmpty) {
-                    _showSnackbar('Isi nomor telepon terlebih dahulu pada tab profil', isError: true);
+                    _showSnackbar(context.t('Isi nomor telepon terlebih dahulu pada tab profil', 'Please enter your phone number in the profile tab first'), isError: true);
                     return;
                   }
                   setState(() => _is2faActive = val);
@@ -761,23 +768,22 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               Divider(height: 20, color: context.borderSubtle),
               _buildSwitchTile(
                 icon: Icons.fingerprint_rounded,
-                title: 'Kunci Biometrik / PIN Transaksi',
-                subtitle: 'Wajibkan sidik jari atau PIN sebelum memproses pembayaran pesanan',
+                title: context.t('Kunci Biometrik / PIN Transaksi', 'Biometric Lock / Transaction PIN'),
+                subtitle: context.t('Wajibkan sidik jari atau PIN sebelum memproses pembayaran pesanan', 'Require fingerprint or PIN before completing order payments'),
                 value: _biometric,
                 onChanged: (val) async {
                   final isVerified = await BiometricAuthDialog.authenticate(
                     context: context,
-                    title: val ? 'Aktivasi Kunci Biometrik' : 'Nonaktifkan Kunci Biometrik',
+                    title: val
+                        ? context.t('Aktivasi Kunci Biometrik', 'Enable Biometric Lock')
+                        : context.t('Nonaktifkan Kunci Biometrik', 'Disable Biometric Lock'),
                     reason: val
-                        ? 'Verifikasi sidik jari atau PIN keamanan untuk mengaktifkan proteksi transaksi pesanan.'
-                        : 'Verifikasi sidik jari atau PIN keamanan Anda untuk menonaktifkan proteksi transaksi.',
+                        ? context.t('Verifikasi sidik jari atau PIN keamanan untuk mengaktifkan proteksi transaksi pesanan.', 'Verify fingerprint or PIN to activate order payment protection.')
+                        : context.t('Verifikasi sidik jari atau PIN keamanan Anda untuk menonaktifkan proteksi transaksi.', 'Verify fingerprint or PIN to disable payment protection.'),
                   );
                   if (isVerified) {
                     setState(() => _biometric = val);
                     widget.db.updateAppSettings(biometricAuth: val);
-                    _showSnackbar('Kunci biometrik transaksi ${val ? "berhasil diaktifkan" : "berhasil dinonaktifkan"}');
-                  } else {
-                    _showSnackbar('Verifikasi dibatalkan. Pengaturan biometrik tidak diubah.', isError: true);
                   }
                 },
               ),
@@ -785,28 +791,28 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               InkWell(
                 onTap: _showPrivacyPolicyDialog,
                 borderRadius: BorderRadius.circular(10),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
-                      Icon(Icons.privacy_tip_outlined, size: 20, color: Color(0xFF64748B)),
-                      SizedBox(width: 12),
+                      const Icon(Icons.privacy_tip_outlined, size: 20, color: Color(0xFF64748B)),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Kebijakan Privasi & Perlindungan Data',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                              context.t('Kebijakan Privasi & Perlindungan Data', 'Privacy Policy & Data Protection'),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                             ),
                             Text(
-                              'Pelajari bagaimana data nomor dan pesanan Anda dilindungi',
-                              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                              context.t('Pelajari bagaimana data nomor dan pesanan Anda dilindungi', 'Learn how your data, orders, and privacy are protected'),
+                              style: TextStyle(fontSize: 11, color: context.textSecondary),
                             ),
                           ],
                         ),
                       ),
-                      Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+                      Icon(Icons.chevron_right_rounded, color: context.textSecondary),
                     ],
                   ),
                 ),
@@ -818,13 +824,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           // ── 5. PREFERENSI PEMESANAN & PETA ──
           _buildSettingsCard(
             icon: Icons.receipt_long_outlined,
-            title: 'Preferensi Pemesanan & Peta',
-            subtitle: 'Pengaturan pencetakan struk dan tampilan navigasi',
+            title: context.t('Preferensi Pemesanan & Peta', 'Ordering & Map Preferences'),
+            subtitle: context.t('Pengaturan pencetakan struk dan tampilan navigasi', 'Receipt printing options and map navigation styles'),
             children: [
               _buildSwitchTile(
                 icon: Icons.print_outlined,
-                title: 'Cetak Struk Otomatis (Auto-Print)',
-                subtitle: 'Kirim perintah cetak struk termal segera setelah transaksi lunas',
+                title: context.t('Cetak Struk Otomatis (Auto-Print)', 'Auto-Print Thermal Receipt'),
+                subtitle: context.t('Kirim perintah cetak struk termal segera setelah transaksi lunas', 'Send print command to thermal printer upon payment completion'),
                 value: _autoPrint,
                 onChanged: (val) {
                   setState(() => _autoPrint = val);
@@ -833,7 +839,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               ),
               Divider(height: 20, color: context.borderSubtle),
               Text(
-                'Tipe Tampilan Peta Driver',
+                context.t('Tipe Tampilan Peta Driver', 'Driver Map View Style'),
                 style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: context.textPrimary),
               ),
               const SizedBox(height: 8),
@@ -841,14 +847,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 children: [
                   _buildMapOption(
                     label: 'OpenStreetMap',
-                    desc: 'Standar jalan & bangunan',
+                    desc: context.t('Standar jalan & bangunan', 'Standard roads & buildings'),
                     value: 'osm',
                     isSelected: _mapStyle == 'osm',
                   ),
                   const SizedBox(width: 8),
                   _buildMapOption(
                     label: 'Carto Positron',
-                    desc: 'Minimalis & hemat data',
+                    desc: context.t('Minimalis & hemat data', 'Clean & data saving'),
                     value: 'carto_light',
                     isSelected: _mapStyle == 'carto_light',
                   ),
@@ -861,8 +867,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           // ── 6. PENYIMPANAN & PEMELIHARAAN ──
           _buildSettingsCard(
             icon: Icons.cleaning_services_outlined,
-            title: 'Penyimpanan & Data Cache',
-            subtitle: 'Kelola file sementara dan reset aplikasi',
+            title: context.t('Penyimpanan & Data Cache', 'Storage & Cache Data'),
+            subtitle: context.t('Kelola file sementara dan reset aplikasi', 'Manage temporary files and reset app'),
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
@@ -874,7 +880,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Data Cache Sementara', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+                    Text(context.t('Data Cache Sementara', 'Temporary Cache Data'), style: TextStyle(fontSize: 12, color: context.textSecondary)),
                     Text(_cacheSize, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary)),
                   ],
                 ),
@@ -888,12 +894,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                label: const Text('Bersihkan Cache Gambar & Data Sementara', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                label: Text(context.t('Bersihkan Cache Gambar & Data Sementara', 'Clear Images & Temporary Cache'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 onPressed: () {
                   PaintingBinding.instance.imageCache.clear();
                   PaintingBinding.instance.imageCache.clearLiveImages();
                   setState(() => _cacheSize = '0.0 MB');
-                  _showSnackbar('Cache gambar & data sementara berhasil dibersihkan (0.0 MB)');
+                  _showSnackbar(context.t('Cache gambar & data sementara berhasil dibersihkan (0.0 MB)', 'Temporary cache successfully cleared (0.0 MB)'));
                 },
               ),
               const SizedBox(height: 8),
@@ -905,19 +911,22 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 icon: const Icon(Icons.restore_rounded, size: 18),
-                label: const Text('Kembalikan Semua Pengaturan ke Default', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                label: Text(context.t('Kembalikan Semua Pengaturan ke Default', 'Reset All Settings to Factory Default'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 onPressed: () {
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      title: const Text('Reset Pengaturan?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      content: const Text(
-                        'Semua tema, bahasa, suara, dan preferensi aplikasi akan dikembalikan ke pengaturan awal pabrik.',
-                        style: TextStyle(fontSize: 13),
+                      title: Text(context.t('Reset Pengaturan?', 'Reset Settings?'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      content: Text(
+                        context.t(
+                          'Semua tema, bahasa, suara, dan preferensi aplikasi akan dikembalikan ke pengaturan awal pabrik.',
+                          'All theme, language, sound, and app preferences will be reset to factory defaults.',
+                        ),
+                        style: const TextStyle(fontSize: 13),
                       ),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.t('Batal', 'Cancel'))),
                         FilledButton(
                           style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
                           onPressed: () async {
@@ -937,9 +946,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                               _biometric = false;
                               _cacheSize = '0.0 MB';
                             });
-                            _showSnackbar('Pengaturan aplikasi berhasil direset ke default');
                           },
-                          child: const Text('Reset'),
+                          child: Text(context.t('Reset', 'Reset')),
                         ),
                       ],
                     ),
@@ -953,8 +961,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           // ── 7. TENTANG APLIKASI & BANTUAN ──
           _buildSettingsCard(
             icon: Icons.info_outline_rounded,
-            title: 'Tentang Aplikasi & Bantuan',
-            subtitle: 'Informasi versi dan kontak layanan pelanggan',
+            title: context.t('Tentang Aplikasi & Bantuan', 'About App & Customer Support'),
+            subtitle: context.t('Informasi versi dan kontak layanan pelanggan', 'Version information and customer care contacts'),
             children: [
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -962,48 +970,50 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF7ED),
+                    color: context.isDarkMode
+                        ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                        : const Color(0xFFFFF7ED),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.restaurant_rounded, color: Color(0xFFEA580C), size: 20),
                 ),
-                title: const Text('Rasantara Resto & Cafe', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                subtitle: const Text('Versi 2.4.0 (Official Production)', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                title: Text('Rasantara Resto & Cafe', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
+                subtitle: Text('Versi 2.4.0 (Official Production)', style: TextStyle(fontSize: 11, color: context.textSecondary)),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
+                    color: const Color(0xFF15803D).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text('Terbaru', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF15803D))),
+                  child: Text(context.t('Terbaru', 'Latest'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF15803D))),
                 ),
               ),
-              const Divider(height: 16, color: Color(0xFFF1F5F9)),
+              Divider(height: 16, color: context.borderSubtle),
               InkWell(
                 onTap: _showHelpSupportDialog,
                 borderRadius: BorderRadius.circular(10),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     children: [
-                      Icon(Icons.headset_mic_outlined, size: 20, color: Color(0xFF15803D)),
-                      SizedBox(width: 12),
+                      const Icon(Icons.headset_mic_outlined, size: 20, color: Color(0xFF15803D)),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Pusat Bantuan & Layanan CS',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                              context.t('Pusat Bantuan & Layanan CS', 'Help Center & CS Support'),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                             ),
                             Text(
-                              'Hotline CS: +62 8978655469 • Email: endymahavira@gmail.com',
-                              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                              context.t('No Telepon: +62 8978655469 • Email: endymahavira@gmail.com', 'Phone: +62 8978655469 • Email: endymahavira@gmail.com'),
+                              style: TextStyle(fontSize: 11, color: context.textSecondary),
                             ),
                           ],
                         ),
                       ),
-                      Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+                      Icon(Icons.chevron_right_rounded, color: context.textSecondary),
                     ],
                   ),
                 ),
@@ -1083,7 +1093,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         onTap: () {
           setState(() => _themeMode = value);
           widget.db.updateAppSettings(themeMode: value);
-          _showSnackbar('Tema tampilan diubah ke $label');
         },
         borderRadius: BorderRadius.circular(10),
         child: Container(
@@ -1131,7 +1140,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         onTap: () {
           setState(() => _language = value);
           widget.db.updateAppSettings(language: value);
-          _showSnackbar('Bahasa diubah ke $label');
         },
         borderRadius: BorderRadius.circular(10),
         child: Container(
@@ -1192,7 +1200,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         onTap: () {
           setState(() => _mapStyle = value);
           widget.db.updateAppSettings(mapStyle: value);
-          _showSnackbar('Tipe tampilan peta diubah ke $label');
         },
         borderRadius: BorderRadius.circular(10),
         child: Container(

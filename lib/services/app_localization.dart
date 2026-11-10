@@ -1,10 +1,26 @@
+import 'package:flutter/widgets.dart';
+
 /// Service lokalisasi dua bahasa (Bahasa Indonesia dan English) untuk Rasantara Restoran
 class AppLocalization {
+  static String _currentLanguage = 'id';
+  static String get currentLanguage => _currentLanguage;
+  static bool get isEnglish => _currentLanguage == 'en';
+
+  static void setLanguage(String code) {
+    _currentLanguage = (code == 'en') ? 'en' : 'id';
+  }
+
+  static String tr(String key) {
+    final langMap = _localizedValues[_currentLanguage] ?? _localizedValues['id']!;
+    return langMap[key] ?? _localizedValues['id']![key] ?? key;
+  }
+
+  static String t(String idText, String enText) {
+    return isEnglish ? enText : idText;
+  }
+
   final String languageCode;
-
-  AppLocalization(this.languageCode);
-
-  bool get isEnglish => languageCode == 'en';
+  AppLocalization([String? code]) : languageCode = code ?? _currentLanguage;
 
   static const Map<String, Map<String, String>> _localizedValues = {
     'id': {
@@ -179,8 +195,14 @@ class AppLocalization {
     },
   };
 
-  String tr(String key) {
+  String translate(String key) {
     final langMap = _localizedValues[languageCode] ?? _localizedValues['id']!;
     return langMap[key] ?? _localizedValues['id']![key] ?? key;
   }
+}
+
+extension LocalizationExtension on BuildContext {
+  String tr(String key) => AppLocalization.tr(key);
+  String t(String idText, String enText) => AppLocalization.t(idText, enText);
+  bool get isEnglish => AppLocalization.isEnglish;
 }

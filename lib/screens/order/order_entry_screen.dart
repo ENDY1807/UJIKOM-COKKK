@@ -29,6 +29,17 @@ enum OrderServiceType {
   final String label;
   final IconData icon;
   const OrderServiceType(this.label, this.icon);
+
+  String localizedLabel(bool isEnglish) {
+    switch (this) {
+      case OrderServiceType.dineIn:
+        return isEnglish ? 'Dine In' : 'Makan di Tempat';
+      case OrderServiceType.takeAway:
+        return 'Take Away';
+      case OrderServiceType.selfPickUp:
+        return isEnglish ? 'Self Pick-Up' : 'Self Pick-Up';
+    }
+  }
 }
 
 class OrderEntryScreen extends StatefulWidget {
@@ -2011,7 +2022,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                type.label,
+                                type.localizedLabel(context.isEnglish),
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
@@ -2109,9 +2120,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             _selectedTableNo!,
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
                           ),
-                          const Text(
-                            'Terkunci otomatis via scan QR Meja',
-                            style: TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w600),
+                          Text(
+                            context.t('Terkunci otomatis via scan QR Meja', 'Auto-locked via Table QR scan'),
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -2124,7 +2135,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                       ),
                       onPressed: _scanTableQr,
                       icon: const Icon(Icons.qr_code_scanner, size: 14),
-                      label: const Text('Scan Ulang', style: TextStyle(fontSize: 11)),
+                      label: Text(context.t('Scan Ulang', 'Rescan'), style: const TextStyle(fontSize: 11)),
                     ),
                     const SizedBox(width: 6),
                     OutlinedButton.icon(
@@ -2140,7 +2151,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         });
                       },
                       icon: const Icon(Icons.arrow_back_rounded, size: 14),
-                      label: const Text('Ke Take Away', style: TextStyle(fontSize: 11)),
+                      label: Text(context.t('Ke Take Away', 'To Take Away'), style: const TextStyle(fontSize: 11)),
                     ),
                   ],
                 )
@@ -2158,14 +2169,14 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: const Color(0xFFEA580C)),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C), size: 18),
-                              SizedBox(width: 8),
+                              const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C), size: 18),
+                              const SizedBox(width: 8),
                               Text(
-                                'Pindai QR di Meja Anda',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                                context.t('Pindai QR di Meja Anda', 'Scan Table QR Code'),
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                               ),
                             ],
                           ),
@@ -2187,7 +2198,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         });
                       },
                       icon: const Icon(Icons.arrow_back_rounded, size: 14),
-                      label: const Text('Take Away', style: TextStyle(fontSize: 11)),
+                      label: Text(context.t('Take Away', 'Take Away'), style: const TextStyle(fontSize: 11)),
                     ),
                   ],
                 ),
@@ -2200,7 +2211,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     child: Text(
                       _deliveryAddressController.text.isNotEmpty
                           ? _deliveryAddressController.text
-                          : 'Pilih titik antar rumah di peta OpenStreetMap',
+                          : context.t('Pilih titik antar rumah di peta OpenStreetMap', 'Select delivery location on OpenStreetMap'),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -2221,11 +2232,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         color: const Color(0xFFEA580C),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.map_rounded, size: 12, color: Colors.white),
-                          SizedBox(width: 4),
-                          Text('Peta OSM', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const Icon(Icons.map_rounded, size: 12, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Text(context.t('Peta OSM', 'OSM Map'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -2269,11 +2280,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         color: const Color(0xFF2563EB),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.bookmark_added_rounded, size: 12, color: Colors.white),
-                          SizedBox(width: 4),
-                          Text('Alamat Saya', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const Icon(Icons.bookmark_added_rounded, size: 12, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Text(context.t('Alamat Saya', 'My Addresses'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -2284,7 +2295,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     icon: _isLoadingGps
                         ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.my_location_rounded, size: 18, color: Color(0xFFEA580C)),
-                    tooltip: 'Gunakan GPS',
+                    tooltip: context.t('Gunakan GPS', 'Use GPS Location'),
                     onPressed: _isLoadingGps ? null : _getUserLocation,
                   ),
                 ],
@@ -2294,11 +2305,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Jarak: ${_deliveryDistanceKm.toStringAsFixed(1)} km • Est. $_deliveryEstimatedTime',
+                    '${context.t('Jarak', 'Distance')}: ${_deliveryDistanceKm.toStringAsFixed(1)} km • Est. $_deliveryEstimatedTime',
                     style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                   ),
                   Text(
-                    'Ongkir: ${_currencyFmt.format(_deliveryFee)}',
+                    '${context.t('Ongkir', 'Delivery Fee')}: ${_currencyFmt.format(_deliveryFee)}',
                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                   ),
                 ],
@@ -2310,7 +2321,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Self Pick-Up di Counter Restoran Rasantara (Jl. Soekarno-Hatta No. 590, Buahbatu, Bandung)',
+                      context.t(
+                        'Self Pick-Up di Counter Restoran Rasantara (Jl. Soekarno-Hatta No. 590, Buahbatu, Bandung)',
+                        'Self Pick-Up at Rasantara Restaurant Counter (Jl. Soekarno-Hatta No. 590, Buahbatu, Bandung)',
+                      ),
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.textPrimary),
                     ),
                   ),
@@ -2320,8 +2334,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Estimasi Waktu Siap: 15 - 20 Menit', style: TextStyle(fontSize: 11, color: context.textSecondary)),
-                  const Text('Biaya Kemasan: Rp 2.000', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
+                  Text(context.t('Estimasi Waktu Siap: 15 - 20 Menit', 'Estimated Ready: 15 - 20 Mins'), style: TextStyle(fontSize: 11, color: context.textSecondary)),
+                  Text(context.t('Biaya Kemasan: Rp 2.000', 'Packaging: Rp 2,000'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
                 ],
               ),
             ],
@@ -2351,7 +2365,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
               style: TextStyle(color: context.textPrimary, fontSize: 13),
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
-                hintText: 'Cari Menu',
+                hintText: context.t('Cari Menu', 'Search Menu'),
                 hintStyle: TextStyle(fontSize: 13, color: context.textSecondary),
                 prefixIcon: Icon(Icons.search_rounded, size: 20, color: context.textSecondary),
                 suffixIcon: _searchQuery.isNotEmpty
@@ -2384,7 +2398,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
                     selected: isSelected,
-                    label: Text('${cat.label} ($count)'),
+                    label: Text('${cat.localizedLabel(context.isEnglish)} ($count)'),
                     labelStyle: TextStyle(
                       fontSize: 12,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -2445,12 +2459,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 const Icon(Icons.search_off_rounded, size: 48, color: Color(0xFF94A3B8)),
                 const SizedBox(height: 12),
                 Text(
-                  'Menu "$_searchQuery" tidak ditemukan',
+                  '${context.t('Menu', 'Menu item')} "$_searchQuery" ${context.t('tidak ditemukan', 'not found')}',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Coba cari dengan kata kunci lain atau reset filter',
+                  context.t('Coba cari dengan kata kunci lain atau reset filter', 'Try searching with other keywords or reset filters'),
                   style: TextStyle(fontSize: 12, color: context.textSecondary),
                 ),
                 const SizedBox(height: 12),
@@ -2462,7 +2476,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                       _selectedCategory = MenuCategory.semua;
                     });
                   },
-                  child: const Text('Reset Pencarian', style: TextStyle(color: Color(0xFFEA580C))),
+                  child: Text(context.t('Reset Pencarian', 'Reset Search'), style: const TextStyle(color: Color(0xFFEA580C))),
                 ),
               ],
             ),
@@ -2471,7 +2485,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
         // 1. Paket Spesial Slider (Slide ke Kanan) dengan Foto
         if (pakets.isNotEmpty) ...[
-          _buildCategoryHeader('Paket Spesial Rasantara', Icons.local_offer_rounded, 'Geser >'),
+          _buildCategoryHeader(
+            context.t('Paket Spesial Rasantara', 'Rasantara Special Combos'),
+            Icons.local_offer_rounded,
+            context.t('Geser >', 'Slide >'),
+          ),
           const SizedBox(height: 8),
           SizedBox(
             height: 245,
@@ -2487,7 +2505,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
         // 2. Makanan Utama
         if (makanans.isNotEmpty) ...[
-          _buildCategoryHeader('Makanan Utama', Icons.lunch_dining_rounded, '${makanans.length} menu'),
+          _buildCategoryHeader(
+            context.t('Makanan Utama', 'Main Courses'),
+            Icons.lunch_dining_rounded,
+            '${makanans.length} ${context.t('menu', 'items')}',
+          ),
           const SizedBox(height: 8),
           ...makanans.map((m) => _buildMenuCard(m)),
           const SizedBox(height: 16),
@@ -2495,7 +2517,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
         // 3. Minuman Segar & Hangat
         if (minumans.isNotEmpty) ...[
-          _buildCategoryHeader('Minuman Segar & Hangat', Icons.local_cafe_rounded, '${minumans.length} menu'),
+          _buildCategoryHeader(
+            context.t('Minuman Segar & Hangat', 'Beverages & Drinks'),
+            Icons.local_cafe_rounded,
+            '${minumans.length} ${context.t('menu', 'items')}',
+          ),
           const SizedBox(height: 8),
           ...minumans.map((m) => _buildMenuCard(m)),
           const SizedBox(height: 16),
@@ -2503,7 +2529,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
         // 4. Camilan & Add-On / Menu Tambahan
         if (addons.isNotEmpty) ...[
-          _buildCategoryHeader('Camilan & Add-On', Icons.bakery_dining_rounded, '${addons.length} menu'),
+          _buildCategoryHeader(
+            context.t('Camilan & Add-On', 'Snacks & Extras'),
+            Icons.bakery_dining_rounded,
+            '${addons.length} ${context.t('menu', 'items')}',
+          ),
           const SizedBox(height: 8),
           ...addons.map((m) => _buildMenuCard(m)),
         ],
@@ -2602,9 +2632,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     borderRadius: BorderRadius.circular(6),
                     boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
                   ),
-                  child: const Text(
-                    'PAKET SPESIAL',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                  child: Text(
+                    context.t('PAKET SPESIAL', 'SPECIAL COMBO'),
+                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ),
               ),
@@ -2652,7 +2682,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           ),
                           onPressed: () => _addToCart(menu),
                           icon: const Icon(Icons.add, size: 14, color: Colors.white),
-                          label: const Text('Tambah', style: TextStyle(fontSize: 11, color: Colors.white)),
+                          label: Text(context.t('Tambah', 'Add'), style: const TextStyle(fontSize: 11, color: Colors.white)),
                         )
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2900,10 +2930,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   children: [
                     const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
                     const SizedBox(width: 6),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Flash Sale Rasantara',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                        context.t('Flash Sale Rasantara', 'Rasantara Flash Deals'),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -2918,9 +2948,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             ],
           ),
           const SizedBox(height: 2),
-          const Text(
-            'Diskonnya s.d. 40%, serbu hidangan lezat sekarang!',
-            style: TextStyle(fontSize: 11, color: Colors.white70),
+          Text(
+            context.t('Diskonnya s.d. 40%, serbu hidangan lezat sekarang!', 'Discounts up to 40%, grab tasty meals now!'),
+            style: const TextStyle(fontSize: 11, color: Colors.white70),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -3072,9 +3102,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Total Pesanan',
-                              style: TextStyle(fontSize: 10.5, color: Colors.white70, fontWeight: FontWeight.w600),
+                            Text(
+                              context.t('Total Pesanan', 'Order Total'),
+                              style: const TextStyle(fontSize: 10.5, color: Colors.white70, fontWeight: FontWeight.w600),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -3095,15 +3125,15 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Row(
+                Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Lihat Keranjang',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                      context.t('Lihat Keranjang', 'View Cart'),
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
                   ],
                 ),
               ],
@@ -3125,31 +3155,24 @@ class FlashSaleCountdownTimer extends StatefulWidget {
 
 class _FlashSaleCountdownTimerState extends State<FlashSaleCountdownTimer> {
   Timer? _ticker;
-  late int _remainingSeconds;
+  int _remainingSeconds = 7200;
 
   @override
   void initState() {
     super.initState();
-    _updateRemaining();
+    _remainingSeconds = _calcRemaining();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      _updateRemaining();
+      setState(() {
+        _remainingSeconds = _calcRemaining();
+      });
     });
   }
 
-  void _updateRemaining() {
+  int _calcRemaining() {
     final now = DateTime.now();
-    // Siklus flash sale 2 jam (7200 detik) tersinkronisasi dengan waktu lokal
     final totalSecondsToday = (now.hour * 3600) + (now.minute * 60) + now.second;
-    final cycleRemaining = 7200 - (totalSecondsToday % 7200);
-
-    if (mounted) {
-      setState(() {
-        _remainingSeconds = cycleRemaining;
-      });
-    } else {
-      _remainingSeconds = cycleRemaining;
-    }
+    return 7200 - (totalSecondsToday % 7200);
   }
 
   @override

@@ -139,36 +139,36 @@ class _DashboardScreenState extends State<DashboardScreen>
 
                 final metrics = [
                   _MetricData(
-                    title: 'Meja Terisi',
+                    title: context.t('Meja Terisi', 'Occupied Tables'),
                     value: '$occupiedTables/${widget.db.tables.length}',
-                    sub: '$emptyTables kosong · $reservedTables reservasi',
+                    sub: '$emptyTables ${context.t('kosong', 'empty')} · $reservedTables ${context.t('reservasi', 'reserved')}',
                     icon: Icons.table_restaurant_rounded,
                     color: AppTheme.orangePrimary,
                     gradient: const [Color(0xFFFF7300), Color(0xFFEA580C)],
                     index: 0,
                   ),
                   _MetricData(
-                    title: 'Pesanan Aktif',
+                    title: context.t('Pesanan Aktif', 'Active Orders'),
                     value: '${activeOrders.length}',
-                    sub: 'Menunggu & dimasak',
+                    sub: context.t('Menunggu & dimasak', 'Queue & cooking'),
                     icon: Icons.soup_kitchen_rounded,
                     color: const Color(0xFFD97706),
                     gradient: const [Color(0xFFF59E0B), Color(0xFFD97706)],
                     index: 1,
                   ),
                   _MetricData(
-                    title: 'Transaksi Lunas',
+                    title: context.t('Transaksi Lunas', 'Completed Sales'),
                     value: '${widget.db.totalTransaksiCount}',
-                    sub: 'Tagihan dibayar',
+                    sub: context.t('Tagihan dibayar', 'Paid invoices'),
                     icon: Icons.check_circle_rounded,
                     color: const Color(0xFF16A34A),
                     gradient: const [Color(0xFF22C55E), Color(0xFF16A34A)],
                     index: 2,
                   ),
                   _MetricData(
-                    title: 'Total Omzet',
+                    title: context.t('Total Omzet', 'Total Revenue'),
                     value: fmt.format(widget.db.totalOmzet),
-                    sub: 'Pendapatan tercatat',
+                    sub: context.t('Pendapatan tercatat', 'Recorded income'),
                     icon: Icons.payments_rounded,
                     color: const Color(0xFF2563EB),
                     gradient: const [Color(0xFF3B82F6), Color(0xFF2563EB)],
@@ -1051,7 +1051,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              'Menu Best Seller & Rekomendasi',
+                              context.t('Menu Best Seller & Rekomendasi', 'Best Sellers & Top Picks'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
@@ -1064,7 +1064,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Paling banyak dipesan pelanggan Rasantara',
+                        context.t('Paling banyak dipesan pelanggan Rasantara', 'Most ordered dishes by Rasantara guests'),
                         style: TextStyle(fontSize: 11, color: context.textSecondary),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1074,9 +1074,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 TextButton.icon(
                   onPressed: () => widget.onNavigateToTab(1),
                   icon: const Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFFEA580C)),
-                  label: const Text(
-                    'Lihat Menu',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                  label: Text(
+                    context.t('Lihat Menu', 'View Menu'),
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                   ),
                 ),
               ],
@@ -1086,7 +1086,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               Container(
                 padding: const EdgeInsets.all(24),
                 alignment: Alignment.center,
-                child: Text('Belum ada menu masakan tersedia', style: TextStyle(color: context.textSecondary)),
+                child: Text(context.t('Belum ada menu masakan tersedia', 'No menu dishes available yet'), style: TextStyle(color: context.textSecondary)),
               )
             else
               GridView.builder(
@@ -1240,7 +1240,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             },
                                           );
                                         },
-                                        child: const Text('Detail & Pesan', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                        child: Text(context.t('Detail & Pesan', 'Details & Order'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                                       ),
                                     ),
                                   ],
@@ -1381,7 +1381,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Voucher & Kupon Hemat',
+                            context.t('Voucher & Kupon Hemat', 'Vouchers & Deals'),
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
@@ -1391,7 +1391,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            'Klaim voucher spesial pesanan Anda',
+                            context.t('Klaim voucher spesial pesanan Anda', 'Claim special discounts for your orders'),
                             style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1406,11 +1406,11 @@ class _DashboardScreenState extends State<DashboardScreen>
               InkWell(
                 onTap: () => widget.onNavigateToTab(1),
                 borderRadius: BorderRadius.circular(6),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                   child: Text(
-                    'Lihat Menu',
-                    style: TextStyle(
+                    context.t('Lihat Menu', 'View Menu'),
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFFEA580C),
@@ -1509,9 +1509,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                       );
                       widget.onNavigateToTab(1, couponCode: v['code'] as String);
                     },
-                    child: const Text(
-                      'Pakai',
-                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                    child: Text(
+                      context.t('Pakai', 'Apply'),
+                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -1552,7 +1552,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Kategori Menu Pilihan',
+                      context.t('Kategori Menu Pilihan', 'Featured Categories'),
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -1562,7 +1562,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'Jelajahi beragam cita rasa kuliner Nusantara',
+                      context.t('Jelajahi beragam cita rasa kuliner Nusantara', 'Explore Indonesia\'s rich culinary diversity'),
                       style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1680,7 +1680,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Antrean Pesanan',
+                      context.t('Antrean Pesanan', 'Order Queue'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -1688,7 +1688,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                     ),
                     Text(
-                      '${activeOrders.length} pesanan berjalan',
+                      '${activeOrders.length} ${context.t('pesanan berjalan', 'active orders')}',
                       style: TextStyle(fontSize: 12, color: context.textSecondary),
                     ),
                   ],
@@ -1715,9 +1715,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                           );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Tidak ada antrean pesanan aktif saat ini.'),
-                              duration: Duration(seconds: 2),
+                            SnackBar(
+                              content: Text(context.t('Tidak ada antrean pesanan aktif saat ini.', 'No active order queue currently.')),
+                              duration: const Duration(seconds: 2),
                             ),
                           );
                         }
@@ -1727,9 +1727,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                         size: 14,
                         color: Color(0xFFEA580C),
                       ),
-                      label: const Text(
-                        'Pantau Pesanan',
-                        style: TextStyle(
+                      label: Text(
+                        context.t('Pantau Pesanan', 'Track Orders'),
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFFEA580C),

@@ -86,9 +86,11 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalization.setLanguage(_db.appLanguage);
     final themeMode = _db.appThemeMode == 'dark'
         ? ThemeMode.dark
         : (_db.appThemeMode == 'light' ? ThemeMode.light : ThemeMode.system);
+    final locale = Locale(_db.appLanguage);
 
     if (_showSplash) {
       return MaterialApp(
@@ -97,6 +99,7 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeMode,
+        locale: locale,
         home: SplashScreen(
           db: _db,
           onFinish: () => setState(() => _showSplash = false),
@@ -110,12 +113,14 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
+      locale: locale,
       home: _db.currentUser == null
           ? LoginScreen(
               db: _db,
               onLoginSuccess: () => setState(() {}),
             )
           : MainNavigationScreen(
+              key: ValueKey('main-nav-${_db.appLanguage}'),
               db: _db,
               onLogout: () => setState(() {}),
             ),

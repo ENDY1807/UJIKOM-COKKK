@@ -10,6 +10,7 @@ import '../models/payment_method_model.dart';
 import '../models/user_address_model.dart';
 import '../models/event_model.dart';
 import 'supabase_service.dart';
+import 'app_localization.dart';
 
 class DatabaseService extends ChangeNotifier {
   // Current logged in user
@@ -312,6 +313,7 @@ class DatabaseService extends ChangeNotifier {
       _appMapStyle = prefs.getString('app_map_style') ?? 'osm';
       _appThemeMode = prefs.getString('app_theme_mode') ?? 'light';
       _appLanguage = prefs.getString('app_language') ?? 'id';
+      AppLocalization.setLanguage(_appLanguage);
       _appFontSize = prefs.getString('app_font_size') ?? 'standard';
       _appDataSaver = prefs.getBool('app_data_saver') ?? false;
       _appBiometricAuth = prefs.getBool('app_biometric_auth') ?? false;
@@ -343,7 +345,10 @@ class DatabaseService extends ChangeNotifier {
     if (haptic != null) _appHaptic = haptic;
     if (mapStyle != null) _appMapStyle = mapStyle;
     if (themeMode != null) _appThemeMode = themeMode;
-    if (language != null) _appLanguage = language;
+    if (language != null) {
+      _appLanguage = language;
+      AppLocalization.setLanguage(language);
+    }
     if (fontSize != null) _appFontSize = fontSize;
     if (dataSaver != null) _appDataSaver = dataSaver;
     if (biometricAuth != null) _appBiometricAuth = biometricAuth;
@@ -378,6 +383,7 @@ class DatabaseService extends ChangeNotifier {
     _appMapStyle = 'osm';
     _appThemeMode = 'light';
     _appLanguage = 'id';
+    AppLocalization.setLanguage('id');
     _appFontSize = 'standard';
     _appDataSaver = false;
     _appBiometricAuth = false;
