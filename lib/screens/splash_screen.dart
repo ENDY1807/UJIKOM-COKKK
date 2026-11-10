@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
+import '../widgets/app_loading_animation.dart';
 
 class SplashScreen extends StatefulWidget {
   final DatabaseService db;
@@ -147,17 +148,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
                 const SizedBox(height: 36),
 
-                // Smooth Bar Loader
-                SizedBox(
-                  width: 140,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: const LinearProgressIndicator(
-                      minHeight: 4,
-                      backgroundColor: Color(0xFFFFEDD5),
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEA580C)),
-                    ),
-                  ),
+                // Animasi Loading Interaktif Gojek & Rasantara Style
+                const AppLoadingAnimation(
+                  size: 42,
+                  primaryColor: Color(0xFF00AA13),
+                  secondaryColor: Color(0xFFEA580C),
                 ),
               ],
             ),

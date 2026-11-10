@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/order_model.dart';
 import '../services/database_service.dart';
 import '../services/payment_gateway_service.dart';
+import 'app_loading_animation.dart';
 import 'receipt_dialog.dart';
 
 class SnapPaymentDialog extends StatefulWidget {
@@ -208,9 +209,13 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
               const SizedBox(height: 16),
 
               if (_isLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: AppLoadingAnimation(
+                    size: 40,
+                    primaryColor: _brandColor,
+                    message: 'Menghubungkan ke Gateway ${widget.providerName}...',
+                  ),
                 )
               else if (_errorMessage != null)
                 Padding(

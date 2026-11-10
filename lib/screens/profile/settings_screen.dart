@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../services/database_service.dart';
 import '../../services/whatsapp_otp_service.dart';
+import '../../widgets/app_loading_animation.dart';
 
 class SettingsScreen extends StatefulWidget {
   final DatabaseService db;
@@ -33,15 +37,39 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   late bool _autoPrint;
   late bool _haptic;
   late String _mapStyle;
+  Uint8List? _customImageBytes;
 
-  final List<String> _presetAvatars = [
-    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80',
-  ];
+  Future<void> _pickProfilePhoto() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
+        final base64String = 'data:image/png;base64,${base64Encode(bytes)}';
+        setState(() {
+          _customImageBytes = bytes;
+          _selectedAvatar = base64String;
+        });
+        _showSnackbar('Foto profil berhasil dipilih dari galeri');
+      }
+    } catch (e) {
+      _showSnackbar('Gagal memilih foto: $e', isError: true);
+    }
+  }
+
+  void _removeProfilePhoto() {
+    setState(() {
+      _customImageBytes = null;
+      _selectedAvatar = '';
+    });
+    _showSnackbar('Foto profil telah dihapus');
+  }
 
   @override
   void initState() {
@@ -85,6 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       return;
     }
 
+    AppLoadingAnimation.show(context, message: 'Menyimpan perubahan profil...');
     setState(() => _isSavingProfile = true);
 
     final cleanUsername = _usernameCtrl.text.trim().replaceAll('@', '').toLowerCase();
@@ -100,6 +129,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       isConfigured: true,
     );
 
+    if (mounted) {
+      AppLoadingAnimation.hide(context);
+    }
     setState(() => _isSavingProfile = false);
 
     if (success) {
@@ -304,15 +336,39 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 36,
-                      backgroundColor: const Color(0xFFFFEDD5),
-                      backgroundImage: _selectedAvatar.isNotEmpty
-                          ? NetworkImage(_selectedAvatar)
-                          : null,
-                      child: _selectedAvatar.isEmpty
-                          ? const Icon(Icons.person, size: 36, color: Color(0xFFEA580C))
-                          : null,
+                    GestureDetector(
+                      onTap: _pickProfilePhoto,
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 36,
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            backgroundImage: _customImageBytes != null
+                                ? MemoryImage(_customImageBytes!)
+                                : (_selectedAvatar.isNotEmpty && _selectedAvatar.startsWith('data:image')
+                                    ? MemoryImage(base64Decode(_selectedAvatar.split(',').last)) as ImageProvider
+                                    : (_selectedAvatar.isNotEmpty && _selectedAvatar.startsWith('http')
+                                        ? NetworkImage(_selectedAvatar) as ImageProvider
+                                        : null)),
+                            child: (_customImageBytes == null && _selectedAvatar.isEmpty)
+                                ? const Icon(Icons.person, size: 36, color: Color(0xFF94A3B8))
+                                : null,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00AA13),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -327,53 +383,46 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFF7ED),
+                              color: const Color(0xFFF0FDF4),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: const Color(0xFFFFEDD5)),
+                              border: Border.all(color: const Color(0xFFBBF7D0)),
                             ),
                             child: Text(
                               'Role: ${user?.role.label ?? "Pelanggan"}',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
                             ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              FilledButton.tonalIcon(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFFF1F5F9),
+                                  foregroundColor: const Color(0xFF1E293B),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.photo_library_outlined, size: 14),
+                                label: const Text('Ganti Foto', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                onPressed: _pickProfilePhoto,
+                              ),
+                              if (_selectedAvatar.isNotEmpty || _customImageBytes != null) ...[
+                                const SizedBox(width: 8),
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: const Color(0xFFDC2626),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  ),
+                                  onPressed: _removeProfilePhoto,
+                                  child: const Text('Hapus', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Pilih Avatar Nusantara:',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 48,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _presetAvatars.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 10),
-                    itemBuilder: (ctx, i) {
-                      final url = _presetAvatars[i];
-                      final isSelected = _selectedAvatar == url;
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedAvatar = url),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
-                              width: isSelected ? 2.5 : 1.0,
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            radius: 22,
-                            backgroundImage: NetworkImage(url),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
                 ),
               ],
             ),

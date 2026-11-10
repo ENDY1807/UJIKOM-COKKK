@@ -15,6 +15,7 @@ import '../../widgets/menu_detail_dialog.dart';
 import '../profile/manage_addresses_screen.dart';
 import 'gofood_tracking_dialog.dart';
 import 'qr_scanner_dialog.dart';
+import '../../widgets/app_loading_animation.dart';
 
 enum OrderServiceType {
   dineIn('Makan di Tempat', Icons.table_restaurant_rounded),
@@ -435,7 +436,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   }
 
   // ── Konfirmasi dan Submit Pesanan ──
-  void _confirmAndSubmitOrder({String? paymentMethodId}) {
+  Future<void> _confirmAndSubmitOrder({String? paymentMethodId}) async {
     if (_cart.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Keranjang masih kosong, pilih menu terlebih dahulu.')),
@@ -612,6 +613,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       _selectedTableNo = null; // Reset QR Meja ke awal
       _serviceType = OrderServiceType.takeAway; // Kembali ke tampilan awal (Take Away & Self Pick-Up)
     });
+
+    AppLoadingAnimation.show(context, message: 'Menyiapkan transaksi pesanan...');
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+    AppLoadingAnimation.hide(context);
 
     // 1. Jika metode QRIS, buka dialog pembayaran QRIS Midtrans
     if (payId == 'qris') {
@@ -1046,6 +1052,129 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // GoFood Address & Delivery Instruction Card (Inspirasi Gojek)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFFFF7ED),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.location_on_rounded, color: Color(0xFFEA580C), size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _serviceType == OrderServiceType.takeAway
+                                              ? (_deliveryAddressController.text.isNotEmpty ? _deliveryAddressController.text : 'Pilih Alamat Pengantaran')
+                                              : (_serviceType == OrderServiceType.dineIn
+                                                  ? 'Makan di Meja Restoran (${_selectedTableNo ?? "Pilih Meja"})'
+                                                  : 'Ambil Sendiri di Resto (Self Pick-Up)'),
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _serviceType == OrderServiceType.takeAway
+                                              ? (_deliveryDistanceKm > 0 ? '${_deliveryDistanceKm.toStringAsFixed(1)} km • $_deliveryEstimatedTime' : 'Pilih titik lokasi presisi di peta OSM')
+                                              : 'Rasantara Kuliner Nusantara',
+                                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF00AA13),
+                                      side: const BorderSide(color: Color(0xFF00AA13), width: 1.5),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                      if (_serviceType == OrderServiceType.takeAway) {
+                                        _openOsmMapPicker();
+                                      } else {
+                                        _scanTableQr();
+                                      }
+                                    },
+                                    child: const Text('Ganti', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                              if (_serviceType == OrderServiceType.takeAway) ...[
+                                const SizedBox(height: 12),
+                                const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                                const SizedBox(height: 10),
+                                const Text(
+                                  'Instruksi Pengantaran Driver:',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                                ),
+                                const SizedBox(height: 6),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      'Tinggal di pintu',
+                                      'Tinggal di pagar',
+                                      'Titipkan satpam',
+                                      'Chat pas sampai',
+                                    ].map((instruction) {
+                                      final isSelected = _orderNotesController.text.contains(instruction);
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 6),
+                                        child: ChoiceChip(
+                                          label: Text(instruction),
+                                          selected: isSelected,
+                                          selectedColor: const Color(0xFFE8F5E9),
+                                          labelStyle: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                            color: isSelected ? const Color(0xFF00AA13) : const Color(0xFF475569),
+                                          ),
+                                          onSelected: (val) {
+                                            setModalState(() {
+                                              if (val) {
+                                                _orderNotesController.text = _orderNotesController.text.isEmpty
+                                                    ? instruction
+                                                    : '${_orderNotesController.text}, $instruction';
+                                              } else {
+                                                _orderNotesController.text = _orderNotesController.text
+                                                    .replaceAll(', $instruction', '')
+                                                    .replaceAll(instruction, '')
+                                                    .trim();
+                                              }
+                                            });
+                                            setState(() {});
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
                         // 1. DAFTAR ITEM PESANAN
                         const Text(
                           'Menu yang Dipesan:',
@@ -1166,6 +1295,47 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               );
                             },
                           ),
+
+                        // Banner GoFood Upsell (Inspirasi Image 3)
+                        Container(
+                          margin: const EdgeInsets.only(top: 14),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Ada lagi yang mau dibeli?',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                    ),
+                                    Text(
+                                      'Masih bisa nambah menu lain, ya.',
+                                      style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF00AA13),
+                                  side: const BorderSide(color: Color(0xFF00AA13), width: 1.5),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  minimumSize: Size.zero,
+                                ),
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                child: const Text('Tambah', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        ),
 
                         const SizedBox(height: 18),
                         const Divider(height: 1, color: Color(0xFFE2E8F0)),
@@ -1467,28 +1637,103 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 ),
 
                 // Pinned Bottom Bar
+                // Pinned Bottom Bar (Inspirasi Gojek Image 3)
                 Container(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
                   ),
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFEA580C),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: _cart.isEmpty
-                        ? null
-                        : () {
-                            Navigator.of(ctx).pop();
-                            _confirmAndSubmitOrder(paymentMethodId: _selectedPaymentMethodId);
-                          },
-                    child: Text(
-                      'Kirim Pesanan Sekarang • ${_currencyFmt.format(_grandTotal)}',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Ringkasan Metode Bayar & Total
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  _selectedPaymentMethodId == 'gopay'
+                                      ? Icons.wallet_rounded
+                                      : (_selectedPaymentMethodId == 'dana'
+                                          ? Icons.account_balance_wallet_rounded
+                                          : (_selectedPaymentMethodId == 'qris'
+                                              ? Icons.qr_code_2_rounded
+                                              : (_selectedPaymentMethodId == 'm_banking'
+                                                  ? Icons.account_balance_rounded
+                                                  : Icons.payments_outlined))),
+                                  size: 18,
+                                  color: _selectedPaymentMethodId == 'gopay' ? const Color(0xFF00AED6) : const Color(0xFF00AA13),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _selectedPaymentMethodId == 'gopay'
+                                        ? 'GoPay'
+                                        : (_selectedPaymentMethodId == 'dana'
+                                            ? 'DANA'
+                                            : (_selectedPaymentMethodId == 'qris'
+                                                ? 'QRIS Dinamis'
+                                                : (_selectedPaymentMethodId == 'm_banking'
+                                                    ? 'Virtual Account'
+                                                    : 'Bayar Tunai'))),
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                  ),
+                                  Text(
+                                    _currencyFmt.format(_grandTotal),
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              'Midtrans Aktif',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00AA13)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Tombol Utama Gojek Signature Green
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF00AA13), // Gojek Signature Green
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          minimumSize: const Size.fromHeight(48),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        ),
+                        onPressed: _cart.isEmpty
+                            ? null
+                            : () {
+                                Navigator.of(ctx).pop();
+                                _confirmAndSubmitOrder(paymentMethodId: _selectedPaymentMethodId);
+                              },
+                        child: Text(
+                          _serviceType == OrderServiceType.takeAway
+                              ? 'Pesan dan antar sekarang'
+                              : 'Pesan Sekarang (${_currencyFmt.format(_grandTotal)})',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -2300,6 +2545,17 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
+                    const SizedBox(width: 2),
+                    Text(
+                      '${(4.7 + (menu.idMasakan % 4) * 0.1).toStringAsFixed(1)} (1rb+) • 100+ terjual',
+                      style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Text(
                   menu.deskripsi,
@@ -2329,63 +2585,52 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     else if (qty == 0)
                       InkWell(
                         onTap: () => _addToCart(menu),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(20),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEA580C),
-                            borderRadius: BorderRadius.circular(8),
+                          width: 32,
+                          height: 32,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF00AA13), // Gojek Signature Green
+                            shape: BoxShape.circle,
                           ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.add, size: 14, color: Colors.white),
-                              SizedBox(width: 4),
-                              Text(
-                                'Tambah',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
+                          child: const Icon(Icons.add, size: 18, color: Colors.white),
                         ),
                       )
                     else
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFF7ED),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFFFEDD5)),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFF00AA13), width: 1.5),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             InkWell(
                               onTap: () => _decrementCart(menu),
+                              borderRadius: BorderRadius.circular(16),
                               child: const Padding(
-                                padding: EdgeInsets.all(6),
-                                child: Icon(Icons.remove, size: 16, color: Color(0xFFEA580C)),
+                                padding: EdgeInsets.all(4),
+                                child: Icon(Icons.remove, size: 16, color: Color(0xFF00AA13)),
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
                               child: Text(
                                 '$qty',
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF9A3412),
+                                  color: Color(0xFF1E293B),
                                 ),
                               ),
                             ),
                             InkWell(
                               onTap: () => _addToCart(menu),
+                              borderRadius: BorderRadius.circular(16),
                               child: const Padding(
-                                padding: EdgeInsets.all(6),
-                                child: Icon(Icons.add, size: 16, color: Color(0xFFEA580C)),
+                                padding: EdgeInsets.all(4),
+                                child: Icon(Icons.add, size: 16, color: Color(0xFF00AA13)),
                               ),
                             ),
                           ],

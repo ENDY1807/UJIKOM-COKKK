@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/order_model.dart';
 import '../services/database_service.dart';
 import '../services/payment_gateway_service.dart';
+import 'app_loading_animation.dart';
 import 'receipt_dialog.dart';
 
 class VirtualAccountPaymentDialog extends StatefulWidget {
@@ -203,7 +204,10 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
                     Text('Nomor Virtual Account ($_selectedBank)', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
                     const SizedBox(height: 6),
                     if (_isLoading)
-                      const SizedBox(height: 32, child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: AppLoadingAnimation(size: 38, message: 'Membuat nomor Virtual Account...'),
+                      )
                     else
                       SelectableText(
                         _vaNumber,
