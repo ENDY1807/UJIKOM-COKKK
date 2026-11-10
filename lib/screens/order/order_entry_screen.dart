@@ -9,6 +9,9 @@ import '../../models/payment_method_model.dart';
 import '../../services/database_service.dart';
 import '../../widgets/osm_map_widget.dart';
 import '../../widgets/qris_payment_dialog.dart';
+import '../../widgets/menu_detail_dialog.dart';
+import '../profile/manage_payments_screen.dart';
+import '../profile/manage_addresses_screen.dart';
 import 'gofood_tracking_dialog.dart';
 import 'qr_scanner_dialog.dart';
 
@@ -25,8 +28,16 @@ enum OrderServiceType {
 class OrderEntryScreen extends StatefulWidget {
   final DatabaseService db;
   final String? initialTableNo;
+  final void Function(int tabIndex)? onNavigateToTab;
+  final VoidCallback? onOrderSubmitted;
 
-  const OrderEntryScreen({super.key, required this.db, this.initialTableNo});
+  const OrderEntryScreen({
+    super.key,
+    required this.db,
+    this.initialTableNo,
+    this.onNavigateToTab,
+    this.onOrderSubmitted,
+  });
 
   @override
   State<OrderEntryScreen> createState() => _OrderEntryScreenState();
@@ -98,6 +109,14 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       _selectedTableNo = null;
       _serviceType = OrderServiceType.takeAway;
     }
+
+    // Restore alamat take away persisten (tidak akan reset)
+    final savedAddr = widget.db.savedTakeAwayAddress;
+    if (savedAddr.isNotEmpty) {
+      _deliveryAddressController.text = savedAddr;
+    } else if (widget.db.primaryAddress != null) {
+      _deliveryAddressController.text = widget.db.primaryAddress!.formattedFullAddress;
+    }
   }
 
   @override
@@ -123,12 +142,66 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     super.dispose();
   }
 
+  // ── Promo, Kupon & Poin Loyalitas ──
+  int? _selectedEventId;
+  String _couponCode = '';
+  int _couponDiscount = 0;
+  bool _usePointsDiscount = false;
+  final TextEditingController _couponInputCtrl = TextEditingController();
+  String? _couponStatusMsg;
+
+  int get _diskonEventAmount {
+    if (_selectedEventId == null) return 0;
+    final match = widget.db.events.where((e) => e.idEvent == _selectedEventId).firstOrNull;
+    if (match != null && match.diskonPersen > 0) {
+      return (_cartTotalHarga * (match.diskonPersen / 100)).round();
+    }
+    return 0;
+  }
+
+  int get _potonganPoinAmount {
+    if (!_usePointsDiscount) return 0;
+    final remainingCost = (_cartTotalHarga - _diskonEventAmount - _couponDiscount).clamp(0, _cartTotalHarga);
+    // 1 Poin = Potongan Rp 1 (sesuai poin pelanggan, bukan ribuan)
+    return widget.db.userPoints.clamp(0, remainingCost);
+  }
+
   // ── Perhitungan Keranjang Belanja ──
   int get _cartTotalHarga => _cart.values.fold(0, (sum, i) => sum + i.subtotal);
   int get _cartTotalItems => _cart.values.fold(0, (sum, i) => sum + i.jumlah);
   int get _packagingFee => (_serviceType != OrderServiceType.dineIn) ? 2000 : 0;
   int get _currentDeliveryFee => (_serviceType == OrderServiceType.takeAway) ? _deliveryFee : 0;
-  int get _grandTotal => _cartTotalHarga + _packagingFee + _currentDeliveryFee;
+  int get _grandTotal {
+    final raw = _cartTotalHarga + _packagingFee + _currentDeliveryFee - _diskonEventAmount - _couponDiscount - _potonganPoinAmount;
+    return raw > 0 ? raw : 0;
+  }
+
+  void _applyCoupon(String code) {
+    final clean = code.trim().toUpperCase();
+    if (clean.isEmpty) return;
+
+    if (clean == 'RASANTARA10') {
+      _couponCode = clean;
+      _couponDiscount = (_cartTotalHarga * 0.10).round().clamp(0, 25000);
+      _couponStatusMsg = 'Kupon 10% berhasil diterapkan';
+    } else if (clean == 'DISKONMEMBER') {
+      _couponCode = clean;
+      _couponDiscount = 15000.clamp(0, _cartTotalHarga);
+      _couponStatusMsg = 'Kupon Member Rp 15.000 diterapkan';
+    } else if (clean == 'HEMAT20') {
+      _couponCode = clean;
+      _couponDiscount = (_cartTotalHarga * 0.20).round().clamp(0, 30000);
+      _couponStatusMsg = 'Kupon Hemat 20% diterapkan';
+    } else if (clean == 'MAKANENAK') {
+      _couponCode = clean;
+      _couponDiscount = 10000.clamp(0, _cartTotalHarga);
+      _couponStatusMsg = 'Kupon Rp 10.000 diterapkan';
+    } else {
+      _couponCode = '';
+      _couponDiscount = 0;
+      _couponStatusMsg = 'Kode kupon tidak valid';
+    }
+  }
 
   // ── Mutasi Keranjang ──
   void _addToCart(MenuModel menu) {
@@ -275,6 +348,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       setState(() {
         _deliveryAddressController.text = detectedAddress;
       });
+      widget.db.saveTakeAwayAddress(
+        detectedAddress,
+        lat: position.latitude,
+        lng: position.longitude,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -316,6 +394,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             _deliveryDistanceKm = result.distanceKm;
             _deliveryEstimatedTime = result.estimatedTime;
           });
+          widget.db.saveTakeAwayAddress(
+            result.formattedAddress,
+            lat: result.latitude,
+            lng: result.longitude,
+          );
         },
       ),
     );
@@ -373,7 +456,20 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     ConnectedPaymentMethod? connectedMethod;
     String paymentMethodName = 'Tunai';
 
-    if (payId == 'qris') {
+    if (payId == 'saldo_rasantara') {
+      if (widget.db.userBalance < _grandTotal) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFFDC2626),
+            content: Text(
+              'Saldo Akun Rasantara tidak mencukupi (${_currencyFmt.format(widget.db.userBalance)} < ${_currencyFmt.format(_grandTotal)}). Harap Top Up terlebih dahulu.',
+            ),
+          ),
+        );
+        return;
+      }
+      paymentMethodName = 'Saldo Rasantara';
+    } else if (payId == 'qris') {
       paymentMethodName = 'QRIS';
     } else if (payId == 'tunai') {
       paymentMethodName = 'Tunai';
@@ -387,7 +483,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             SnackBar(
               backgroundColor: const Color(0xFFDC2626),
               content: Text(
-                'Saldo ${connectedMethod.provider.label} tidak mencukupi (${_currencyFmt.format(connectedMethod.balance)} < ${_currencyFmt.format(_grandTotal)}). Harap Top Up di Menu Profil.',
+                'Saldo ${connectedMethod.displayName} tidak mencukupi (${_currencyFmt.format(connectedMethod.balance)} < ${_currencyFmt.format(_grandTotal)}). Harap Top Up di Menu Manage Payments.',
               ),
             ),
           );
@@ -424,16 +520,47 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         break;
     }
 
+    // Hitung diskon yang diterapkan
+    final effDiskonEvent = _diskonEventAmount;
+    final effDiskonKupon = _couponDiscount;
+    final effPotonganPoin = _potonganPoinAmount;
+    final effKodeKupon = _couponCode.isNotEmpty ? _couponCode : null;
+
     // Buat order di database
     final order = widget.db.createOrder(
       noMeja: tableIdentifier,
       namaPelanggan: custName,
       keterangan: fullOrderNotes,
       items: _cart.values.toList(),
+      diskonEvent: effDiskonEvent,
+      diskonKupon: effDiskonKupon,
+      potonganPoin: effPotonganPoin,
+      kodeKupon: effKodeKupon,
     );
 
-    // Jika dibayar dengan metode terkoneksi (DANA, GoPay, M-Banking), potong saldo dan catat transaksi lunas
-    if (connectedMethod != null) {
+    // Potong poin jika digunakan (1 poin = Rp 1)
+    if (effPotonganPoin > 0) {
+      widget.db.deductPoints(effPotonganPoin);
+    }
+
+    // Jika dibayar dengan Saldo Rasantara
+    if (payId == 'saldo_rasantara') {
+      widget.db.deductBalance(
+        _grandTotal,
+        orderRef: 'ORD-${order.idOrder}',
+        notes: 'Pesanan #${order.idOrder} ($tableIdentifier)',
+      );
+      widget.db.processTransaction(
+        order: order,
+        jumlahBayar: _grandTotal,
+        metodePembayaran: paymentMethodName,
+        diskonEvent: effDiskonEvent,
+        diskonKupon: effDiskonKupon,
+        potonganPoin: effPotonganPoin,
+        kodeKupon: effKodeKupon,
+      );
+    } else if (connectedMethod != null) {
+      // Jika dibayar dengan metode terkoneksi (DANA, GoPay, M-Banking), potong saldo dan catat transaksi lunas
       widget.db.deductPaymentMethodBalance(
         connectedMethod.id,
         _grandTotal,
@@ -444,6 +571,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         order: order,
         jumlahBayar: _grandTotal,
         metodePembayaran: paymentMethodName,
+        diskonEvent: effDiskonEvent,
+        diskonKupon: effDiskonKupon,
+        potonganPoin: effPotonganPoin,
+        kodeKupon: effKodeKupon,
       );
     }
 
@@ -453,12 +584,16 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     final isDeliveryOrder = _serviceType == OrderServiceType.takeAway;
     final grandTotalFinal = _grandTotal;
 
+    if (savedAddress.isNotEmpty) {
+      widget.db.saveTakeAwayAddress(savedAddress);
+    }
+
     setState(() {
       _cart.clear();
       _orderNotesController.clear();
-      if (_serviceType != OrderServiceType.dineIn) {
-        _deliveryAddressController.clear();
-      }
+      // Alamat take away TIDAK di-clear agar tersimpan terus dan tidak reset
+      _selectedTableNo = null; // Reset QR Meja ke awal
+      _serviceType = OrderServiceType.takeAway; // Kembali ke tampilan awal (Take Away & Self Pick-Up)
     });
 
     // Jika metode QRIS, buka dialog pembayaran QRIS Nasional interaktif
@@ -472,9 +607,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               backgroundColor: Color(0xFF16A34A),
-              content: Text('✓ Pembayaran QRIS Sukses Diterima! Pesanan Diproses.'),
+              content: Text('Pembayaran QRIS sukses diterima! Pesanan diproses.'),
             ),
           );
+          widget.onOrderSubmitted?.call();
+          widget.onNavigateToTab?.call(0);
         },
       );
       return;
@@ -574,7 +711,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   if (connectedMethod != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      '✓ Saldo ${connectedMethod.provider.label} terpotong ${_currencyFmt.format(_grandTotal)} (Sisa: ${_currencyFmt.format(connectedMethod.balance)})',
+                      'Saldo ${connectedMethod.provider.label} terpotong ${_currencyFmt.format(_grandTotal)} (Sisa: ${_currencyFmt.format(connectedMethod.balance)})',
                       style: const TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
@@ -606,14 +743,19 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 );
               },
             ),
-          FilledButton(
+          FilledButton.icon(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFEA580C),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold)),
+            icon: const Icon(Icons.timeline_rounded, size: 16),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              widget.onOrderSubmitted?.call();
+              widget.onNavigateToTab?.call(0);
+            },
+            label: const Text('Lihat Proses Pesanan', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -658,6 +800,33 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // ── Modal Detail Menu Lengkap (Gizi, Kalori, Bahan & Alergen) ──
+  void _openMenuDetail(MenuModel menu) {
+    final currentQty = _cart[menu.idMasakan]?.jumlah ?? 0;
+    final currentNote = _cart[menu.idMasakan]?.catatan;
+
+    MenuDetailDialog.show(
+      context,
+      menu: menu,
+      initialQty: currentQty > 0 ? currentQty : 1,
+      initialNote: currentNote,
+      onConfirm: (quantity, note) {
+        setState(() {
+          if (quantity <= 0) {
+            _cart.remove(menu.idMasakan);
+          } else {
+            _cart[menu.idMasakan] = OrderItemModel(
+              idDetailOrder: _cart[menu.idMasakan]?.idDetailOrder ?? 0,
+              menu: menu,
+              jumlah: quantity,
+              catatan: note,
+            );
+          }
+        });
+      },
     );
   }
 
@@ -842,16 +1011,41 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 const Divider(height: 20),
 
                 // Pilihan Metode Pembayaran Terkoneksi Nyata (Tanpa teks oranye di baris judul)
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Pilih Metode Pembayaran:',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Pilih Metode Pembayaran:',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
                     ),
-                  ),
+                    InkWell(
+                      onTap: () {
+                        Navigator.of(ctx).pop();
+                        ManagePaymentsScreen.navigate(context, widget.db);
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        child: Row(
+                          children: [
+                            Icon(Icons.tune_rounded, size: 13, color: Color(0xFF0284C7)),
+                            SizedBox(width: 4),
+                            Text(
+                              'Manage payments >',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF0284C7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
 
@@ -860,6 +1054,65 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
+                      // Saldo Rasantara
+                      GestureDetector(
+                        onTap: () {
+                          setModalState(() => _selectedPaymentMethodId = 'saldo_rasantara');
+                          setState(() => _selectedPaymentMethodId = 'saldo_rasantara');
+                        },
+                        child: Container(
+                          width: 145,
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: _selectedPaymentMethodId == 'saldo_rasantara' ? const Color(0xFFECFDF5) : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _selectedPaymentMethodId == 'saldo_rasantara' ? const Color(0xFF059669) : const Color(0xFFCBD5E1),
+                              width: _selectedPaymentMethodId == 'saldo_rasantara' ? 1.5 : 1.0,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF059669).withValues(alpha: 0.10),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF059669), size: 18),
+                                  ),
+                                  if (_selectedPaymentMethodId == 'saldo_rasantara')
+                                    const Icon(Icons.check_circle_rounded, size: 18, color: Color(0xFF059669)),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Saldo',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B)),
+                                    maxLines: 1,
+                                  ),
+                                  Text(
+                                    _currencyFmt.format(widget.db.userBalance),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: widget.db.userBalance >= _grandTotal ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       ...widget.db.connectedPaymentMethods.map((method) {
                         final isSelected = _selectedPaymentMethodId == method.id;
                         final isEnough = method.balance >= _grandTotal;
@@ -1053,7 +1306,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   backgroundColor: const Color(0xFF16A34A),
-                                  content: Text('✓ Berhasil Top Up Cepat ${_currencyFmt.format(topUpAmt)} ke ${curPay.provider.label}!'),
+                                  content: Text('Berhasil Top Up Cepat ${_currencyFmt.format(topUpAmt)} ke ${curPay.provider.label}!'),
                                 ),
                               );
                             },
@@ -1100,10 +1353,176 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
                 const Divider(height: 20),
 
+                // ── VOUCHER, EVENT & POIN PELANGGAN ──
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.local_offer_outlined, size: 16, color: Color(0xFFEA580C)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Diskon Event, Kupon & Poin Loyalitas',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // 1. Selector Event Restoran (jika ada event aktif)
+                      if (widget.db.events.isNotEmpty) ...[
+                        const Text('Pilih Promo Event:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+                        const SizedBox(height: 6),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: widget.db.events.where((e) => e.isActive).map((ev) {
+                              final isSelected = _selectedEventId == ev.idEvent;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: ChoiceChip(
+                                  label: Text('${ev.judulEvent} (${ev.diskonPersen}%)'),
+                                  selected: isSelected,
+                                  selectedColor: const Color(0xFFFFEDD5),
+                                  labelStyle: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF475569),
+                                  ),
+                                  onSelected: (val) {
+                                    setModalState(() {
+                                      _selectedEventId = val ? ev.idEvent : null;
+                                    });
+                                    setState(() {
+                                      _selectedEventId = val ? ev.idEvent : null;
+                                    });
+                                  },
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+
+                      // 2. Input Kupon Promo
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 38,
+                              child: TextField(
+                                controller: _couponInputCtrl,
+                                style: const TextStyle(fontSize: 12),
+                                textCapitalization: TextCapitalization.characters,
+                                decoration: InputDecoration(
+                                  hintText: 'Kode Kupon (cth: RASANTARA10)',
+                                  hintStyle: const TextStyle(fontSize: 11),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFEA580C),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            ),
+                            onPressed: () {
+                              setModalState(() {
+                                _applyCoupon(_couponInputCtrl.text);
+                              });
+                              setState(() {
+                                _applyCoupon(_couponInputCtrl.text);
+                              });
+                            },
+                            child: const Text('Terapkan', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      if (_couponStatusMsg != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          _couponStatusMsg!,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: _couponDiscount > 0 ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 10),
+
+                      // 3. Poin Pelanggan (1 Poin = Rp 1 Potongan)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: _usePointsDiscount,
+                              activeColor: const Color(0xFFEA580C),
+                              onChanged: widget.db.userPoints > 0
+                                  ? (val) {
+                                      setModalState(() => _usePointsDiscount = val ?? false);
+                                      setState(() => _usePointsDiscount = val ?? false);
+                                    }
+                                  : null,
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Gunakan Poin Kuliner (${widget.db.userPoints} Poin)',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                  ),
+                                  const Text(
+                                    '1 Poin = Rp 1 Potongan langsung harga makanan',
+                                    style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (_usePointsDiscount && _potonganPoinAmount > 0)
+                              Text(
+                                '- ${_currencyFmt.format(_potonganPoinAmount)}',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Divider(height: 20),
+
                 // Biaya Rincian
                 Column(
                   children: [
                     _buildCostRow('Subtotal Hidangan ($_cartTotalItems item)', _currencyFmt.format(_cartTotalHarga)),
+                    if (_diskonEventAmount > 0)
+                      _buildCostRow('Diskon Event Promo', '- ${_currencyFmt.format(_diskonEventAmount)}', isHighlight: true),
+                    if (_couponDiscount > 0)
+                      _buildCostRow('Diskon Kupon ($_couponCode)', '- ${_currencyFmt.format(_couponDiscount)}', isHighlight: true),
+                    if (_potonganPoinAmount > 0)
+                      _buildCostRow('Potongan Poin Kuliner', '- ${_currencyFmt.format(_potonganPoinAmount)}', isHighlight: true),
                     if (_packagingFee > 0)
                       _buildCostRow('Biaya Kemasan Higienis', _currencyFmt.format(_packagingFee)),
                     if (_currentDeliveryFee > 0)
@@ -1160,14 +1579,28 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     );
   }
 
-  Widget _buildCostRow(String title, String val) {
+  Widget _buildCostRow(String title, String val, {bool isHighlight = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-          Text(val, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
+              color: isHighlight ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+            ),
+          ),
+          Text(
+            val,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: isHighlight ? const Color(0xFF16A34A) : const Color(0xFF334155),
+            ),
+          ),
         ],
       ),
     );
@@ -1419,6 +1852,54 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           Icon(Icons.map_rounded, size: 12, color: Colors.white),
                           SizedBox(width: 4),
                           Text('Peta OSM', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  InkWell(
+                    onTap: () async {
+                      final selectedAddr = await ManageAddressesScreen.selectAddress(context, widget.db);
+                      if (selectedAddr != null) {
+                        setState(() {
+                          _deliveryAddressController.text = selectedAddr.formattedFullAddress;
+                          if (selectedAddr.recipientName.isNotEmpty) {
+                            _customerNameController.text = selectedAddr.recipientName;
+                          }
+                          if (selectedAddr.recipientPhone.isNotEmpty) {
+                            _phoneController.text = selectedAddr.recipientPhone;
+                          }
+                          if (selectedAddr.latitude != null && selectedAddr.longitude != null) {
+                            final meters = Geolocator.distanceBetween(
+                              -6.2088,
+                              106.8456,
+                              selectedAddr.latitude!,
+                              selectedAddr.longitude!,
+                            );
+                            final dist = (meters / 1000.0).clamp(0.5, 30.0);
+                            _deliveryDistanceKm = dist;
+                            _deliveryFee = (8000 + (dist * 2500)).round();
+                            _deliveryEstimatedTime = '${(15 + (dist * 4)).round()} - ${(25 + (dist * 5)).round()} Menit';
+                          }
+                        });
+                        widget.db.saveTakeAwayAddress(
+                          selectedAddr.formattedFullAddress,
+                          lat: selectedAddr.latitude,
+                          lng: selectedAddr.longitude,
+                        );
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2563EB),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.bookmark_added_rounded, size: 12, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text('Alamat Saya', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -1688,8 +2169,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         ? menu.gambarUrl
         : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80';
 
-    return Container(
-      width: 220,
+    return InkWell(
+      onTap: () => _openMenuDetail(menu),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 220,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1809,7 +2293,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   // ── Widget Card Menu Hidangan ──
@@ -1817,8 +2302,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     final inCart = _cart[menu.idMasakan];
     final qty = inCart?.jumlah ?? 0;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+    return InkWell(
+      onTap: () => _openMenuDetail(menu),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1990,7 +2478,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   // ── Widget Sticky Bottom Cart Bar ──

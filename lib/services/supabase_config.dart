@@ -12,8 +12,13 @@ class SupabaseConfig {
       'https://kzhqoowfvdyllcaewsao.supabase.co/auth/v1/.well-known/jwks.json';
 
   // Google OAuth Credentials
+  // Web Client ID (digunakan untuk serverClientId / web / desktop OAuth & Supabase)
   static const String googleClientId =
       '124635820971-cn5609qedpjbrlq8f181kk6vcojp8jjk.apps.googleusercontent.com';
+
+  // Android Client ID (Rasantara Mobile - package com.example.kasir_restoran)
+  static const String googleAndroidClientId =
+      '124635820971-lr7jvkgi3hur5pukh3nasrlo4j6b9ktk.apps.googleusercontent.com';
   static const String googleClientSecret = String.fromEnvironment(
     'GOOGLE_CLIENT_SECRET',
     defaultValue: 'YOUR_GOOGLE_CLIENT_SECRET',

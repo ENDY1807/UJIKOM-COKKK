@@ -87,7 +87,7 @@ class _TableQrScreenState extends State<TableQrScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     backgroundColor: const Color(0xFF16A34A),
-                    content: Text('✓ $no berhasil ditambahkan & siap cetak QR!'),
+                    content: Text('$no berhasil ditambahkan & siap cetak QR!'),
                   ),
                 );
               }
@@ -134,7 +134,7 @@ class _TableQrScreenState extends State<TableQrScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: const Color(0xFF16A34A),
-                          content: Text('✓ Menyiapkan & mengunduh berkas QR Card $tableNo...'),
+                          content: Text('Menyiapkan & mengunduh berkas QR Card $tableNo...'),
                         ),
                       );
                       await ExportReportService.exportTableQrPdf(

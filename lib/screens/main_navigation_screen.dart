@@ -12,6 +12,7 @@ import 'reference/table_qr_screen.dart';
 import 'reports/report_screen.dart';
 import 'users/user_management_screen.dart';
 import 'profile/profile_screen.dart';
+import 'profile/settings_screen.dart';
 
 class NavDestinationItem {
   final String label;
@@ -106,6 +107,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           key: ValueKey(_scannedTableFromQr),
           db: widget.db,
           initialTableNo: _scannedTableFromQr,
+          onNavigateToTab: _navigateToTab,
+          onOrderSubmitted: () {
+            setState(() {
+              _scannedTableFromQr = null;
+            });
+            _navigateToTab(0);
+          },
         ),
       ));
     }
@@ -355,84 +363,44 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ],
             ),
             actions: [
-              // Quick Role Switcher Dropdown
-              PopupMenuButton<UserRole>(
-                tooltip: 'Ganti Role Akun',
-                onSelected: (newRole) {
-                  widget.db.switchRole(newRole);
-                  setState(() => _currentIndex = 0);
-                },
-                itemBuilder: (ctx) => UserRole.values.map((r) {
-                  return PopupMenuItem(
-                    value: r,
-                    child: Row(
-                      children: [
-                        Icon(
-                          r == role ? Icons.check_circle : Icons.circle_outlined,
-                          size: 16,
-                          color: r == role ? const Color(0xFFEA580C) : AppTheme.textMuted,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(r.label, style: const TextStyle(fontSize: 13)),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEA580C).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFEA580C).withValues(alpha: 0.2)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.badge_outlined, size: 14, color: Color(0xFFEA580C)),
-                      const SizedBox(width: 4),
-                      Text(
-                        role.label,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFEA580C),
-                        ),
-                      ),
-                      const Icon(Icons.arrow_drop_down, size: 14, color: Color(0xFFEA580C)),
-                    ],
-                  ),
-                ),
-              ),
               if (isDesktop) ...[
-                const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceBg,
+                    color: const Color(0xFFFFF7ED),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.borderSubtle),
+                    border: Border.all(color: const Color(0xFFFFEDD5)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.person, size: 16, color: AppTheme.textMuted),
+                      const Icon(Icons.shield_outlined, size: 14, color: Color(0xFFEA580C)),
                       const SizedBox(width: 6),
                       Text(
-                        currentUser?.namaUser ?? 'Pengguna',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textDark),
+                        role == UserRole.pelanggan && (currentUser?.username.isNotEmpty ?? false) && currentUser?.username != 'pelanggan'
+                            ? '@${currentUser!.username}'
+                            : role.label,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 4),
               ],
-              const SizedBox(width: 4),
               IconButton(
-                icon: const Icon(Icons.logout, color: AppTheme.statusRed, size: 18),
-                tooltip: 'Keluar',
+                icon: const Icon(Icons.settings_outlined, color: AppTheme.textMuted, size: 20),
+                tooltip: 'Pengaturan Aplikasi',
                 onPressed: () {
-                  widget.db.logout();
-                  widget.onLogout();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => SettingsScreen(db: widget.db)),
+                  );
                 },
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 18),
+                tooltip: 'Keluar dari Akun',
+                onPressed: () => _confirmLogout(context),
               ),
               const SizedBox(width: 4),
             ],
@@ -786,11 +754,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         'Rasantara',
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textDark),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${role.label} · ${currentUser?.namaUser ?? "Pengguna"}',
-                        style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
-                        overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Cita Rasa Kuliner Nusantara',
+                        style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEA580C).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFEA580C).withValues(alpha: 0.2)),
+                        ),
+                        child: Text(
+                          role == UserRole.pelanggan && (currentUser?.username.isNotEmpty ?? false) && currentUser?.username != 'pelanggan'
+                              ? '@${currentUser!.username}'
+                              : role.label,
+                          style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                        ),
                       ),
                     ],
                   ),
@@ -829,22 +811,73 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               },
             ),
           ),
+          ListTile(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            leading: const Icon(Icons.settings_outlined, color: AppTheme.textMuted),
+            title: const Text('Pengaturan Aplikasi', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textDark)),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen(db: widget.db)));
+            },
+          ),
           const Divider(color: AppTheme.borderSubtle),
           Padding(
             padding: const EdgeInsets.all(16),
             child: FilledButton.tonalIcon(
               style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(44),
+                backgroundColor: const Color(0xFFFEE2E2),
+                foregroundColor: const Color(0xFFDC2626),
+                minimumSize: const Size.fromHeight(46),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              icon: const Icon(Icons.logout, color: AppTheme.statusRed, size: 18),
-              label: const Text('Keluar dari Akun', style: TextStyle(color: AppTheme.statusRed, fontWeight: FontWeight.bold)),
+              icon: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 18),
+              label: const Text(
+                'Keluar dari Akun',
+                style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold, fontSize: 13),
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
-                widget.db.logout();
-                widget.onLogout();
+                _confirmLogout(context);
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 22),
+            SizedBox(width: 8),
+            Text('Konfirmasi Keluar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar dari sesi akun Rasantara?',
+          style: TextStyle(fontSize: 13, color: Color(0xFF475569)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              widget.db.logout();
+              widget.onLogout();
+            },
+            child: const Text('Ya, Keluar'),
           ),
         ],
       ),

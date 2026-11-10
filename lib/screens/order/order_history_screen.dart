@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/order_model.dart';
+import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/receipt_dialog.dart';
@@ -30,22 +31,24 @@ class _CustomerOrderHistoryScreenState
   @override
   Widget build(BuildContext context) {
     final currentUserId = widget.db.currentUser?.idUser;
-    final currentUserName = widget.db.currentUser?.namaUser.toLowerCase() ?? '';
+    final currentUserName = widget.db.currentUser?.namaUser.toLowerCase().trim() ?? '';
+    final currentUserRole = widget.db.currentUser?.role;
 
-    // Filter orders belonging to this user or created in this session
+    // Filter pesanan murni per akun (hanya pesanan milik akun yang sedang login)
     final userOrders = widget.db.orders.where((o) {
       if (currentUserId != null && o.idUser == currentUserId) return true;
       if (currentUserName.isNotEmpty &&
-          o.namaPelanggan.toLowerCase().contains(currentUserName)) {
+          o.namaPelanggan.toLowerCase().trim() == currentUserName) {
         return true;
       }
       return false;
     }).toList();
 
-    // Fallback if list is empty but orders exist in session
-    final displayOrders = userOrders.isNotEmpty
+    // Untuk staf (admin/kasir/waiter/owner), jika membuka riwayat pesanan bisa melihat semua jika ingin,
+    // namun untuk pelanggan, WAJIB murni pesanan akun mereka sendiri tanpa fallback ke pesanan orang lain
+    final displayOrders = (currentUserRole == UserRole.pelanggan || userOrders.isNotEmpty)
         ? userOrders
-        : widget.db.orders;
+        : (currentUserId != null ? userOrders : widget.db.orders);
 
     final filtered = displayOrders.where((o) {
       if (_filter == 'aktif') {

@@ -1,14 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kasir_restoran/models/payment_method_model.dart';
 import 'package:kasir_restoran/models/user_model.dart';
 import 'package:kasir_restoran/models/menu_model.dart';
 import 'package:kasir_restoran/models/table_model.dart';
 import 'package:kasir_restoran/models/order_model.dart';
 import 'package:kasir_restoran/models/transaction_model.dart';
+import 'package:kasir_restoran/models/user_address_model.dart';
 import 'package:kasir_restoran/services/database_service.dart';
 import 'package:kasir_restoran/services/supabase_config.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
   group('Supabase Configuration & Credentials', () {
     test('Config contains correct project URL and keys', () {
       expect(SupabaseConfig.url, 'https://kzhqoowfvdyllcaewsao.supabase.co');
@@ -238,6 +242,64 @@ void main() {
       db.unlinkGoogleAccount(user.idUser);
       final unlinkedUser = db.users.firstWhere((u) => u.idUser == user.idUser);
       expect(unlinkedUser.isGoogleLinked, isFalse);
+    });
+
+    test('UserAddressModel mapping and DatabaseService address management', () async {
+      final db = DatabaseService();
+      db.addUser('andi', 'andi123', 'Andi Supratman', UserRole.pelanggan);
+      final user = db.users.firstWhere((u) => u.username == 'andi');
+      await db.loginAsync('andi', 'andi123');
+
+      // 1. Add Address
+      final newAddr = UserAddressModel(
+        idAlamat: 0,
+        idUser: user.idUser,
+        label: 'Kantor',
+        recipientName: 'Andi Supratman',
+        recipientPhone: '081234567890',
+        province: 'DKI Jakarta',
+        city: 'Jakarta Selatan',
+        district: 'Kebayoran Baru',
+        fullAddress: 'Jl. Senopati No. 88',
+        notes: 'Gedung Wisma Lt. 5',
+        latitude: -6.2297,
+        longitude: 106.8099,
+        isPrimary: true,
+      );
+
+      final added = await db.addUserAddress(newAddr);
+      expect(added, isNotNull);
+      expect(db.userAddresses.length, 1);
+      expect(db.primaryAddress?.label, 'Kantor');
+      expect(db.savedTakeAwayAddress.contains('Jl. Senopati No. 88'), isTrue);
+
+      // 2. Add Second Address (Kirim ke Teman)
+      final friendAddr = UserAddressModel(
+        idAlamat: 0,
+        idUser: user.idUser,
+        label: 'Teman',
+        recipientName: 'Budi Santoso',
+        recipientPhone: '081987654321',
+        province: 'DKI Jakarta',
+        city: 'Jakarta Pusat',
+        district: 'Menteng',
+        fullAddress: 'Jl. Teuku Umar No. 12',
+        isPrimary: false,
+      );
+
+      final addedFriend = await db.addUserAddress(friendAddr);
+      expect(addedFriend, isNotNull);
+      expect(db.userAddresses.length, 2);
+      expect(db.primaryAddress?.label, 'Kantor'); // Kantor tetap primary
+
+      // 3. Switch primary to friend address
+      await db.setPrimaryAddress(addedFriend!.idAlamat);
+      expect(db.primaryAddress?.label, 'Teman');
+      expect(db.savedTakeAwayAddress.contains('Jl. Teuku Umar No. 12'), isTrue);
+
+      // 4. Remove address
+      await db.removeUserAddress(added!.idAlamat);
+      expect(db.userAddresses.length, 1);
     });
   });
 }

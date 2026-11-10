@@ -6,6 +6,9 @@
 -- ============================================================
 
 -- Bersihkan view & tabel jika sudah ada sebelumnya (clean install)
+-- Hapus semua view alias lama agar tidak menduplikasi daftar tabel di Supabase Dashboard
+DROP VIEW IF EXISTS "user_address" CASCADE;
+DROP VIEW IF EXISTS "event" CASCADE;
 DROP VIEW IF EXISTS "transaksi" CASCADE;
 DROP VIEW IF EXISTS "detail_order" CASCADE;
 DROP VIEW IF EXISTS "order" CASCADE;
@@ -14,6 +17,7 @@ DROP VIEW IF EXISTS "meja" CASCADE;
 DROP VIEW IF EXISTS "user" CASCADE;
 DROP VIEW IF EXISTS "level" CASCADE;
 
+DROP TABLE IF EXISTS tb_user_address CASCADE;
 DROP TABLE IF EXISTS tb_payment_mutasi CASCADE;
 DROP TABLE IF EXISTS tb_user_payment_methods CASCADE;
 DROP TABLE IF EXISTS tb_log_aktivitas CASCADE;
@@ -68,24 +72,24 @@ CREATE TABLE tb_user (
     password VARCHAR(255) DEFAULT '',
     nama_user VARCHAR(100) NOT NULL,
     id_level INT NOT NULL DEFAULT 5 REFERENCES tb_level(id_level) ON DELETE RESTRICT ON UPDATE CASCADE,
+    phone_number VARCHAR(30) DEFAULT '',
     foto_profil VARCHAR(500) DEFAULT NULL,
     auth_provider auth_provider_type NOT NULL DEFAULT 'local',
     google_uid VARCHAR(128) UNIQUE DEFAULT NULL,
     google_email VARCHAR(150) UNIQUE DEFAULT NULL,
     google_photo VARCHAR(500) DEFAULT NULL,
+    is_two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO tb_user (id_user, username, password, nama_user, id_level, auth_provider) VALUES
-(1, 'admin', 'admin123', 'Bagas Administrator', 1, 'local'),
-(2, 'waiter', 'waiter123', 'Dewi Waiter Nusantara', 2, 'local'),
-(3, 'kasir', 'kasir123', 'Rian Kasir Rasantara', 3, 'local'),
-(4, 'owner', 'owner123', 'Pak Hendra (Owner)', 4, 'local'),
-(5, 'pelanggan', 'pelanggan123', 'Pelanggan Rasantara', 5, 'local'),
-(6, 'budi', 'budi123', 'Budi Santoso', 5, 'local'),
-(7, 'siti', 'siti123', 'Siti Rahmawati', 5, 'local');
+INSERT INTO tb_user (id_user, username, password, nama_user, id_level, phone_number, auth_provider) VALUES
+(1, 'admin', 'admin123', 'Administrator', 1, '081234567890', 'local'),
+(2, 'waiter', 'waiter123', 'Waiter', 2, '081234567891', 'local'),
+(3, 'kasir', 'kasir123', 'Kasir', 3, '081234567892', 'local'),
+(4, 'owner', 'owner123', 'Owner', 4, '081234567893', 'local'),
+(5, 'pelanggan', 'pelanggan123', 'Pelanggan', 5, '081234567894', 'local');
 
 SELECT setval(pg_get_serial_sequence('tb_user', 'id_user'), COALESCE(MAX(id_user), 1)) FROM tb_user;
 
@@ -165,6 +169,10 @@ CREATE TABLE tb_order (
     id_user INT REFERENCES tb_user(id_user) ON DELETE SET NULL ON UPDATE CASCADE,
     keterangan TEXT,
     status_order status_order_type NOT NULL DEFAULT 'Menunggu',
+    diskon_event INT NOT NULL DEFAULT 0,
+    diskon_kupon INT NOT NULL DEFAULT 0,
+    potongan_poin INT NOT NULL DEFAULT 0,
+    kode_kupon VARCHAR(50) DEFAULT '',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -194,8 +202,33 @@ CREATE TABLE tb_transaksi (
     jumlah_bayar INT NOT NULL CHECK (jumlah_bayar >= 0),
     kembalian INT NOT NULL DEFAULT 0 CHECK (kembalian >= 0),
     metode_pembayaran VARCHAR(50) NOT NULL DEFAULT 'Tunai',
+    diskon_event INT NOT NULL DEFAULT 0,
+    diskon_kupon INT NOT NULL DEFAULT 0,
+    potongan_poin INT NOT NULL DEFAULT 0,
+    kode_kupon VARCHAR(50) DEFAULT '',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ============================================================
+-- 7b. TABEL KUPON PROMO RESTORAN
+-- ============================================================
+CREATE TABLE IF NOT EXISTS tb_kupon (
+    id_kupon SERIAL PRIMARY KEY,
+    kode_kupon VARCHAR(50) UNIQUE NOT NULL,
+    nama_kupon VARCHAR(100) NOT NULL,
+    tipe_diskon VARCHAR(20) NOT NULL DEFAULT 'persen',
+    nilai_diskon INT NOT NULL DEFAULT 10,
+    minimal_transaksi INT NOT NULL DEFAULT 0,
+    maksimal_potongan INT NOT NULL DEFAULT 50000,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO tb_kupon (kode_kupon, nama_kupon, tipe_diskon, nilai_diskon, minimal_transaksi, maksimal_potongan) VALUES
+('RASANTARA10', 'Diskon Spesial Nusantara 10%', 'persen', 10, 30000, 20000),
+('DISKONMEMBER', 'Kupon Eksklusif Pelanggan Rp 15.000', 'nominal', 15000, 50000, 15000),
+('HEMAT20', 'Promo Pesta Kuliner 20%', 'persen', 20, 60000, 30000)
+ON CONFLICT (kode_kupon) DO NOTHING;
 
 -- ============================================================
 -- 8. TABEL METODE PEMBAYARAN PENGGUNA (E-WALLET & M-BANKING)
@@ -236,6 +269,74 @@ CREATE TABLE tb_log_aktivitas (
     aktivitas VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ============================================================
+-- 11. TABEL ALAMAT PENGGUNA (TAKE AWAY / DELIVERY MULTI-ALAMAT)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS tb_user_address (
+    id_alamat SERIAL PRIMARY KEY,
+    id_user INT NOT NULL REFERENCES tb_user(id_user) ON DELETE CASCADE ON UPDATE CASCADE,
+    label VARCHAR(50) NOT NULL DEFAULT 'Rumah',
+    recipient_name VARCHAR(100) NOT NULL,
+    recipient_phone VARCHAR(30) NOT NULL,
+    province VARCHAR(100) NOT NULL DEFAULT '',
+    city VARCHAR(100) NOT NULL DEFAULT '',
+    district VARCHAR(100) NOT NULL DEFAULT '',
+    postal_code VARCHAR(20) DEFAULT '',
+    full_address TEXT NOT NULL,
+    notes TEXT DEFAULT '',
+    latitude DOUBLE PRECISION DEFAULT NULL,
+    longitude DOUBLE PRECISION DEFAULT NULL,
+    gmaps_link TEXT DEFAULT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- 12. TABEL EVENT & PROMOSI RESTORAN (HANYA OWNER YANG BISA MEMBUAT)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS tb_event (
+    id_event SERIAL PRIMARY KEY,
+    judul_event VARCHAR(255) NOT NULL,
+    deskripsi TEXT,
+    gambar_url TEXT,
+    kode_promo VARCHAR(50) DEFAULT '',
+    diskon_persen INT DEFAULT 10,
+    tanggal_mulai DATE DEFAULT CURRENT_DATE,
+    tanggal_selesai DATE DEFAULT (CURRENT_DATE + INTERVAL '14 days'),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by VARCHAR(50) NOT NULL DEFAULT 'owner',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Initial Seed Event Restoran
+INSERT INTO tb_event (id_event, judul_event, deskripsi, gambar_url, kode_promo, diskon_persen, tanggal_mulai, tanggal_selesai, is_active, created_by)
+VALUES
+    (1, 'Festival Kuliner Nusantara', 'Nikmati potongan diskon 20% untuk semua menu Paket Spesial & Rendang Minang warisan asli.', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80', 'NUSANTARA20', 20, CURRENT_DATE, CURRENT_DATE + INTERVAL '14 days', TRUE, 'owner'),
+    (2, 'Pesta Gurih Akhir Pekan', 'Spesial kuah rempah! Diskon 15% untuk Rawon Surabaya & Soto Banjar menggunakan Saldo Rasantara.', 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80', 'GURIHHEMAT', 15, CURRENT_DATE, CURRENT_DATE + INTERVAL '7 days', TRUE, 'owner'),
+    (3, 'Gebyar Dobel Poin Rasantara', 'Dapatkan 2x lipat Poin Kuliner untuk setiap pesanan Take Away menggunakan titik pin GPS.', 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80', 'DOBELPOIN', 10, CURRENT_DATE, CURRENT_DATE + INTERVAL '30 days', TRUE, 'owner')
+ON CONFLICT (id_event) DO UPDATE SET
+    judul_event = EXCLUDED.judul_event,
+    deskripsi = EXCLUDED.deskripsi,
+    kode_promo = EXCLUDED.kode_promo,
+    diskon_persen = EXCLUDED.diskon_persen;
+
+-- Security Policy RLS: Hanya role owner yang boleh INSERT / UPDATE / DELETE event
+ALTER TABLE tb_event ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'tb_event' AND policyname = 'Semua pengguna dapat melihat event aktif') THEN
+        CREATE POLICY "Semua pengguna dapat melihat event aktif" ON tb_event FOR SELECT USING (is_active = TRUE);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'tb_event' AND policyname = 'Hanya Owner yang dapat mengelola event') THEN
+        CREATE POLICY "Hanya Owner yang dapat mengelola event" ON tb_event FOR ALL USING (
+            auth.jwt() ->> 'role' = 'owner' OR 
+            (SELECT id_level FROM tb_user WHERE id_user = (auth.jwt() ->> 'sub')::int) = 4
+        );
+    END IF;
+END $$;
 
 -- ============================================================
 -- SEED DATA HISTORIS TRANSAKSI & PESANAN (MENGISI DIAGRAM REAL-TIME)
@@ -479,20 +580,7 @@ SELECT setval(pg_get_serial_sequence('tb_detail_order', 'id_detail_order'), COAL
 SELECT setval(pg_get_serial_sequence('tb_transaksi', 'id_transaksi'), COALESCE(MAX(id_transaksi), 1)) FROM tb_transaksi;
 
 -- ============================================================
--- 9. COMPATIBILITY VIEWS (DUAL-NAMING SUPPORT: 'user' & 'tb_user')
--- Memungkinkan query dengan atau tanpa prefix 'tb_' secara transparan.
--- Di PostgreSQL 9.3+, simple view secara otomatis updatable (INSERT/UPDATE/DELETE).
--- ============================================================
-CREATE OR REPLACE VIEW "level" AS SELECT * FROM tb_level;
-CREATE OR REPLACE VIEW "user" AS SELECT * FROM tb_user;
-CREATE OR REPLACE VIEW "masakan" AS SELECT * FROM tb_masakan;
-CREATE OR REPLACE VIEW "meja" AS SELECT * FROM tb_meja;
-CREATE OR REPLACE VIEW "order" AS SELECT * FROM tb_order;
-CREATE OR REPLACE VIEW "detail_order" AS SELECT * FROM tb_detail_order;
-CREATE OR REPLACE VIEW "transaksi" AS SELECT * FROM tb_transaksi;
-
--- ============================================================
--- 10. ROW LEVEL SECURITY (RLS) & PUBLIC GRANT FOR SUPABASE
+-- 9. ROW LEVEL SECURITY (RLS) & PUBLIC GRANT FOR SUPABASE
 -- Mengaktifkan izin penuh kepada role 'anon' dan 'authenticated'
 -- agar koneksi aplikasi Flutter dapat membaca dan menulis data tanpa kendala.
 -- ============================================================
@@ -506,6 +594,7 @@ ALTER TABLE tb_transaksi ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_user_payment_methods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_payment_mutasi ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_log_aktivitas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tb_user_address ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all tb_level" ON tb_level;
 CREATE POLICY "Allow all tb_level" ON tb_level FOR ALL USING (true) WITH CHECK (true);
@@ -536,6 +625,9 @@ CREATE POLICY "Allow all tb_payment_mutasi" ON tb_payment_mutasi FOR ALL USING (
 
 DROP POLICY IF EXISTS "Allow all tb_log_aktivitas" ON tb_log_aktivitas;
 CREATE POLICY "Allow all tb_log_aktivitas" ON tb_log_aktivitas FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all tb_user_address" ON tb_user_address;
+CREATE POLICY "Allow all tb_user_address" ON tb_user_address FOR ALL USING (true) WITH CHECK (true);
 
 -- Grant privileges ke anon, authenticated, dan service_role
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;

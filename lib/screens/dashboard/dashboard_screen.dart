@@ -5,10 +5,12 @@ import '../../models/menu_model.dart';
 import '../../models/order_model.dart';
 import '../../models/table_model.dart';
 import '../../models/user_model.dart';
+import '../../models/event_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/analytics_charts.dart';
+import '../../widgets/menu_detail_dialog.dart';
 import '../../services/order_simulation_service.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -29,10 +31,17 @@ class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
   late AnimationController _entryController;
   late List<Animation<double>> _cardAnimations;
+  late PageController _heroCarouselController;
+  int _currentHeroIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _heroCarouselController = PageController(initialPage: 0);
+    // Sinkronkan data event terkini langsung dari Supabase saat membuka Beranda
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.db.refreshEvents();
+    });
     _entryController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -48,6 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   void dispose() {
+    _heroCarouselController.dispose();
     _entryController.dispose();
     super.dispose();
   }
@@ -88,17 +98,24 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6F3),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Hero Header ──
-            _buildHeroHeader(user, role, greeting),
-            const SizedBox(height: 20),
+      body: RefreshIndicator(
+        color: const Color(0xFFEA580C),
+        onRefresh: () async {
+          await widget.db.refreshEvents();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Hero Header ──
+              _buildHeroHeader(user, role, greeting),
+              const SizedBox(height: 20),
 
-            // ── Metric Cards ──
-            LayoutBuilder(
+              // ── Metric Cards (Khusus Role Manajemen / Staff: Admin, Waiter, Kasir, Owner. Disembunyikan untuk Pelanggan) ──
+              if (role != UserRole.pelanggan) ...[
+                LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 750;
                 final isMedium = constraints.maxWidth > 480;
@@ -231,8 +248,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               },
             ),
             const SizedBox(height: 20),
+          ],
 
-            // ── Menu Best Seller & Rekomendasi + Antrean Pesanan / Proses Pesanan ──
+          // ── Menu Best Seller & Rekomendasi + Antrean Pesanan / Proses Pesanan ──
             LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 800;
@@ -271,11 +289,16 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  // ── Hero Header ────────────────────────────────────────────────────────────
+  // ── Hero Header Carousel (TikTok-style Swipe: Ucapan Selamat -> Poin -> Event) ──────
   Widget _buildHeroHeader(dynamic user, UserRole role, String greeting) {
+    final isOwner = role == UserRole.owner;
+    final events = widget.db.events;
+    final totalSlides = 2 + events.length + (isOwner ? 1 : 0);
+
     return FadeTransition(
       opacity: _cardAnimations[0],
       child: SlideTransition(
@@ -283,74 +306,113 @@ class _DashboardScreenState extends State<DashboardScreen>
           begin: const Offset(0, -0.1),
           end: Offset.zero,
         ).animate(_cardAnimations[0]),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFFF7300), Color(0xFFEA580C), Color(0xFFCC4A0B)],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x14000000),
-                blurRadius: 16,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // Decorative background shape
-              Positioned(
-                right: -30,
-                top: -30,
-                child: Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.07),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 60,
-                bottom: -50,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 195,
+              child: PageView(
+                controller: _heroCarouselController,
+                onPageChanged: (idx) {
+                  setState(() => _currentHeroIndex = idx);
+                },
+                children: [
+                  // Slide 1 (Default): Ucapan Selamat & Welcome
+                  _buildWelcomeSlide(user, role, greeting),
 
+                  // Slide 2: Poin Loyalitas & Rewards Rasantara
+                  _buildPointsSlide(user),
+
+                  // Slide 3+: Event & Promosi Restoran dari SQL
+                  ...events.map((event) => _buildEventSlide(event, isOwner: isOwner)),
+
+                  // Extra Slide jika Owner: Tombol Tambah Event
+                  if (isOwner) _buildAddEventSlide(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Indikator Titik Carousel (TikTok-style dots)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(totalSlides, (index) {
+                final isActive = _currentHeroIndex == index;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  height: 6,
+                  width: isActive ? 22 : 6,
+                  decoration: BoxDecoration(
+                    color: isActive ? const Color(0xFFEA580C) : const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Slide 1: Ucapan Selamat (Selamat Pagi / Siang / Malam)
+  Widget _buildWelcomeSlide(dynamic user, UserRole role, String greeting) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFF7300), Color(0xFFEA580C), Color(0xFFCC4A0B)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -25,
+            top: -25,
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               Row(
                 children: [
-                  // Avatar
                   Container(
-                    width: 60,
-                    height: 60,
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(18),
+                      color: Colors.white.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Center(
                       child: Text(
                         (user?.namaUser ?? 'U')[0].toUpperCase(),
                         style: const TextStyle(
-                          fontSize: 26,
+                          fontSize: 24,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,36 +420,31 @@ class _DashboardScreenState extends State<DashboardScreen>
                         Text(
                           '$greeting,',
                           style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 12.5,
+                            color: Colors.white.withValues(alpha: 0.85),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         Text(
-                          user?.namaUser ?? 'Pengguna',
+                          user?.namaUser ?? 'Pelanggan Rasantara',
                           style: const TextStyle(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 3),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 5,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.22),
-                            borderRadius: BorderRadius.circular(50),
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '${role.label} · Restoran Rasantara',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                            '${role.label} · Rasantara Resto',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ),
                       ],
@@ -395,8 +452,450 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                 ],
               ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.swipe_rounded, size: 14, color: Colors.white70),
+                        SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Geser untuk Poin & Event >',
+                            style: TextStyle(color: Colors.white70, fontSize: 11),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFFEA580C),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: () => widget.onNavigateToTab(1),
+                    child: const Text('Buka Menu', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  // Slide 2: Poin Loyalitas & Rewards Rasantara
+  Widget _buildPointsSlide(dynamic user) {
+    final points = (widget.db.orders.where((o) => o.idUser == user?.idUser).length * 150) + 250;
+    final rupiahDiscount = points * 100;
+    final fmt = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E293B), Color(0xFF0F172A), Color(0xFF334155)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.military_tech_rounded, color: Colors.amber, size: 18),
+                  SizedBox(width: 6),
+                  Text(
+                    'POIN KULINER RASANTARA',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEA580C),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.verified_rounded, color: Colors.white, size: 11),
+                    SizedBox(width: 3),
+                    Text('Member Aktif', style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$points Poin',
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Setara ${fmt.format(rupiahDiscount)} potongan transaksi pesanan Anda',
+                style: const TextStyle(fontSize: 11.5, color: Colors.white70),
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Expanded(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_task_rounded, size: 14, color: Color(0xFF38BDF8)),
+                    SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        '+150 Poin / transaksi',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF38BDF8), fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFEA580C),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  visualDensity: VisualDensity.compact,
+                ),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: const Color(0xFF16A34A),
+                      content: Text('Poin Anda dapat langsung dipotongkan saat memesan makanan! (Saldo Poin: $points)'),
+                    ),
+                  );
+                  widget.onNavigateToTab(1);
+                },
+                child: const Text('Gunakan Poin', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Slide 3+: Event & Promosi Restoran dari SQL
+  Widget _buildEventSlide(EventModel event, {required bool isOwner}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF4C1D95), Color(0xFF5B21B6), Color(0xFF7C3AED)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.campaign_rounded, color: Colors.amber, size: 18),
+                  SizedBox(width: 6),
+                  Text(
+                    'EVENT RESTORAN AKTIF',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Diskon ${event.diskonPersen}%',
+                  style: const TextStyle(color: Color(0xFF4C1D95), fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                event.judulEvent,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                event.deskripsi,
+                style: const TextStyle(fontSize: 11, color: Colors.white70, height: 1.3),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (event.kodePromo.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white30),
+                  ),
+                  child: Text(
+                    'KODE: ${event.kodePromo}',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                )
+              else
+                const SizedBox(),
+              Row(
+                children: [
+                  if (isOwner)
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.white70, size: 18),
+                      tooltip: 'Hapus Event (Owner)',
+                      onPressed: () => widget.db.deleteEvent(event.idEvent),
+                    ),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF4C1D95),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: () => widget.onNavigateToTab(1),
+                    child: const Text('Klaim Promo', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Slide Tambah Event (Khusus Owner)
+  Widget _buildAddEventSlide() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFFED7AA), width: 1.5),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFF7ED),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.add_circle_outline_rounded, size: 32, color: Color(0xFFEA580C)),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Kelola & Buat Event Baru',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+          ),
+          const SizedBox(height: 3),
+          const Text(
+            'Khusus Owner: Terbitkan promo & diskon baru ke seluruh pelanggan',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEA580C),
+              visualDensity: VisualDensity.compact,
+            ),
+            icon: const Icon(Icons.add, size: 16),
+            label: const Text('Tambah Event Baru', style: TextStyle(fontSize: 11.5)),
+            onPressed: () => _showCreateEventDialog(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Modal Dialog Pembuatan Event Baru (Khusus Owner)
+  void _showCreateEventDialog(BuildContext context) {
+    final titleCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final promoCtrl = TextEditingController();
+    int discountPct = 15;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.campaign_rounded, color: Color(0xFFEA580C)),
+              SizedBox(width: 8),
+              Text('Buat Event Restoran Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Hanya akun Owner yang memiliki otoritas untuk menerbitkan event & promosi ke beranda seluruh pelanggan.',
+                  style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: titleCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Judul Event *',
+                    hintText: 'Misal: Promo Spesial Weekend',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Deskripsi Event & Ketentuan *',
+                    hintText: 'Potongan 20% untuk semua masakan olahan sapi...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: promoCtrl,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(
+                    labelText: 'Kode Promo',
+                    hintText: 'Misal: WEEKENDHEMAT',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Besaran Diskon:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    Text('$discountPct%', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFFEA580C))),
+                  ],
+                ),
+                Slider(
+                  value: discountPct.toDouble(),
+                  min: 5,
+                  max: 50,
+                  divisions: 9,
+                  activeColor: const Color(0xFFEA580C),
+                  onChanged: (val) => setDlgState(() => discountPct = val.round()),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
+              onPressed: () async {
+                if (titleCtrl.text.trim().isEmpty || descCtrl.text.trim().isEmpty) {
+                  return;
+                }
+                final newEvent = EventModel(
+                  idEvent: 0,
+                  judulEvent: titleCtrl.text.trim(),
+                  deskripsi: descCtrl.text.trim(),
+                  kodePromo: promoCtrl.text.trim().toUpperCase(),
+                  diskonPersen: discountPct,
+                  tanggalMulai: DateTime.now(),
+                  tanggalSelesai: DateTime.now().add(const Duration(days: 14)),
+                  createdBy: 'owner',
+                );
+                final success = await widget.db.addEvent(newEvent);
+                if (ctx.mounted) {
+                  Navigator.of(ctx).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: success ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                      content: Text(success ? 'Event promosi berhasil diterbitkan ke Beranda!' : 'Gagal membuat event.'),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Terbitkan Event'),
+            ),
+          ],
         ),
       ),
     );
@@ -581,109 +1080,146 @@ class _DashboardScreenState extends State<DashboardScreen>
                   final menu = displayMenus[i];
                   final rank = i + 1;
                   final badgeLabel = rank == 1
-                      ? '🔥 #1 Terlaris'
+                      ? '#1 Terlaris'
                       : rank == 2
-                          ? '⭐ #2 Favorit'
+                          ? '#2 Favorit'
                           : rank == 3
-                              ? '👍 #3 Rekomendasi'
+                              ? '#3 Rekomendasi'
                               : 'Menu Pilihan';
+                  final badgeIcon = rank == 1
+                      ? Icons.local_fire_department_rounded
+                      : rank == 2
+                          ? Icons.star_rounded
+                          : rank == 3
+                              ? Icons.thumb_up_rounded
+                              : Icons.verified_rounded;
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x06000000),
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Foto Menu & Badge Rank
-                        Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
-                              child: SizedBox(
-                                width: double.infinity,
-                                height: 95,
-                                child: menu.gambarUrl.isNotEmpty
-                                    ? Image.network(
-                                        menu.gambarUrl,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => _menuPlaceholder(),
-                                      )
-                                    : _menuPlaceholder(),
-                              ),
+                      onTap: () {
+                        MenuDetailDialog.show(
+                          context,
+                          menu: menu,
+                          onConfirm: (quantity, note) {
+                            widget.onNavigateToTab(1);
+                          },
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x06000000),
+                              blurRadius: 6,
+                              offset: Offset(0, 2),
                             ),
-                            Positioned(
-                              top: 6,
-                              left: 6,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: rank <= 3 ? const Color(0xFFEA580C) : const Color(0xFF1E293B),
-                                  borderRadius: BorderRadius.circular(6),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Foto Menu & Badge Rank
+                            Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    height: 95,
+                                    child: menu.gambarUrl.isNotEmpty
+                                        ? Image.network(
+                                            menu.gambarUrl,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) => _menuPlaceholder(),
+                                          )
+                                        : _menuPlaceholder(),
+                                  ),
                                 ),
-                                child: Text(
-                                  badgeLabel,
-                                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                                Positioned(
+                                  top: 6,
+                                  left: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: rank <= 3 ? const Color(0xFFEA580C) : const Color(0xFF1E293B),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(badgeIcon, size: 10, color: Colors.white),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          badgeLabel,
+                                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          menu.namaMasakan,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B)),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          fmt.format(menu.harga),
+                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFFEA580C)),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 26,
+                                      child: FilledButton(
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: const Color(0xFFFFF7ED),
+                                          foregroundColor: const Color(0xFFEA580C),
+                                          elevation: 0,
+                                          padding: EdgeInsets.zero,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(6),
+                                            side: const BorderSide(color: Color(0xFFFFEDD5)),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          MenuDetailDialog.show(
+                                            context,
+                                            menu: menu,
+                                            onConfirm: (quantity, note) {
+                                              widget.onNavigateToTab(1);
+                                            },
+                                          );
+                                        },
+                                        child: const Text('Detail & Pesan', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      menu.namaMasakan,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B)),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      fmt.format(menu.harga),
-                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFFEA580C)),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 26,
-                                  child: FilledButton(
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFFF7ED),
-                                      foregroundColor: const Color(0xFFEA580C),
-                                      elevation: 0,
-                                      padding: EdgeInsets.zero,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
-                                        side: const BorderSide(color: Color(0xFFFFEDD5)),
-                                      ),
-                                    ),
-                                    onPressed: () => widget.onNavigateToTab(1),
-                                    child: const Text('Pesan Sekarang', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   );
                 },
@@ -706,6 +1242,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   // ── Customer Live Order Tracker (Proses Pesanan Anda) ─────────────────────
   Widget _buildCustomerOrderTracker(List<dynamic> activeOrders, NumberFormat fmt) {
     final currentUser = widget.db.currentUser;
+    final isPelanggan = currentUser?.role == UserRole.pelanggan;
+
     // Ambil pesanan milik user pelanggan yang sedang aktif atau yang paling baru
     final userOrders = activeOrders.where((o) =>
       (currentUser != null && o.idUser == currentUser.idUser) ||
@@ -722,8 +1260,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         targetOrder = allUserOrders.first;
       }
     }
-    // Fallback ke pesanan aktif pertama jika pelanggan belum ada pesanan atas namanya
-    targetOrder ??= activeOrders.isNotEmpty ? activeOrders.first : null;
+    // Hanya fallback ke pesanan aktif jika BUKAN pelanggan (misal admin/kasir demo)
+    if (!isPelanggan) {
+      targetOrder ??= activeOrders.isNotEmpty ? activeOrders.first : null;
+    }
 
     final simService = OrderSimulationService();
     simService.attachDatabase(widget.db);
@@ -731,6 +1271,11 @@ class _DashboardScreenState extends State<DashboardScreen>
     return ListenableBuilder(
       listenable: simService,
       builder: (context, _) {
+        // Cek apakah pesanan sudah melewati jeda 2 menit setelah selesai
+        if (targetOrder != null && simService.isOrderExpired(targetOrder.idOrder)) {
+          targetOrder = null;
+        }
+
         final progress = (targetOrder != null && targetOrder is OrderModel)
             ? simService.getOrCreateProgress(targetOrder)
             : null;
@@ -738,6 +1283,10 @@ class _DashboardScreenState extends State<DashboardScreen>
             (targetOrder?.status == OrderStatus.selesai
                 ? 4
                 : (targetOrder?.status == OrderStatus.diproses ? 2 : 1));
+
+        if (progress != null && progress.isExpired) {
+          targetOrder = null;
+        }
 
         return Container(
           decoration: BoxDecoration(
@@ -826,18 +1375,35 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                     ),
                   ] else if (targetOrder != null && currentStep >= 4) ...[
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      onPressed: () => simService.restartSimulation(targetOrder.idOrder),
-                      icon: const Icon(Icons.refresh_rounded, size: 14, color: Color(0xFF16A34A)),
-                      label: const Text(
-                        'Ulangi',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFDCFCE7)),
+                          ),
+                          child: Text(
+                            'Selesai (${progress?.remainingSecondsUntilClear ?? 120}s)',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () => simService.dismissCompletedOrder(targetOrder.idOrder),
+                          child: const Text(
+                            'Tutup Sesi',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],

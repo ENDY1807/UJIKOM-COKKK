@@ -11,7 +11,9 @@ import '../services/desktop_oauth_service.dart';
 import '../services/supabase_config.dart';
 import '../services/supabase_service.dart';
 import '../services/web_oauth_helper.dart';
+import '../services/whatsapp_otp_service.dart';
 import '../theme/app_theme.dart';
+import 'auth/google_onboarding_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
   final DatabaseService db;
@@ -36,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   // Register
   final _regNameController = TextEditingController();
-  final _regUsernameController = TextEditingController();
+  final _regEmailController = TextEditingController();
   final _regPasswordController = TextEditingController();
   final _regConfirmPasswordController = TextEditingController();
   bool _regObscure = true;
@@ -154,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen>
               _isGoogleLoading = false;
               _successMessage = 'Berhasil masuk sebagai ${name ?? email} (${user.role.label})';
             });
-            widget.onLoginSuccess();
+            _completeUserLogin(user);
           }
           return;
         }
@@ -189,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen>
                     _isGoogleLoading = false;
                     _successMessage = 'Berhasil masuk sebagai $name';
                   });
-                  widget.onLoginSuccess();
+                  _completeUserLogin(user);
                 }
               });
         }
@@ -203,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen>
     _loginUsernameController.dispose();
     _loginPasswordController.dispose();
     _regNameController.dispose();
-    _regUsernameController.dispose();
+    _regEmailController.dispose();
     _regPasswordController.dispose();
     _regConfirmPasswordController.dispose();
     _slideController.dispose();
@@ -239,11 +241,11 @@ class _LoginScreenState extends State<LoginScreen>
     final success = await widget.db.loginAsync(username, password);
     if (success) {
       final user = widget.db.currentUser;
-      if (user != null && user.isTwoFactorEnabled) {
-        _showTwoFactorDialog(user);
-        return;
+      if (user != null) {
+        _completeUserLogin(user);
+      } else {
+        widget.onLoginSuccess();
       }
-      widget.onLoginSuccess();
     } else {
       setState(() => _errorMessage = 'Username atau password tidak cocok');
     }
@@ -255,12 +257,17 @@ class _LoginScreenState extends State<LoginScreen>
       _successMessage = null;
     });
     final name = _regNameController.text.trim();
-    final username = _regUsernameController.text.trim();
+    final email = _regEmailController.text.trim();
     final password = _regPasswordController.text;
     final confirm = _regConfirmPasswordController.text;
 
-    if (name.isEmpty || username.isEmpty || password.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
       setState(() => _errorMessage = 'Semua field wajib diisi');
+      return;
+    }
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!emailRegex.hasMatch(email)) {
+      setState(() => _errorMessage = 'Format email tidak valid (contoh: user@gmail.com)');
       return;
     }
     if (password.length < 4) {
@@ -274,11 +281,12 @@ class _LoginScreenState extends State<LoginScreen>
 
     try {
       final newUser = await widget.db.registerUser(
-        username: username,
+        username: email,
         password: password,
         namaUser: name,
+        email: email,
       );
-      _loginUsernameController.text = username;
+      _loginUsernameController.text = email;
       _loginPasswordController.text = password;
       setState(() {
         _successMessage =
@@ -286,7 +294,7 @@ class _LoginScreenState extends State<LoginScreen>
       });
       _toggleMode(false);
       _regNameController.clear();
-      _regUsernameController.clear();
+      _regEmailController.clear();
       _regPasswordController.clear();
       _regConfirmPasswordController.clear();
     } catch (e) {
@@ -303,8 +311,12 @@ class _LoginScreenState extends State<LoginScreen>
     _googleSignInInitialized = true;
     try {
       await GoogleSignIn.instance.initialize(
-        clientId: kIsWeb ? SupabaseConfig.googleClientId : null,
-        serverClientId: kIsWeb ? null : SupabaseConfig.googleClientId,
+        clientId: kIsWeb
+            ? SupabaseConfig.googleClientId
+            : (defaultTargetPlatform == TargetPlatform.android
+                ? SupabaseConfig.googleAndroidClientId
+                : null),
+        serverClientId: SupabaseConfig.googleClientId,
       );
     } catch (e) {
       if (!e.toString().contains('already been called')) {
@@ -357,7 +369,7 @@ class _LoginScreenState extends State<LoginScreen>
             _successMessage =
                 'Berhasil masuk dengan Google sebagai $name (${user.role.label})';
           });
-          widget.onLoginSuccess();
+          _completeUserLogin(user);
         }
         return;
       }
@@ -429,11 +441,7 @@ class _LoginScreenState extends State<LoginScreen>
               _successMessage =
                   'Berhasil masuk sebagai ${googleProfile.name} (${appUser.role.label})';
             });
-            if (appUser.isTwoFactorEnabled) {
-              _showTwoFactorDialog(appUser);
-              return;
-            }
-            widget.onLoginSuccess();
+            _completeUserLogin(appUser);
           }
           return;
         }
@@ -460,8 +468,41 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  void _showTwoFactorDialog(UserModel user) {
+  void _completeUserLogin(UserModel user) {
+    if (user.authProvider == AuthProvider.google &&
+        (!user.isConfigured || user.phoneNumber.isEmpty || user.username == 'pelanggan')) {
+      GoogleOnboardingDialog.show(
+        context,
+        db: widget.db,
+        user: user,
+        onComplete: () {
+          widget.onLoginSuccess();
+        },
+      );
+      return;
+    }
+
+    if (user.isTwoFactorEnabled) {
+      _showTwoFactorDialog(user);
+      return;
+    }
+
+    widget.onLoginSuccess();
+  }
+
+  void _showTwoFactorDialog(UserModel user) async {
     final codeCtrl = TextEditingController();
+    final rawPhone = user.phoneNumber.isNotEmpty ? user.phoneNumber : '081234567890';
+    
+    // Kirim kode OTP WhatsApp nyata
+    final sentCode = await WhatsAppOtpService.instance.sendOtp(
+      rawPhone: rawPhone,
+      userName: user.namaUser,
+      purpose: 'Verifikasi Login 2FA Rasantara',
+    );
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -472,7 +513,7 @@ class _LoginScreenState extends State<LoginScreen>
           children: [
             Icon(Icons.security_rounded, color: Color(0xFFEA580C)),
             SizedBox(width: 8),
-            Text('Verifikasi 2 Langkah', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('Autentikasi 2 Langkah', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -480,17 +521,43 @@ class _LoginScreenState extends State<LoginScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Akun ${user.namaUser} dilindungi dengan autentikasi dua langkah (${user.twoFactorType ?? "Authenticator"}). Masukkan 6-digit kode verifikasi Anda:',
+              'Kode OTP resmi telah dikirim ke WhatsApp akun ${user.namaUser} ($rawPhone).',
               style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFDCFCE7),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFF15803D)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Simulasi/Demo OTP: $sentCode',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => codeCtrl.text = sentCode,
+                    child: const Text('Isi', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF15803D), decoration: TextDecoration.underline)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
             TextField(
               controller: codeCtrl,
               keyboardType: TextInputType.number,
               maxLength: 6,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 20, letterSpacing: 6, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
-                labelText: 'Kode Verifikasi 6-Digit',
-                hintText: '123456',
+                hintText: '••••••',
+                counterText: '',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 prefixIcon: const Icon(Icons.pin, color: Color(0xFFEA580C)),
               ),
@@ -509,15 +576,21 @@ class _LoginScreenState extends State<LoginScreen>
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () {
-              final code = codeCtrl.text.trim();
-              if (code.length < 4) {
+              final result = WhatsAppOtpService.instance.verifyOtp(
+                rawPhone: rawPhone,
+                inputCode: codeCtrl.text,
+              );
+              if (result.isValid) {
+                Navigator.of(ctx).pop();
+                widget.onLoginSuccess();
+              } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Masukkan kode autentikasi 2 langkah yang valid')),
+                  SnackBar(
+                    content: Text(result.message),
+                    backgroundColor: const Color(0xFFDC2626),
+                  ),
                 );
-                return;
               }
-              Navigator.of(ctx).pop();
-              widget.onLoginSuccess();
             },
             child: const Text('Verifikasi & Masuk'),
           ),
@@ -700,11 +773,7 @@ class _LoginScreenState extends State<LoginScreen>
                       _isGoogleLoading = false;
                       _successMessage = 'Selamat datang, $name!';
                     });
-                    if (appUser.isTwoFactorEnabled) {
-                      _showTwoFactorDialog(appUser);
-                      return;
-                    }
-                    widget.onLoginSuccess();
+                    _completeUserLogin(appUser);
                   }
                 } catch (err) {
                   if (mounted) {
@@ -1156,9 +1225,11 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 12),
         _inputField(
-          controller: _regUsernameController,
-          label: 'Username',
-          icon: Icons.alternate_email,
+          controller: _regEmailController,
+          label: 'Email',
+          hintText: 'nama@email.com',
+          icon: Icons.email_outlined,
+          keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 12),
         _inputField(
@@ -1235,9 +1306,12 @@ class _LoginScreenState extends State<LoginScreen>
     bool obscure = false,
     VoidCallback? onToggle,
     ValueChanged<String>? onSubmit,
+    TextInputType? keyboardType,
+    String? hintText,
   }) {
     return TextField(
       controller: controller,
+      keyboardType: keyboardType,
       obscureText: obscure,
       onSubmitted: onSubmit,
       style: const TextStyle(
@@ -1247,7 +1321,7 @@ class _LoginScreenState extends State<LoginScreen>
       ),
       decoration: InputDecoration(
         labelText: label,
-        hintText: 'Masukkan $label',
+        hintText: hintText ?? 'Masukkan $label',
         labelStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
         prefixIcon: Icon(icon, size: 20, color: AppTheme.orangePrimary),
         suffixIcon: isPassword
@@ -1563,9 +1637,11 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                     const SizedBox(height: 12),
                                     _inputField(
-                                      controller: _regUsernameController,
-                                      label: 'Username',
-                                      icon: Icons.alternate_email,
+                                      controller: _regEmailController,
+                                      label: 'Email',
+                                      hintText: 'nama@email.com',
+                                      icon: Icons.email_outlined,
+                                      keyboardType: TextInputType.emailAddress,
                                     ),
                                     const SizedBox(height: 12),
                                     _inputField(

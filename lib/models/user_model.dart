@@ -43,8 +43,10 @@ class UserModel {
   final String? googleEmail;
   final String? googlePhoto;
   final String? fotoProfil;
+  final String phoneNumber;
   final bool isTwoFactorEnabled;
   final String? twoFactorType;
+  final bool isConfigured;
 
   UserModel({
     required this.idUser,
@@ -57,8 +59,10 @@ class UserModel {
     this.googleEmail,
     this.googlePhoto,
     this.fotoProfil,
+    this.phoneNumber = '',
     this.isTwoFactorEnabled = false,
     this.twoFactorType,
+    this.isConfigured = true,
   });
 
   bool get isGoogleLinked =>
@@ -83,8 +87,10 @@ class UserModel {
     String? googleEmail,
     String? googlePhoto,
     String? fotoProfil,
+    String? phoneNumber,
     bool? isTwoFactorEnabled,
     String? twoFactorType,
+    bool? isConfigured,
   }) {
     return UserModel(
       idUser: idUser ?? this.idUser,
@@ -97,8 +103,10 @@ class UserModel {
       googleEmail: googleEmail ?? this.googleEmail,
       googlePhoto: googlePhoto ?? this.googlePhoto,
       fotoProfil: fotoProfil ?? this.fotoProfil,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
       isTwoFactorEnabled: isTwoFactorEnabled ?? this.isTwoFactorEnabled,
       twoFactorType: twoFactorType ?? this.twoFactorType,
+      isConfigured: isConfigured ?? this.isConfigured,
     );
   }
 
@@ -120,6 +128,11 @@ class UserModel {
     final twoFactorRaw = map['is_two_factor_enabled'] ?? map['two_factor'];
     final bool is2fa = twoFactorRaw == true || twoFactorRaw == 1 || twoFactorRaw == 'true';
 
+    final bool cfg = map['is_configured'] == true ||
+        map['is_configured'] == 1 ||
+        map['is_configured'] == 'true' ||
+        (map['phone_number'] != null && map['phone_number'].toString().isNotEmpty);
+
     return UserModel(
       idUser: map['id_user'] is int
           ? map['id_user'] as int
@@ -133,8 +146,10 @@ class UserModel {
       googleEmail: email?.toString(),
       googlePhoto: map['google_photo']?.toString(),
       fotoProfil: (map['foto_profil'] ?? map['avatar_url'])?.toString(),
+      phoneNumber: map['phone_number']?.toString() ?? '',
       isTwoFactorEnabled: is2fa,
       twoFactorType: map['two_factor_type']?.toString(),
+      isConfigured: cfg,
     );
   }
 
@@ -146,6 +161,7 @@ class UserModel {
       'nama_user': namaUser,
       'id_level': role.id,
       'email': displayEmail,
+      'phone_number': phoneNumber,
       'auth_provider': authProvider.name,
       if (googleUid != null) 'google_uid': googleUid,
       if (googleEmail != null) 'google_email': googleEmail,
@@ -153,6 +169,7 @@ class UserModel {
       if (fotoProfil != null) 'foto_profil': fotoProfil,
       'is_two_factor_enabled': isTwoFactorEnabled,
       if (twoFactorType != null) 'two_factor_type': twoFactorType,
+      'is_configured': isConfigured,
     };
   }
 }

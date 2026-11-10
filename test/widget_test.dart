@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kasir_restoran/main.dart';
 import 'package:kasir_restoran/models/user_model.dart';
 import 'package:kasir_restoran/screens/login_screen.dart';
@@ -8,6 +9,10 @@ import 'package:kasir_restoran/services/database_service.dart';
 import 'package:kasir_restoran/services/order_simulation_service.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   tearDown(() {
     OrderSimulationService().stop();
   });

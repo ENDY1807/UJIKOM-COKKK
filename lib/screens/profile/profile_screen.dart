@@ -4,6 +4,9 @@ import '../../models/payment_method_model.dart';
 import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
+import 'manage_payments_screen.dart';
+import 'manage_addresses_screen.dart';
+import 'settings_screen.dart';
 
 /// Layar Profil Pengguna & Pengaturan Terintegrasi:
 /// 1. Koneksi Akun Google (Tautkan / Putuskan Google OAuth)
@@ -26,8 +29,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final List<String> _savedAddresses = [];
-
   final _currencyFmt = NumberFormat.currency(
     locale: 'id_ID',
     symbol: 'Rp ',
@@ -138,7 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       backgroundColor: Color(0xFF16A34A),
-                      content: Text('✓ Autentikasi 2 Langkah (2FA) Berhasil Diaktifkan!'),
+                      content: Text('Autentikasi 2 Langkah (2FA) Berhasil Diaktifkan!'),
                     ),
                   );
                 },
@@ -358,7 +359,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         backgroundColor: const Color(0xFF16A34A),
-                        content: Text('✓ ${selectedProvider.label} ($acc) berhasil dikoneksikan ke database!'),
+                        content: Text('${selectedProvider.label} ($acc) berhasil dikoneksikan ke database!'),
                       ),
                     );
                   }
@@ -505,7 +506,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             backgroundColor: const Color(0xFF16A34A),
-                            content: Text('✓ Akun ${provider.label} ($accountNumber) berhasil terverifikasi & terkoneksi!'),
+                            content: Text('Akun ${provider.label} ($accountNumber) berhasil terverifikasi & terkoneksi!'),
                           ),
                         );
                       },
@@ -584,7 +585,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       backgroundColor: const Color(0xFF16A34A),
-                      content: Text('✓ Top up ${_currencyFmt.format(selectedAmount)} ke ${method.provider.label} berhasil!'),
+                      content: Text('Top up ${_currencyFmt.format(selectedAmount)} ke ${method.provider.label} berhasil!'),
                     ),
                   );
                 },
@@ -831,53 +832,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     backgroundColor: Color(0xFF16A34A),
-                    content: Text('✓ Kata sandi berhasil diperbarui!'),
-                  ),
-                );
-              }
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddAddressDialog() {
-    final addrController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.add_location_alt_rounded, color: Color(0xFFEA580C)),
-            SizedBox(width: 8),
-            Text('Tambah Alamat Antar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: TextField(
-          controller: addrController,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Alamat Rumah / Kantor',
-            hintText: 'Masukkan Alamat',
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Batal')),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
-            onPressed: () {
-              final text = addrController.text.trim();
-              if (text.isNotEmpty) {
-                setState(() => _savedAddresses.add(text));
-                Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: Color(0xFF16A34A),
-                    content: Text('✓ Alamat baru berhasil disimpan!'),
+                    content: Text('Kata sandi berhasil diperbarui!'),
                   ),
                 );
               }
@@ -978,18 +933,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.settings_outlined, color: AppTheme.textMuted),
+                      tooltip: 'Pengaturan Akun & Aplikasi',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SettingsScreen(
+                              db: widget.db,
+                              onProfileUpdated: () => setState(() {}),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
 
-              // ── 2. Keamanan Akun & Two-Factor Auth (2FA / 2-Auth) ──
+              // ── 2. Keamanan Akun & Two-Factor Auth (2FA / 2-Auth) (Di bawah Akun, Di atas Metode Pembayaran) ──
               _buildSectionHeader('Keamanan Akun & 2-Factor Auth (2FA)'),
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x06000000), blurRadius: 8, offset: Offset(0, 2)),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -1085,24 +1058,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── 4. Metode Pembayaran Terkoneksi Nyata (DANA, GoPay, M-Banking, dsb.) ──
+              // ── 3. Metode Pembayaran Terkoneksi Nyata (DANA, GoPay, Saldo Rasantara, dsb.) ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildSectionHeader('Metode Pembayaran Terkoneksi'),
                   InkWell(
-                    onTap: _openAddPaymentMethodDialog,
+                    onTap: () => ManagePaymentsScreen.navigate(context, widget.db),
                     child: const Padding(
                       padding: EdgeInsets.only(bottom: 8, right: 4),
                       child: Row(
                         children: [
-                          Icon(Icons.add_circle_outline, size: 14, color: Color(0xFFEA580C)),
+                          Icon(Icons.tune_rounded, size: 14, color: Color(0xFF0284C7)),
                           SizedBox(width: 4),
                           Text(
-                            '+ Tambah Baru',
+                            'Manage Payments >',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFFEA580C),
+                              color: Color(0xFF0284C7),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1257,112 +1230,240 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 }),
               const SizedBox(height: 16),
 
-              // ── 5. Member Restoran Nusantara (Poin & Rewards) ──
-              _buildSectionHeader('Langganan & Member Restoran'),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFEA580C), Color(0xFFFF7300)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              // ── 3. Alamat Pengantaran (Delivery & Take Away) ──
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Alamat Pengantaran (Delivery & Take Away)',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                  InkWell(
+                    onTap: () => ManageAddressesScreen.navigate(context, widget.db),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.tune_rounded, size: 14, color: Color(0xFFEA580C)),
+                          SizedBox(width: 4),
+                          Text(
+                            'Kelola Alamat',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFEA580C),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x06000000), blurRadius: 8, offset: Offset(0, 2)),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'MEMBER GOLD RASANTARA',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white24,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
+                    if (widget.db.userAddresses.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Column(
                             children: [
-                              Icon(Icons.stars, color: Colors.amber, size: 14),
-                              SizedBox(width: 4),
-                              Text(
-                                'Aktif',
-                                style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                              const Icon(Icons.location_off_outlined, size: 36, color: Color(0xFF94A3B8)),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Belum ada alamat pengantaran tersimpan di akun Anda.',
+                                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                              ),
+                              const SizedBox(height: 10),
+                              FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFFEA580C),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.add_location_alt_rounded, size: 16),
+                                label: const Text('Tambah Alamat Pertama', style: TextStyle(fontSize: 12)),
+                                onPressed: () => ManageAddressesScreen.navigate(context, widget.db),
                               ),
                             ],
+                          ),
+                        ),
+                      )
+                    else ...[
+                      // Highlight Primary Address
+                      Builder(
+                        builder: (context) {
+                          final primaryAddr = widget.db.primaryAddress ?? widget.db.userAddresses.first;
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF7ED),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFFFEDD5)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFEA580C),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.location_on_rounded, size: 14, color: Colors.white),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      primaryAddr.label,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEA580C),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text(
+                                        'UTAMA',
+                                        style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    if (primaryAddr.latitude != null && primaryAddr.longitude != null)
+                                      const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.gps_fixed_rounded, size: 12, color: Color(0xFF16A34A)),
+                                          SizedBox(width: 3),
+                                          Text('GPS Aktif', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '${primaryAddr.recipientName} • ${primaryAddr.recipientPhone}',
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11.5, color: Color(0xFF334155)),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  primaryAddr.formattedFullAddress,
+                                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.35),
+                                ),
+                                if (primaryAddr.notes.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Patokan/Catatan: ${primaryAddr.notes}',
+                                    style: const TextStyle(fontSize: 10.5, fontStyle: FontStyle.italic, color: Color(0xFF94A3B8)),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      if (widget.db.userAddresses.length > 1) ...[
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Pilih Cepat Alamat Utama:',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                        ),
+                        const SizedBox(height: 6),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: widget.db.userAddresses.map((addr) {
+                              final isCurrentPrimary = addr.isPrimary;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: ChoiceChip(
+                                  selected: isCurrentPrimary,
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      widget.db.setPrimaryAddress(addr.idAlamat);
+                                      setState(() {});
+                                    }
+                                  },
+                                  avatar: Icon(
+                                    addr.label.toLowerCase().contains('kantor')
+                                        ? Icons.business_rounded
+                                        : Icons.home_rounded,
+                                    size: 14,
+                                    color: isCurrentPrimary ? Colors.white : const Color(0xFF64748B),
+                                  ),
+                                  label: Text(addr.label, style: const TextStyle(fontSize: 11)),
+                                  selectedColor: const Color(0xFFEA580C),
+                                  labelStyle: TextStyle(
+                                    color: isCurrentPrimary ? Colors.white : const Color(0xFF334155),
+                                    fontWeight: isCurrentPrimary ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      '${(widget.db.orders.where((o) => o.idUser == user?.idUser).length * 100)} Poin Kuliner',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Tukarkan poin dengan potongan harga saat makan di tempat atau pesan delivery OSM.',
-                      style: TextStyle(color: Colors.white70, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              _buildSectionHeader('Alamat Pengantaran (Delivery & Take Away)'),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  children: [
-                    ..._savedAddresses.map((addr) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.place_rounded, size: 18, color: Color(0xFFEA580C)),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(addr, style: const TextStyle(fontSize: 12, color: AppTheme.textDark)),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFEA580C),
+                                side: const BorderSide(color: Color(0xFFEA580C)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
                               ),
-                            ],
+                              icon: const Icon(Icons.add_location_alt_outlined, size: 16),
+                              label: const Text('Tambah Alamat', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              onPressed: () => ManageAddressesScreen.navigate(context, widget.db),
+                            ),
                           ),
-                        )),
-                    const SizedBox(height: 6),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFEA580C),
-                        side: const BorderSide(color: Color(0xFFEA580C)),
-                        minimumSize: const Size.fromHeight(38),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: FilledButton.tonalIcon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFFF1F5F9),
+                                foregroundColor: const Color(0xFF334155),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              icon: const Icon(Icons.list_alt_rounded, size: 16),
+                              label: Text('Semua (${widget.db.userAddresses.length})', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              onPressed: () => ManageAddressesScreen.navigate(context, widget.db),
+                            ),
+                          ),
+                        ],
                       ),
-                      icon: const Icon(Icons.add_location_alt_outlined, size: 16),
-                      label: const Text('Tambah Alamat Baru', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      onPressed: _showAddAddressDialog,
-                    ),
+                    ],
                   ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              // ── 7. Tombol Keluar / Logout ──
+              // ── 5. Tombol Keluar / Logout ──
               FilledButton.tonalIcon(
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFFEE2E2),
@@ -1376,8 +1477,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 onPressed: () {
-                  widget.db.logout();
-                  widget.onLogout();
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: const Row(
+                        children: [
+                          Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 22),
+                          SizedBox(width: 8),
+                          Text('Konfirmasi Keluar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      content: const Text(
+                        'Apakah Anda yakin ingin keluar dari sesi akun Rasantara?',
+                        style: TextStyle(fontSize: 13, color: Color(0xFF475569)),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B))),
+                        ),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFFDC2626),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            widget.db.logout();
+                            widget.onLogout();
+                          },
+                          child: const Text('Ya, Keluar'),
+                        ),
+                      ],
+                    ),
+                  );
                 },
               ),
               const SizedBox(height: 20),

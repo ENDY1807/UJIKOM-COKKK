@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_navigation_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/database_service.dart';
 import 'services/supabase_config.dart';
 import 'services/supabase_service.dart';
@@ -34,6 +35,7 @@ class KasirRestoranApp extends StatefulWidget {
 class _KasirRestoranAppState extends State<KasirRestoranApp> {
   late final DatabaseService _db;
   StreamSubscription<AuthState>? _authSub;
+  bool _showSplash = true;
 
   @override
   void initState() {
@@ -84,6 +86,18 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> {
 
   @override
   Widget build(BuildContext context) {
+    if (_showSplash) {
+      return MaterialApp(
+        title: 'Rasantara · Restoran Masakan Nusantara',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        home: SplashScreen(
+          db: _db,
+          onFinish: () => setState(() => _showSplash = false),
+        ),
+      );
+    }
+
     return MaterialApp(
       title: 'Rasantara · Restoran Masakan Nusantara',
       debugShowCheckedModeBanner: false,

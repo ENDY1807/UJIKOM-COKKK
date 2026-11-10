@@ -529,7 +529,7 @@ class _CashierScreenState extends State<CashierScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: AppTheme.statusRed,
-                              content: Text('✓ Pesanan #${order.idOrder} berhasil dibatalkan (Void).'),
+                              content: Text('Pesanan #${order.idOrder} berhasil dibatalkan (Void).'),
                             ),
                           );
                         },

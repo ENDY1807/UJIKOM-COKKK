@@ -74,6 +74,14 @@ enum PaymentMethodProvider {
     Color(0xFFE55300),
     'Rek. 0455-8821-90',
     'Direct debit rekening Bank Negara Indonesia dengan PIN otorisasi.',
+  ),
+  card(
+    'Kartu Debit / Kredit',
+    PaymentMethodCategory.mBanking,
+    Icons.credit_card_rounded,
+    Color(0xFF1E293B),
+    '4000-1234-5678-9010',
+    'Kartu Debit / Kredit Visa, Mastercard, atau GPN.',
   );
 
   final String label;
@@ -121,6 +129,22 @@ class ConnectedPaymentMethod {
       return '$prefix-****-$suffix';
     }
     return accountNumber;
+  }
+
+  String get displayName {
+    final clean = accountNumber.replaceAll(RegExp(r'[^0-9]'), '');
+    final suffix = clean.length >= 4 ? clean.substring(clean.length - 4) : accountNumber;
+    if (provider == PaymentMethodProvider.dana) {
+      return 'DANA $suffix';
+    } else if (provider == PaymentMethodProvider.gopay) {
+      return 'GoPay **** $suffix';
+    } else if (provider == PaymentMethodProvider.ovo) {
+      return 'OVO $suffix';
+    } else if (provider == PaymentMethodProvider.card) {
+      return 'Kartu **** $suffix';
+    } else {
+      return '${provider.label} **** $suffix';
+    }
   }
 
   ConnectedPaymentMethod copyWith({
@@ -262,6 +286,59 @@ class PaymentMutation {
       if (referensiId != null) 'referensi_id': referensiId,
       'created_at': tanggal.toIso8601String(),
     };
+  }
+}
+
+/// Model untuk Metode Pengembalian Dana (Refund Methods)
+class RefundMethod {
+  final String id;
+  final String type; // 'bank' | 'ewallet'
+  final String providerName; // 'BCA', 'Mandiri', 'BRI', 'DANA', 'GoPay', 'OVO'
+  final String accountNumber;
+  final String accountHolderName;
+  final DateTime createdAt;
+
+  RefundMethod({
+    required this.id,
+    required this.type,
+    required this.providerName,
+    required this.accountNumber,
+    required this.accountHolderName,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  String get displayName {
+    final clean = accountNumber.replaceAll(RegExp(r'[^0-9]'), '');
+    final suffix = clean.length >= 4 ? clean.substring(clean.length - 4) : accountNumber;
+    return '$providerName **** $suffix';
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'type': type,
+      'provider_name': providerName,
+      'account_number': accountNumber,
+      'account_holder_name': accountHolderName,
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+
+  factory RefundMethod.fromMap(Map<String, dynamic> map) {
+    DateTime conn = DateTime.now();
+    if (map['created_at'] != null) {
+      try {
+        conn = DateTime.parse(map['created_at'].toString());
+      } catch (_) {}
+    }
+    return RefundMethod(
+      id: map['id']?.toString() ?? 'ref_${DateTime.now().millisecondsSinceEpoch}',
+      type: map['type']?.toString() ?? 'bank',
+      providerName: map['provider_name']?.toString() ?? 'Bank BCA',
+      accountNumber: map['account_number']?.toString() ?? '',
+      accountHolderName: map['account_holder_name']?.toString() ?? '',
+      createdAt: conn,
+    );
   }
 }
 

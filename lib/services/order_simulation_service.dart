@@ -12,6 +12,8 @@ class OrderProgressState {
   final int durasiPengantaranSec;
   int secondsInCurrentStep;
   String reasonNote;
+  DateTime? completedAt;
+  int secondsSinceCompleted;
 
   OrderProgressState({
     required this.orderId,
@@ -21,7 +23,12 @@ class OrderProgressState {
     required this.durasiPengantaranSec,
     this.secondsInCurrentStep = 0,
     this.reasonNote = '',
+    this.completedAt,
+    this.secondsSinceCompleted = 0,
   });
+
+  bool get isExpired => currentStep >= 4 && secondsSinceCompleted >= 120;
+  int get remainingSecondsUntilClear => (120 - secondsSinceCompleted).clamp(0, 120);
 
   int get currentStepTargetDurationSec {
     switch (currentStep) {
@@ -59,6 +66,7 @@ class OrderSimulationService extends ChangeNotifier {
   OrderSimulationService._internal();
 
   final Map<int, OrderProgressState> _states = {};
+  final Set<int> _dismissedOrExpiredOrders = {};
   Timer? _timer;
   DatabaseService? _db;
 
@@ -68,7 +76,8 @@ class OrderSimulationService extends ChangeNotifier {
   }
 
   void _checkTimerNeed() {
-    final hasActive = _states.values.any((s) => s.currentStep < 4);
+    // Timer tetap berjalan jika ada pesanan yang sedang berjalan ATAU pesanan selesai dalam jeda 2 menit
+    final hasActive = _states.values.any((s) => !s.isExpired);
     if (hasActive) {
       _timer ??= Timer.periodic(const Duration(seconds: 1), _onTick);
     } else {
@@ -77,10 +86,24 @@ class OrderSimulationService extends ChangeNotifier {
     }
   }
 
+  bool isOrderExpired(int orderId) {
+    if (_dismissedOrExpiredOrders.contains(orderId)) return true;
+    final state = _states[orderId];
+    return state != null && state.isExpired;
+  }
+
+  void dismissCompletedOrder(int orderId) {
+    _dismissedOrExpiredOrders.add(orderId);
+    _states.remove(orderId);
+    _checkTimerNeed();
+    notifyListeners();
+  }
+
   void stop() {
     _timer?.cancel();
     _timer = null;
     _states.clear();
+    _dismissedOrExpiredOrders.clear();
   }
 
   void _onTick(Timer timer) {
@@ -94,6 +117,16 @@ class OrderSimulationService extends ChangeNotifier {
       if (state == null) continue;
 
       if (state.currentStep >= 4) {
+        // Jeda 2 menit setelah pesanan selesai sebelum menjadi kosong kembali
+        state.completedAt ??= DateTime.now();
+        state.secondsSinceCompleted++;
+        hasChanges = true;
+
+        if (state.secondsSinceCompleted >= 120) {
+          // Jeda 2 menit selesai, otomatis hapus dari proses aktif
+          _dismissedOrExpiredOrders.add(orderId);
+          _states.remove(orderId);
+        }
         continue;
       }
 
@@ -112,6 +145,7 @@ class OrderSimulationService extends ChangeNotifier {
           } else if (state.currentStep == 3) {
             _db!.updateOrderStatus(orderId, OrderStatus.diproses);
           } else if (state.currentStep >= 4) {
+            state.completedAt = DateTime.now();
             _db!.updateOrderStatus(orderId, OrderStatus.selesai);
           }
         }

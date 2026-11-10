@@ -6,6 +6,9 @@
 -- ============================================================
 
 -- Bersihkan view & tabel jika sudah ada sebelumnya (clean install)
+-- Hapus semua view alias lama agar tidak menduplikasi daftar tabel di Supabase Dashboard
+DROP VIEW IF EXISTS "user_address" CASCADE;
+DROP VIEW IF EXISTS "event" CASCADE;
 DROP VIEW IF EXISTS "transaksi" CASCADE;
 DROP VIEW IF EXISTS "detail_order" CASCADE;
 DROP VIEW IF EXISTS "order" CASCADE;
@@ -14,6 +17,7 @@ DROP VIEW IF EXISTS "meja" CASCADE;
 DROP VIEW IF EXISTS "user" CASCADE;
 DROP VIEW IF EXISTS "level" CASCADE;
 
+DROP TABLE IF EXISTS tb_user_address CASCADE;
 DROP TABLE IF EXISTS tb_payment_mutasi CASCADE;
 DROP TABLE IF EXISTS tb_user_payment_methods CASCADE;
 DROP TABLE IF EXISTS tb_log_aktivitas CASCADE;
@@ -236,6 +240,59 @@ CREATE TABLE tb_log_aktivitas (
     aktivitas VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ============================================================
+-- 11. TABEL ALAMAT PENGGUNA (TAKE AWAY / DELIVERY MULTI-ALAMAT)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS tb_user_address (
+    id_alamat SERIAL PRIMARY KEY,
+    id_user INT NOT NULL REFERENCES tb_user(id_user) ON DELETE CASCADE ON UPDATE CASCADE,
+    label VARCHAR(50) NOT NULL DEFAULT 'Rumah',
+    recipient_name VARCHAR(100) NOT NULL,
+    recipient_phone VARCHAR(30) NOT NULL,
+    province VARCHAR(100) NOT NULL DEFAULT '',
+    city VARCHAR(100) NOT NULL DEFAULT '',
+    district VARCHAR(100) NOT NULL DEFAULT '',
+    postal_code VARCHAR(20) DEFAULT '',
+    full_address TEXT NOT NULL,
+    notes TEXT DEFAULT '',
+    latitude DOUBLE PRECISION DEFAULT NULL,
+    longitude DOUBLE PRECISION DEFAULT NULL,
+    gmaps_link TEXT DEFAULT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- 12. TABEL EVENT & PROMOSI RESTORAN (HANYA OWNER YANG BISA MEMBUAT)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS tb_event (
+    id_event SERIAL PRIMARY KEY,
+    judul_event VARCHAR(255) NOT NULL,
+    deskripsi TEXT,
+    gambar_url TEXT,
+    kode_promo VARCHAR(50) DEFAULT '',
+    diskon_persen INT DEFAULT 10,
+    tanggal_mulai DATE DEFAULT CURRENT_DATE,
+    tanggal_selesai DATE DEFAULT (CURRENT_DATE + INTERVAL '14 days'),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by VARCHAR(50) NOT NULL DEFAULT 'owner',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Initial Seed Event Restoran
+INSERT INTO tb_event (id_event, judul_event, deskripsi, gambar_url, kode_promo, diskon_persen, tanggal_mulai, tanggal_selesai, is_active, created_by)
+VALUES
+    (1, 'Festival Kuliner Nusantara', 'Nikmati potongan diskon 20% untuk semua menu Paket Spesial & Rendang Minang warisan asli.', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80', 'NUSANTARA20', 20, CURRENT_DATE, CURRENT_DATE + INTERVAL '14 days', TRUE, 'owner'),
+    (2, 'Pesta Gurih Akhir Pekan', 'Spesial kuah rempah! Diskon 15% untuk Rawon Surabaya & Soto Banjar menggunakan Saldo Rasantara.', 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80', 'GURIHHEMAT', 15, CURRENT_DATE, CURRENT_DATE + INTERVAL '7 days', TRUE, 'owner'),
+    (3, 'Gebyar Dobel Poin Rasantara', 'Dapatkan 2x lipat Poin Kuliner untuk setiap pesanan Take Away menggunakan titik pin GPS.', 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80', 'DOBELPOIN', 10, CURRENT_DATE, CURRENT_DATE + INTERVAL '30 days', TRUE, 'owner')
+ON CONFLICT (id_event) DO UPDATE SET
+    judul_event = EXCLUDED.judul_event,
+    deskripsi = EXCLUDED.deskripsi,
+    kode_promo = EXCLUDED.kode_promo,
+    diskon_persen = EXCLUDED.diskon_persen;
 
 -- ============================================================
 -- SEED DATA HISTORIS TRANSAKSI & PESANAN (MENGISI DIAGRAM REAL-TIME)
@@ -479,20 +536,7 @@ SELECT setval(pg_get_serial_sequence('tb_detail_order', 'id_detail_order'), COAL
 SELECT setval(pg_get_serial_sequence('tb_transaksi', 'id_transaksi'), COALESCE(MAX(id_transaksi), 1)) FROM tb_transaksi;
 
 -- ============================================================
--- 9. COMPATIBILITY VIEWS (DUAL-NAMING SUPPORT: 'user' & 'tb_user')
--- Memungkinkan query dengan atau tanpa prefix 'tb_' secara transparan.
--- Di PostgreSQL 9.3+, simple view secara otomatis updatable (INSERT/UPDATE/DELETE).
--- ============================================================
-CREATE OR REPLACE VIEW "level" AS SELECT * FROM tb_level;
-CREATE OR REPLACE VIEW "user" AS SELECT * FROM tb_user;
-CREATE OR REPLACE VIEW "masakan" AS SELECT * FROM tb_masakan;
-CREATE OR REPLACE VIEW "meja" AS SELECT * FROM tb_meja;
-CREATE OR REPLACE VIEW "order" AS SELECT * FROM tb_order;
-CREATE OR REPLACE VIEW "detail_order" AS SELECT * FROM tb_detail_order;
-CREATE OR REPLACE VIEW "transaksi" AS SELECT * FROM tb_transaksi;
-
--- ============================================================
--- 10. ROW LEVEL SECURITY (RLS) & PUBLIC GRANT FOR SUPABASE
+-- 9. ROW LEVEL SECURITY (RLS) & PUBLIC GRANT FOR SUPABASE
 -- Mengaktifkan izin penuh kepada role 'anon' dan 'authenticated'
 -- agar koneksi aplikasi Flutter dapat membaca dan menulis data tanpa kendala.
 -- ============================================================
@@ -506,6 +550,7 @@ ALTER TABLE tb_transaksi ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_user_payment_methods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_payment_mutasi ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_log_aktivitas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tb_user_address ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all tb_level" ON tb_level;
 CREATE POLICY "Allow all tb_level" ON tb_level FOR ALL USING (true) WITH CHECK (true);
@@ -536,6 +581,9 @@ CREATE POLICY "Allow all tb_payment_mutasi" ON tb_payment_mutasi FOR ALL USING (
 
 DROP POLICY IF EXISTS "Allow all tb_log_aktivitas" ON tb_log_aktivitas;
 CREATE POLICY "Allow all tb_log_aktivitas" ON tb_log_aktivitas FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all tb_user_address" ON tb_user_address;
+CREATE POLICY "Allow all tb_user_address" ON tb_user_address FOR ALL USING (true) WITH CHECK (true);
 
 -- Grant privileges ke anon, authenticated, dan service_role
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;

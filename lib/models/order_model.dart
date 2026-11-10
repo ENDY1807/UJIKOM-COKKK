@@ -87,6 +87,10 @@ class OrderModel {
   final String keterangan;
   OrderStatus status;
   final List<OrderItemModel> items;
+  final int diskonEvent;
+  final int diskonKupon;
+  final int potonganPoin;
+  final String kodeKupon;
 
   OrderModel({
     required this.idOrder,
@@ -98,10 +102,19 @@ class OrderModel {
     this.keterangan = '',
     this.status = OrderStatus.menunggu,
     required this.items,
+    this.diskonEvent = 0,
+    this.diskonKupon = 0,
+    this.potonganPoin = 0,
+    this.kodeKupon = '',
   });
 
   int get totalHarga => items.fold(0, (sum, item) => sum + item.subtotal);
   int get totalItem => items.fold(0, (sum, item) => sum + item.jumlah);
+  int get totalDiskon => diskonEvent + diskonKupon + potonganPoin;
+  int get grandTotalSetelahDiskon {
+    final net = totalHarga - totalDiskon;
+    return net > 0 ? net : 0;
+  }
 
   OrderModel copyWith({
     int? idOrder,
@@ -113,6 +126,10 @@ class OrderModel {
     String? keterangan,
     OrderStatus? status,
     List<OrderItemModel>? items,
+    int? diskonEvent,
+    int? diskonKupon,
+    int? potonganPoin,
+    String? kodeKupon,
   }) {
     return OrderModel(
       idOrder: idOrder ?? this.idOrder,
@@ -124,6 +141,10 @@ class OrderModel {
       keterangan: keterangan ?? this.keterangan,
       status: status ?? this.status,
       items: items ?? this.items,
+      diskonEvent: diskonEvent ?? this.diskonEvent,
+      diskonKupon: diskonKupon ?? this.diskonKupon,
+      potonganPoin: potonganPoin ?? this.potonganPoin,
+      kodeKupon: kodeKupon ?? this.kodeKupon,
     );
   }
 
@@ -169,6 +190,10 @@ class OrderModel {
       keterangan: ket,
       status: OrderStatus.fromString(map['status_order']?.toString() ?? map['status']?.toString() ?? 'Menunggu'),
       items: items ?? [],
+      diskonEvent: _parseInt(map['diskon_event']),
+      diskonKupon: _parseInt(map['diskon_kupon']),
+      potonganPoin: _parseInt(map['potongan_poin']),
+      kodeKupon: map['kode_kupon']?.toString() ?? '',
     );
   }
 
@@ -182,6 +207,10 @@ class OrderModel {
           ? 'Pelanggan: $namaPelanggan${keterangan.isNotEmpty ? ' | $keterangan' : ''}'
           : keterangan,
       'status_order': status.label,
+      'diskon_event': diskonEvent,
+      'diskon_kupon': diskonKupon,
+      'potongan_poin': potonganPoin,
+      'kode_kupon': kodeKupon,
     };
   }
 }

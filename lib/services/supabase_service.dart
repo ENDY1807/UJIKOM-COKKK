@@ -7,6 +7,8 @@ import '../models/table_model.dart';
 import '../models/order_model.dart';
 import '../models/transaction_model.dart';
 import '../models/payment_method_model.dart';
+import '../models/user_address_model.dart';
+import '../models/event_model.dart';
 import 'supabase_config.dart';
 
 /// Service untuk mengelola interaksi langsung dengan Supabase PostgreSQL & Auth.
@@ -40,12 +42,12 @@ class SupabaseService {
   bool _isConnected = false;
   bool get isConnected => _isConnected;
 
-  // Nama tabel yang terdeteksi di database Supabase
-  String _userTable = 'user';
-  String _menuTable = 'masakan';
-  String _orderTable = 'order';
-  String _detailOrderTable = 'detail_order';
-  String _transaksiTable = 'transaksi';
+  // Nama tabel di database Supabase (Standar tabel Rasantara menggunakan prefix tb_)
+  String _userTable = 'tb_user';
+  String _menuTable = 'tb_masakan';
+  String _orderTable = 'tb_order';
+  String _detailOrderTable = 'tb_detail_order';
+  String _transaksiTable = 'tb_transaksi';
 
   /// Inisialisasi client Supabase
   Future<bool> initialize() async {
@@ -63,7 +65,7 @@ class SupabaseService {
     }
   }
 
-  /// Cek koneksi ke database Supabase dan deteksi nama tabel
+  /// Cek koneksi ke database Supabase dan verifikasi tabel aktif
   Future<bool> checkConnection() async {
     try {
       final c = clientSafe;
@@ -72,58 +74,58 @@ class SupabaseService {
         return false;
       }
 
-      // Deteksi tabel user / tb_user
+      // Deteksi tabel tb_user (fallback ke 'user' jika ada database lama)
       try {
-        await c.from('user').select('id_user').limit(1);
-        _userTable = 'user';
+        await c.from('tb_user').select('id_user').limit(1);
+        _userTable = 'tb_user';
       } catch (_) {
         try {
-          await c.from('tb_user').select('id_user').limit(1);
-          _userTable = 'tb_user';
+          await c.from('user').select('id_user').limit(1);
+          _userTable = 'user';
         } catch (_) {}
       }
 
-      // Deteksi tabel masakan / tb_masakan
+      // Deteksi tabel tb_masakan (fallback ke 'masakan')
       try {
-        await c.from('masakan').select('id_masakan').limit(1);
-        _menuTable = 'masakan';
+        await c.from('tb_masakan').select('id_masakan').limit(1);
+        _menuTable = 'tb_masakan';
       } catch (_) {
         try {
-          await c.from('tb_masakan').select('id_masakan').limit(1);
-          _menuTable = 'tb_masakan';
+          await c.from('masakan').select('id_masakan').limit(1);
+          _menuTable = 'masakan';
         } catch (_) {}
       }
 
-      // Deteksi tabel order / tb_order
+      // Deteksi tabel tb_order (fallback ke 'order')
       try {
-        await c.from('order').select('id_order').limit(1);
-        _orderTable = 'order';
+        await c.from('tb_order').select('id_order').limit(1);
+        _orderTable = 'tb_order';
       } catch (_) {
         try {
-          await c.from('tb_order').select('id_order').limit(1);
-          _orderTable = 'tb_order';
+          await c.from('order').select('id_order').limit(1);
+          _orderTable = 'order';
         } catch (_) {}
       }
 
-      // Deteksi detail_order
+      // Deteksi tb_detail_order (fallback ke 'detail_order')
       try {
-        await c.from('detail_order').select('id_detail_order').limit(1);
-        _detailOrderTable = 'detail_order';
+        await c.from('tb_detail_order').select('id_detail_order').limit(1);
+        _detailOrderTable = 'tb_detail_order';
       } catch (_) {
         try {
-          await c.from('tb_detail_order').select('id_detail_order').limit(1);
-          _detailOrderTable = 'tb_detail_order';
+          await c.from('detail_order').select('id_detail_order').limit(1);
+          _detailOrderTable = 'detail_order';
         } catch (_) {}
       }
 
-      // Deteksi transaksi
+      // Deteksi tb_transaksi (fallback ke 'transaksi')
       try {
-        await c.from('transaksi').select('id_transaksi').limit(1);
-        _transaksiTable = 'transaksi';
+        await c.from('tb_transaksi').select('id_transaksi').limit(1);
+        _transaksiTable = 'tb_transaksi';
       } catch (_) {
         try {
-          await c.from('tb_transaksi').select('id_transaksi').limit(1);
-          _transaksiTable = 'tb_transaksi';
+          await c.from('transaksi').select('id_transaksi').limit(1);
+          _transaksiTable = 'transaksi';
         } catch (_) {}
       }
 
@@ -217,36 +219,80 @@ class SupabaseService {
       if (existing != null) {
         final existingId = existing['id_user'];
         // Tautkan data Google ke akun yang sudah ada (menjaga hak akses role yang ada)
-        final updated = await client.from(_userTable).update({
-          'google_uid': googleUid,
-          'google_email': googleEmail,
-          'google_photo': photoUrl,
-          'auth_provider': 'both',
-        }).eq('id_user', existingId).select('*').single();
-        return UserModel.fromMap(updated);
+        try {
+          final updated = await client.from(_userTable).update({
+            'google_uid': googleUid,
+            'google_email': googleEmail,
+            'google_photo': photoUrl,
+            'auth_provider': 'both',
+          }).eq('id_user', existingId).select('*').single();
+          return UserModel.fromMap(updated);
+        } catch (_) {
+          try {
+            final updated = await client.from(_userTable).update({
+              'google_uid': googleUid,
+              'google_email': googleEmail,
+            }).eq('id_user', existingId).select('*').single();
+            return UserModel.fromMap(updated);
+          } catch (_) {
+            return UserModel.fromMap(existing);
+          }
+        }
       }
 
-      // 2. User baru: Daftarkan sebagai Administrator (id_level = 1)
-      // agar seluruh fitur, menu, pesanan, dan laporan dapat langsung diakses & diuji
-      final defaultLevel = cleanUsername.contains('pelanggan') ? 5 : 1;
+      // 2. User baru: Daftarkan sebagai Pelanggan (id_level = 5) ke Supabase
       final newUserData = {
         'username': cleanUsername,
         'nama_user': displayName.isNotEmpty ? displayName : 'Pengguna Google',
         'password': 'google_oauth_verified',
-        'id_level': defaultLevel,
+        'id_level': 5,
         'google_email': googleEmail,
         'google_uid': googleUid,
         'google_photo': photoUrl,
         'auth_provider': 'google',
       };
 
-      final inserted = await client
-          .from(_userTable)
-          .insert(newUserData)
-          .select('*')
-          .single();
-
-      return UserModel.fromMap(inserted);
+      try {
+        final inserted = await client
+            .from(_userTable)
+            .insert(newUserData)
+            .select('*')
+            .single();
+        return UserModel.fromMap(inserted);
+      } catch (insertErr) {
+        debugPrint('[SupabaseService] Full insert error: $insertErr, attempting fallback insert');
+        // Fallback 1: Coba dengan kolom standar tanpa foto & auth_provider
+        final minimalData = <String, dynamic>{
+          'username': cleanUsername,
+          'nama_user': displayName.isNotEmpty ? displayName : 'Pengguna Google',
+          'password': 'google_oauth_verified',
+          'id_level': 5,
+          'google_email': googleEmail,
+          'google_uid': googleUid,
+        };
+        try {
+          final inserted = await client.from(_userTable).insert(minimalData).select('*').single();
+          return UserModel.fromMap(inserted);
+        } catch (_) {
+          // Fallback 2: Jika nama kolom email adalah 'email' bukan 'google_email'
+          minimalData.remove('google_email');
+          minimalData['email'] = googleEmail;
+          try {
+            final inserted = await client.from(_userTable).insert(minimalData).select('*').single();
+            return UserModel.fromMap(inserted);
+          } catch (_) {
+            // Fallback 3: Kolom inti
+            final coreData = <String, dynamic>{
+              'username': cleanUsername,
+              'nama_user': displayName.isNotEmpty ? displayName : 'Pengguna Google',
+              'password': 'google_oauth_verified',
+              'id_level': 5,
+            };
+            final inserted = await client.from(_userTable).insert(coreData).select('*').single();
+            return UserModel.fromMap(inserted);
+          }
+        }
+      }
     } catch (e) {
       debugPrint('[SupabaseService] _fallbackGoogleLogin error: $e');
       return null;
@@ -276,8 +322,33 @@ class SupabaseService {
         'id_level': user.role.id,
         'email': user.displayEmail,
       };
-      final res = await client.from(_userTable).insert(data).select().single();
-      return UserModel.fromMap(res);
+      try {
+        final res = await client.from(_userTable).insert(data).select().single();
+        return UserModel.fromMap(res);
+      } catch (_) {
+        // Fallback jika nama kolom adalah google_email bukan email
+        final dataGoogleEmail = {
+          'username': user.username,
+          'password': user.password,
+          'nama_user': user.namaUser,
+          'id_level': user.role.id,
+          'google_email': user.displayEmail,
+        };
+        try {
+          final res = await client.from(_userTable).insert(dataGoogleEmail).select().single();
+          return UserModel.fromMap(res);
+        } catch (_) {
+          // Fallback tanpa kolom email
+          final coreData = {
+            'username': user.username,
+            'password': user.password,
+            'nama_user': user.namaUser,
+            'id_level': user.role.id,
+          };
+          final res = await client.from(_userTable).insert(coreData).select().single();
+          return UserModel.fromMap(res);
+        }
+      }
     } catch (e) {
       debugPrint('[SupabaseService] insertUser error: $e');
       return null;
@@ -288,16 +359,33 @@ class SupabaseService {
     try {
       final data = <String, dynamic>{
         'nama_user': user.namaUser,
+        'username': user.username,
         'id_level': user.role.id,
+        'phone_number': user.phoneNumber,
+        'is_two_factor_enabled': user.isTwoFactorEnabled,
       };
       if (user.password.isNotEmpty) {
         data['password'] = user.password;
       }
+      if (user.fotoProfil != null && user.fotoProfil!.isNotEmpty) {
+        data['foto_profil'] = user.fotoProfil;
+      }
       await client.from(_userTable).update(data).eq('id_user', user.idUser);
       return true;
     } catch (e) {
-      debugPrint('[SupabaseService] updateUser error: $e');
-      return false;
+      // Fallback jika kolom baru belum dimigrasi di server cloud
+      try {
+        final fallbackData = <String, dynamic>{
+          'nama_user': user.namaUser,
+          'id_level': user.role.id,
+        };
+        if (user.password.isNotEmpty) fallbackData['password'] = user.password;
+        await client.from(_userTable).update(fallbackData).eq('id_user', user.idUser);
+        return true;
+      } catch (fallbackErr) {
+        debugPrint('[SupabaseService] updateUser error: $fallbackErr');
+        return false;
+      }
     }
   }
 
@@ -754,6 +842,174 @@ class SupabaseService {
     } catch (e) {
       debugPrint('[SupabaseService] insertPaymentMutation error: $e');
       return false;
+    }
+  }
+
+  // ============================================================
+  // USER ADDRESSES (tb_user_address / user_address)
+  // ============================================================
+
+  Future<List<UserAddressModel>> fetchUserAddresses(int idUser) async {
+    if (!isInitialized) return [];
+    try {
+      final res = await client
+          .from('tb_user_address')
+          .select('*')
+          .eq('id_user', idUser)
+          .order('is_primary', ascending: false)
+          .order('created_at', ascending: false);
+      return (res as List).map((map) => UserAddressModel.fromMap(map)).toList();
+    } catch (_) {
+      try {
+        final res = await client
+            .from('user_address')
+            .select('*')
+            .eq('id_user', idUser)
+            .order('is_primary', ascending: false)
+            .order('created_at', ascending: false);
+        return (res as List).map((map) => UserAddressModel.fromMap(map)).toList();
+      } catch (e) {
+        debugPrint('[SupabaseService] fetchUserAddresses error: $e');
+        return [];
+      }
+    }
+  }
+
+  Future<UserAddressModel?> insertUserAddress(UserAddressModel address) async {
+    if (!isInitialized) return null;
+    try {
+      final data = address.toMap();
+      data.remove('id_alamat');
+      final res = await client.from('tb_user_address').insert(data).select().single();
+      return UserAddressModel.fromMap(res);
+    } catch (_) {
+      try {
+        final data = address.toMap();
+        data.remove('id_alamat');
+        final res = await client.from('user_address').insert(data).select().single();
+        return UserAddressModel.fromMap(res);
+      } catch (e) {
+        debugPrint('[SupabaseService] insertUserAddress error: $e');
+        return null;
+      }
+    }
+  }
+
+  Future<bool> updateUserAddress(UserAddressModel address) async {
+    if (!isInitialized) return false;
+    try {
+      final data = address.toMap();
+      data.remove('id_alamat');
+      await client.from('tb_user_address').update(data).eq('id_alamat', address.idAlamat);
+      return true;
+    } catch (_) {
+      try {
+        final data = address.toMap();
+        data.remove('id_alamat');
+        await client.from('user_address').update(data).eq('id_alamat', address.idAlamat);
+        return true;
+      } catch (e) {
+        debugPrint('[SupabaseService] updateUserAddress error: $e');
+        return false;
+      }
+    }
+  }
+
+  Future<bool> deleteUserAddress(int idAlamat) async {
+    if (!isInitialized) return false;
+    try {
+      await client.from('tb_user_address').delete().eq('id_alamat', idAlamat);
+      return true;
+    } catch (_) {
+      try {
+        await client.from('user_address').delete().eq('id_alamat', idAlamat);
+        return true;
+      } catch (e) {
+        debugPrint('[SupabaseService] deleteUserAddress error: $e');
+        return false;
+      }
+    }
+  }
+
+  Future<bool> setPrimaryUserAddress(int idUser, int idAlamat) async {
+    if (!isInitialized) return false;
+    try {
+      await client.from('tb_user_address').update({'is_primary': false}).eq('id_user', idUser);
+      await client.from('tb_user_address').update({'is_primary': true}).eq('id_alamat', idAlamat);
+      return true;
+    } catch (_) {
+      try {
+        await client.from('user_address').update({'is_primary': false}).eq('id_user', idUser);
+        await client.from('user_address').update({'is_primary': true}).eq('id_alamat', idAlamat);
+        return true;
+      } catch (e) {
+        debugPrint('[SupabaseService] setPrimaryUserAddress error: $e');
+        return false;
+      }
+    }
+  }
+
+  // ==========================================
+  // EVENT & PROMOSI RESTORAN (Hanya Owner yang berhak menambah/mengubah)
+  // ==========================================
+
+  Future<List<EventModel>> fetchEvents() async {
+    if (!isInitialized) return [];
+    try {
+      final res = await client
+          .from('tb_event')
+          .select('*')
+          .eq('is_active', true)
+          .order('id_event', ascending: false);
+      return (res as List).map((m) => EventModel.fromMap(m as Map<String, dynamic>)).toList();
+    } catch (_) {
+      try {
+        final res = await client
+            .from('event')
+            .select('*')
+            .eq('is_active', true)
+            .order('id_event', ascending: false);
+        return (res as List).map((m) => EventModel.fromMap(m as Map<String, dynamic>)).toList();
+      } catch (e) {
+        debugPrint('[SupabaseService] fetchEvents error: $e');
+        return [];
+      }
+    }
+  }
+
+  Future<EventModel?> insertEvent(EventModel event) async {
+    if (!isInitialized) return null;
+    try {
+      final data = event.toMap();
+      data.remove('id_event');
+      final res = await client.from('tb_event').insert(data).select().single();
+      return EventModel.fromMap(res);
+    } catch (_) {
+      try {
+        final data = event.toMap();
+        data.remove('id_event');
+        final res = await client.from('event').insert(data).select().single();
+        return EventModel.fromMap(res);
+      } catch (e) {
+        debugPrint('[SupabaseService] insertEvent error: $e');
+        return null;
+      }
+    }
+  }
+
+  Future<bool> deleteEvent(int idEvent) async {
+    if (!isInitialized) return false;
+    try {
+      await client.from('tb_event').delete().eq('id_event', idEvent);
+      return true;
+    } catch (_) {
+      try {
+        await client.from('event').delete().eq('id_event', idEvent);
+        return true;
+      } catch (e) {
+        debugPrint('[SupabaseService] deleteEvent error: $e');
+        return false;
+      }
     }
   }
 }
