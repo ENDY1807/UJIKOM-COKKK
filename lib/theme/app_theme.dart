@@ -116,6 +116,20 @@ class AppTheme {
         thickness: 1,
         space: 1,
       ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.white,
+        modalBackgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+      ),
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        titleTextStyle: TextStyle(color: textDark, fontSize: 16, fontWeight: FontWeight.bold),
+        contentTextStyle: TextStyle(color: textMuted, fontSize: 13),
+      ),
+      drawerTheme: const DrawerThemeData(
+        backgroundColor: Colors.white,
+      ),
     );
   }
 
@@ -155,6 +169,20 @@ class AppTheme {
           side: const BorderSide(color: Color(0xFF334155), width: 1),
         ),
         margin: EdgeInsets.zero,
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Color(0xFF1E293B),
+        modalBackgroundColor: Color(0xFF1E293B),
+        surfaceTintColor: Colors.transparent,
+      ),
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Color(0xFF1E293B),
+        surfaceTintColor: Colors.transparent,
+        titleTextStyle: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+        contentTextStyle: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
+      ),
+      drawerTheme: const DrawerThemeData(
+        backgroundColor: Color(0xFF1E293B),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

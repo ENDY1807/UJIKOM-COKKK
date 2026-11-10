@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:js_interop';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,7 @@ import 'package:flutter/services.dart';
 // Import web package conditionally or with web guard
 import 'package:web/web.dart' as web;
 
-/// Layanan Audio Feedback dan In-App Notification Rasantara
+/// Layanan Audio Feedback dan In-App / System Notification Rasantara
 class AudioNotificationService {
   static final AudioNotificationService _instance = AudioNotificationService._internal();
   factory AudioNotificationService() => _instance;
@@ -15,6 +16,47 @@ class AudioNotificationService {
 
   String? _orderReceivedWavDataUrl;
   String? _promoChimeWavDataUrl;
+
+  /// Meminta izin notifikasi sistem / OS langsung ke Windows & HP
+  static Future<void> requestSystemNotificationPermission() async {
+    if (!kIsWeb) return;
+    try {
+      if (web.Notification.permission != 'granted') {
+        await web.Notification.requestPermission().toDart;
+      }
+    } catch (_) {}
+  }
+
+  /// Menampilkan Notifikasi Sistem Asli ke Windows Action Center / HP Notification Drawer
+  static void showSystemNotification({
+    required String title,
+    required String message,
+  }) {
+    if (!kIsWeb) return;
+    try {
+      if (web.Notification.permission == 'granted') {
+        web.Notification(
+          title,
+          web.NotificationOptions(
+            body: message,
+            icon: 'icons/Icon-192.png',
+          ),
+        );
+      } else if (web.Notification.permission != 'denied') {
+        web.Notification.requestPermission().toDart.then((perm) {
+          if (perm.toDart == 'granted') {
+            web.Notification(
+              title,
+              web.NotificationOptions(
+                body: message,
+                icon: 'icons/Icon-192.png',
+              ),
+            );
+          }
+        });
+      }
+    } catch (_) {}
+  }
 
   /// Inisialisasi audio synth
   void _ensureAudioBuffers() {

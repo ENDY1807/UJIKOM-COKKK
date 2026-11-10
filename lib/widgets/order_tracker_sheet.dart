@@ -5,6 +5,7 @@ import '../models/transaction_model.dart';
 import '../screens/order/gofood_tracking_dialog.dart';
 import '../services/database_service.dart';
 import '../services/order_simulation_service.dart';
+import '../theme/app_theme.dart';
 import 'receipt_dialog.dart';
 
 /// Floating pill bar pesanan aktif (gaya Gojek) yang melayang di bawah layar
@@ -200,10 +201,10 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
           maxChildSize: 0.95,
           builder: (context, scrollController) {
             return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                boxShadow: [
+              decoration: BoxDecoration(
+                color: context.surfaceCard,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: const [
                   BoxShadow(
                     color: Color(0x1F000000),
                     blurRadius: 24,
@@ -251,19 +252,19 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Pantau Pesanan',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w800,
-                                        color: Color(0xFF1E293B),
+                                        color: context.textPrimary,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
                                       'Detail tracking #${widget.order.idOrder}',
-                                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                                      style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -552,19 +553,19 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: context.fillSubtle,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: context.borderSubtle),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Ringkasan pembayaran',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E293B),
+                                  color: context.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 10),

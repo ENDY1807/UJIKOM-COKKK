@@ -53,6 +53,10 @@ class _DashboardScreenState extends State<DashboardScreen>
           color: const Color(0xFFEA580C),
           onTap: () => widget.onNavigateToTab(1, couponCode: ev.kodePromo),
         );
+        AudioNotificationService.showSystemNotification(
+          title: 'Promo Spesial: ${ev.judulEvent}',
+          message: 'Dapatkan diskon ${ev.diskonPersen}% dengan kode ${ev.kodePromo}',
+        );
       }
     });
     _entryController = AnimationController(

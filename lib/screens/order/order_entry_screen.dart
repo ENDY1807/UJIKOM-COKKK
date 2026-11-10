@@ -694,6 +694,14 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     // Mainkan efek audio pesanan diterima
     AudioNotificationService().playOrderReceivedSound(enabled: widget.db.appSoundFx);
 
+    // Kirim notifikasi sistem langsung ke Windows / HP
+    if (widget.db.appNotifications) {
+      AudioNotificationService.showSystemNotification(
+        title: 'Pesanan Diterima Restoran #${order.idOrder}',
+        message: 'Koki dapur Rasantara mulai menyiapkan hidangan pesanan Anda.',
+      );
+    }
+
     setState(() {
       _cart.clear();
       _orderNotesController.clear();
@@ -1063,7 +1071,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.surfaceCard,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1107,12 +1115,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Rincian Pesanan Rasantara',
                                   style: TextStyle(
                                     fontSize: 17,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E293B),
+                                    color: context.textPrimary,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -2673,10 +2681,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: qty > 0 ? const Color(0xFFFED7AA) : const Color(0xFFE2E8F0),
+          color: qty > 0 ? const Color(0xFFFED7AA) : context.borderSubtle,
           width: qty > 0 ? 1.5 : 1.0,
         ),
         boxShadow: const [
@@ -2718,10 +2726,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     Expanded(
                       child: Text(
                         menu.namaMasakan,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E293B),
+                          color: context.textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -2798,7 +2806,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     else
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.surfaceCard,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: const Color(0xFFEA580C), width: 1.5),
                         ),
@@ -2817,10 +2825,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 6),
                               child: Text(
                                 '$qty',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E293B),
+                                  color: context.textPrimary,
                                 ),
                               ),
                             ),

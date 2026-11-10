@@ -850,7 +850,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final paymentMethods = widget.db.connectedPaymentMethods;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: context.surfaceBg,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -861,9 +861,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.surfaceCard,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: context.borderSubtle),
                   boxShadow: const [
                     BoxShadow(color: Color(0x06000000), blurRadius: 10, offset: Offset(0, 2)),
                   ],
@@ -943,9 +943,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildSectionHeader('Keamanan Akun & 2-Factor Auth (2FA)'),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.surfaceCard,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: context.borderSubtle),
                   boxShadow: const [
                     BoxShadow(color: Color(0x06000000), blurRadius: 8, offset: Offset(0, 2)),
                   ],
@@ -1075,9 +1075,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.surfaceCard,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: context.borderSubtle),
                   ),
                   child: Center(
                     child: Column(
@@ -1258,9 +1258,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.surfaceCard,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: context.borderSubtle),
                   boxShadow: const [
                     BoxShadow(color: Color(0x06000000), blurRadius: 8, offset: Offset(0, 2)),
                   ],

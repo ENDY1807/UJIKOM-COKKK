@@ -61,15 +61,15 @@ class _CustomerOrderHistoryScreenState
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F6F3),
+      backgroundColor: context.surfaceBg,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Riwayat Pesanan Saya',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.textPrimary),
         ),
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1E293B),
+        backgroundColor: context.surfaceCard,
+        foregroundColor: context.textPrimary,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Padding(
@@ -149,9 +149,9 @@ class _CustomerOrderHistoryScreenState
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: context.borderSubtle),
         boxShadow: const [
           BoxShadow(
             color: Color(0x08000000),
@@ -187,17 +187,17 @@ class _CustomerOrderHistoryScreenState
                     children: [
                       Text(
                         order.noMeja,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E293B),
+                          color: context.textPrimary,
                         ),
                       ),
                       Text(
                         '#ORDER-${order.idOrder}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF64748B),
+                          color: context.textSecondary,
                         ),
                       ),
                     ],

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/order_model.dart';
 import 'database_service.dart';
+import 'audio_notification_service.dart';
 
 class OrderProgressState {
   final int orderId;
@@ -142,11 +143,29 @@ class OrderSimulationService extends ChangeNotifier {
         if (_db != null) {
           if (state.currentStep == 2) {
             _db!.updateOrderStatus(orderId, OrderStatus.diproses);
+            if (_db!.appNotifications) {
+              AudioNotificationService.showSystemNotification(
+                title: 'Pesanan #$orderId Sedang Dimasak',
+                message: 'Koki dapur Rasantara mulai meracik hidangan pesanan Anda.',
+              );
+            }
           } else if (state.currentStep == 3) {
             _db!.updateOrderStatus(orderId, OrderStatus.diproses);
+            if (_db!.appNotifications) {
+              AudioNotificationService.showSystemNotification(
+                title: 'Pesanan #$orderId Sedang Diantar!',
+                message: 'Driver kurir Rasantara sedang dalam perjalanan mengantar hidangan Anda.',
+              );
+            }
           } else if (state.currentStep >= 4) {
             state.completedAt = DateTime.now();
             _db!.updateOrderStatus(orderId, OrderStatus.selesai);
+            if (_db!.appNotifications) {
+              AudioNotificationService.showSystemNotification(
+                title: 'Pesanan #$orderId Selesai Diterima!',
+                message: 'Pesanan Anda telah tiba. Selamat menikmati hidangan Nusantara!',
+              );
+            }
           }
         }
       }

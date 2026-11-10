@@ -7,6 +7,7 @@ import '../../services/whatsapp_otp_service.dart';
 import '../../widgets/app_loading_animation.dart';
 import '../../widgets/biometric_auth_dialog.dart';
 import '../../theme/app_theme.dart';
+import '../../services/audio_notification_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final DatabaseService db;
@@ -678,12 +679,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             children: [
               _buildSwitchTile(
                 icon: Icons.notifications_outlined,
-                title: 'Status Pesanan & Driver',
-                subtitle: 'Peringatan saat pesanan disiapkan dapur atau driver mengantar',
+                title: 'Notifikasi Langsung ke HP / Windows',
+                subtitle: 'Muncul di bilah status notifikasi HP & Windows Action Center (Toast OS)',
                 value: _notifications,
-                onChanged: (val) {
+                onChanged: (val) async {
                   setState(() => _notifications = val);
                   widget.db.updateAppSettings(notifications: val);
+                  if (val) {
+                    await AudioNotificationService.requestSystemNotificationPermission();
+                    AudioNotificationService.showSystemNotification(
+                      title: 'Notifikasi Rasantara Aktif',
+                      message: 'Status pesanan dan info promo akan muncul langsung di perangkat Anda.',
+                    );
+                    _showSnackbar('Izin notifikasi sistem aktif ke Windows / HP');
+                  }
                 },
               ),
               const Divider(height: 20, color: Color(0xFFF1F5F9)),
@@ -695,6 +704,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 onChanged: (val) {
                   setState(() => _promoNotifications = val);
                   widget.db.updateAppSettings(promoNotification: val);
+                  if (val) {
+                    AudioNotificationService.showSystemNotification(
+                      title: 'Promo Rasantara Aktif',
+                      message: 'Anda akan menerima pemberitahuan diskon dan voucher hemat kuliner.',
+                    );
+                  }
                 },
               ),
               const Divider(height: 20, color: Color(0xFFF1F5F9)),

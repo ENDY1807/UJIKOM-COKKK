@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/menu_model.dart';
+import '../theme/app_theme.dart';
 
 /// Dialog/Sheet Detail Menu Makanan Lengkap
 /// Menyajikan:
@@ -422,9 +423,9 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
     final totalPrice = menu.harga * _qty;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: context.surfaceCard,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
@@ -530,10 +531,10 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                       Expanded(
                         child: Text(
                           menu.namaMasakan,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF1E293B),
+                            color: context.textPrimary,
                           ),
                         ),
                       ),
@@ -555,9 +556,9 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                     menu.deskripsi.isNotEmpty
                         ? menu.deskripsi
                         : 'Hidangan istimewa autentik nusantara dengan cita rasa rempah khas warisan kuliner Indonesia.',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF475569),
+                      color: context.textSecondary,
                       height: 1.45,
                     ),
                   ),
@@ -641,9 +642,9 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
           // ── BOTTOM ACTION BAR (STEPPER & CONFIRM) ──
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
+            decoration: BoxDecoration(
+              color: context.surfaceCard,
+              boxShadow: const [
                 BoxShadow(
                   color: Color(0x0F000000),
                   blurRadius: 10,
