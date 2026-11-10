@@ -152,7 +152,7 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
                       const Icon(Icons.account_balance_rounded, color: Color(0xFF4338CA), size: 24),
                       const SizedBox(width: 8),
                       Text(
-                        'Virtual Account M-Banking',
+                        context.t('Virtual Account M-Banking', 'Virtual Account M-Banking'),
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                     ],
@@ -166,7 +166,7 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
               Divider(height: 16, color: context.borderSubtle),
 
               // Pilihan Bank
-              Text('Pilih Bank Tujuan:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary)),
+              Text(context.t('Pilih Bank Tujuan:', 'Select Destination Bank:'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary)),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -206,12 +206,12 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
                 ),
                 child: Column(
                   children: [
-                    Text('Nomor Virtual Account ($_selectedBank)', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+                    Text('${context.t('Nomor Virtual Account', 'Virtual Account Number')} ($_selectedBank)', style: TextStyle(fontSize: 12, color: context.textSecondary)),
                     const SizedBox(height: 6),
                     if (_isLoading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: AppLoadingAnimation(size: 38, message: 'Membuat nomor Virtual Account...'),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: AppLoadingAnimation(size: 38, message: context.t('Membuat nomor Virtual Account...', 'Generating Virtual Account number...')),
                       )
                     else
                       SelectableText(
@@ -226,11 +226,11 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       ),
                       icon: const Icon(Icons.copy_rounded, size: 16),
-                      label: const Text('Salin Nomor VA', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      label: Text(context.t('Salin Nomor VA', 'Copy VA Number'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: _vaNumber));
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Nomor Virtual Account berhasil disalin!')),
+                          SnackBar(content: Text(context.t('Nomor Virtual Account berhasil disalin!', 'Virtual Account number copied successfully!'))),
                         );
                       },
                     ),
@@ -243,7 +243,7 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total Pembayaran:', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+                  Text(context.t('Total Pembayaran:', 'Total Payment:'), style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
                   Text(
                     _currencyFmt.format(widget.totalAmount),
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
@@ -262,7 +262,7 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
                 onPressed: _isVerifying ? null : _verifyPayment,
                 child: _isVerifying
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Cek Status Pembayaran (Saya Sudah Bayar)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    : Text(context.t('Cek Status Pembayaran (Saya Sudah Bayar)', 'Check Payment Status (I Have Paid)'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
               ),
             ],
           ),

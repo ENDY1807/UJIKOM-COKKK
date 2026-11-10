@@ -498,7 +498,7 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                             boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
                           ),
                           child: Text(
-                            menu.isTersedia ? 'Tersedia' : 'Habis',
+                            menu.isTersedia ? context.t('Tersedia', 'Available') : context.t('Habis', 'Sold Out'),
                             style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -514,7 +514,7 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                             boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
                           ),
                           child: Text(
-                            menu.kategori.label,
+                            menu.kategori.localizedLabel(context.isEnglish),
                             style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -606,7 +606,7 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                       const Icon(Icons.description_outlined, color: Color(0xFFEA580C), size: 18),
                       const SizedBox(width: 8),
                       Text(
-                        'Deskripsi Makanan',
+                        context.t('Deskripsi Makanan', 'Food Description'),
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                     ],
@@ -623,7 +623,10 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                     child: Text(
                       menu.deskripsi.isNotEmpty
                           ? menu.deskripsi
-                          : 'Hidangan istimewa autentik nusantara dengan cita rasa rempah khas warisan kuliner Indonesia. Dimasak menggunakan racikan bumbu pilihan berkualitas tinggi untuk menciptakan kenikmatan rasa yang tiada tara.',
+                          : context.t(
+                              'Hidangan istimewa autentik nusantara dengan cita rasa rempah khas warisan kuliner Indonesia. Dimasak menggunakan racikan bumbu pilihan berkualitas tinggi untuk menciptakan kenikmatan rasa yang tiada tara.',
+                              'Special authentic Indonesian heritage culinary dish with rich traditional herbs and spices. Prepared using premium selected ingredients for an unmatched taste.',
+                            ),
                       style: TextStyle(fontSize: 13, color: context.textPrimary, height: 1.5),
                     ),
                   ),
@@ -633,8 +636,8 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                   TextField(
                     controller: _noteCtrl,
                     decoration: InputDecoration(
-                      labelText: 'Catatan Khusus Pesanan (Opsional)',
-                      hintText: 'Contoh: Kurang pedas, tanpa santan kental, es sedikit...',
+                      labelText: context.t('Catatan Khusus Pesanan (Opsional)', 'Special Order Notes (Optional)'),
+                      hintText: context.t('Contoh: Kurang pedas, tanpa santan kental, es sedikit...', 'e.g. Less spicy, no coconut milk, less ice...'),
                       prefixIcon: const Icon(Icons.edit_note_rounded, color: Color(0xFFEA580C)),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -717,8 +720,8 @@ class _MenuDetailDialogState extends State<MenuDetailDialog> {
                           const SizedBox(width: 8),
                           Text(
                             menu.isTersedia
-                                ? 'Pesan • ${_currencyFmt.format(totalPrice)}'
-                                : 'Menu Habis',
+                                ? '${context.t('Pesan', 'Order')} • ${_currencyFmt.format(totalPrice)}'
+                                : context.t('Menu Habis', 'Sold Out'),
                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                         ],

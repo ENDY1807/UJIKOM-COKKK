@@ -12,6 +12,7 @@ import '../models/order_model.dart';
 import '../services/database_service.dart';
 import '../services/file_downloader.dart';
 import '../services/payment_gateway_service.dart';
+import '../theme/app_theme.dart';
 import 'receipt_dialog.dart';
 
 /// Modal Pembayaran QRIS / GoPay persis dengan antarmuka Midtrans Snap Checkout
@@ -176,13 +177,16 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             backgroundColor: const Color(0xFF16A34A),
             content: Row(
-              children: const [
-                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 10),
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'QRIS berhasil diunduh. Silakan buka aplikasi DANA, GoPay, atau M-Banking Anda dan scan dari galeri.',
-                    style: TextStyle(color: Colors.white, fontSize: 12.5),
+                    context.t(
+                      'QRIS berhasil diunduh. Silakan buka aplikasi DANA, GoPay, atau M-Banking Anda dan scan dari galeri.',
+                      'QRIS downloaded successfully. Open DANA, GoPay, or M-Banking to scan from gallery.',
+                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 12.5),
                   ),
                 ),
               ],
@@ -199,7 +203,7 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             backgroundColor: const Color(0xFFDC2626),
             content: Text(
-              'Gagal mengunduh QRIS: $e',
+              context.t('Gagal mengunduh QRIS: $e', 'Failed to download QRIS: $e'),
               style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
           ),
@@ -520,25 +524,37 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
+                            children: [
                               Text(
-                                '1. Klik tombol "Download QRIS" untuk menyimpan QR ke ponsel Anda.',
-                                style: TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
+                                context.t(
+                                  '1. Klik tombol "Download QRIS" untuk menyimpan QR ke ponsel Anda.',
+                                  '1. Click "Download QRIS" to save the QR code to your phone.',
+                                ),
+                                style: const TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                '2. Buka aplikasi GoPay, DANA, BCA Mobile, atau e-Wallet lainnya.',
-                                style: TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
+                                context.t(
+                                  '2. Buka aplikasi GoPay, DANA, BCA Mobile, atau e-Wallet lainnya.',
+                                  '2. Open your GoPay, DANA, BCA Mobile, or other e-Wallet app.',
+                                ),
+                                style: const TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                '3. Pilih menu "Scan QR" lalu ketuk ikon "Galeri / Foto" untuk memuat QRIS yang diunduh.',
-                                style: TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
+                                context.t(
+                                  '3. Pilih menu "Scan QR" lalu ketuk ikon "Galeri / Foto" untuk memuat QRIS yang diunduh.',
+                                  '3. Select "Scan QR" then tap the "Gallery / Photo" icon to load the saved QRIS.',
+                                ),
+                                style: const TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                '4. Konfirmasi pembayaran, kemudian tekan tombol "Cek Status Pembayaran".',
-                                style: TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
+                                context.t(
+                                  '4. Konfirmasi pembayaran, kemudian tekan tombol "Cek Status Pembayaran".',
+                                  '4. Confirm the payment, then tap the "Check Status" button.',
+                                ),
+                                style: const TextStyle(fontSize: 11, color: Color(0xFF334155), height: 1.3),
                               ),
                             ],
                           ),
@@ -585,7 +601,9 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
                                   )
                                 : const Icon(Icons.download_rounded, size: 17),
                             label: Text(
-                              _isDownloading ? 'Menyimpan...' : 'Download QRIS',
+                              _isDownloading
+                                  ? context.t('Menyimpan...', 'Saving...')
+                                  : context.t('Download QRIS', 'Download QRIS'),
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                             ),
                           ),
@@ -615,7 +633,9 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
                                   )
                                 : const Icon(Icons.check_circle_outline_rounded, size: 17),
                             label: Text(
-                              _isProcessingPayment ? 'Memeriksa...' : 'Cek Status',
+                              _isProcessingPayment
+                                  ? context.t('Memeriksa...', 'Verifying...')
+                                  : context.t('Cek Status', 'Check Status'),
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                             ),
                           ),
@@ -638,9 +658,9 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
                           ),
                         ),
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text(
-                          'Back to merchant',
-                          style: TextStyle(
+                        child: Text(
+                          context.t('Back to merchant', 'Back to merchant'),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.2,

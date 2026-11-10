@@ -318,32 +318,41 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: context.surfaceCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C)),
-            SizedBox(width: 8),
-            Text('Scan QR Meja Diperlukan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C)),
+            const SizedBox(width: 8),
+            Text(
+              context.t('Scan QR Meja Diperlukan', 'Table QR Scan Required'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Untuk pesanan Makan di Tempat, Anda wajib memindai QR Code yang berada di atas meja makan Anda terlebih dahulu.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              context.t(
+                'Untuk pesanan Makan di Tempat, Anda wajib memindai QR Code yang berada di atas meja makan Anda terlebih dahulu.',
+                'For Dine-In orders, you must scan the QR code located on your dining table first.',
+              ),
+              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
-              'Arahkan kamera ke QR Meja untuk membuka akses pemilihan hidangan.',
-              style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+              context.t(
+                'Arahkan kamera ke QR Meja untuk membuka akses pemilihan hidangan.',
+                'Point your camera at the Table QR to unlock menu selection.',
+              ),
+              style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+            child: Text(context.t('Batal', 'Cancel'), style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
@@ -356,7 +365,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
               _scanTableQr();
             },
             icon: const Icon(Icons.qr_code_scanner, size: 16),
-            label: const Text('Pindai QR Meja Sekarang'),
+            label: Text(context.t('Pindai QR Meja Sekarang', 'Scan Table QR Now')),
           ),
         ],
       ),
@@ -446,7 +455,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: const Color(0xFF16A34A),
-            content: Text('Lokasi berhasil dideteksi: $lat, $lng'),
+            content: Text(context.t('Lokasi berhasil dideteksi: $lat, $lng', 'Location detected: $lat, $lng')),
           ),
         );
       }
@@ -455,7 +464,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: const Color(0xFFDC2626),
-            content: Text('Gagal membaca GPS: $e'),
+            content: Text(context.t('Gagal membaca GPS: $e', 'Failed to read GPS: $e')),
           ),
         );
       }
@@ -504,7 +513,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: const Color(0xFFEA580C),
-            content: Text('QR Meja Terbaca: $result. Silakan pilih hidangan favorit.'),
+            content: Text(context.t('QR Meja Terbaca: $result. Silakan pilih hidangan favorit.', 'Table QR Scanned: $result. Please select your favorite dishes.')),
           ),
         );
       }
@@ -515,7 +524,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   Future<void> _confirmAndSubmitOrder({String? paymentMethodId}) async {
     if (_cart.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Keranjang masih kosong, pilih menu terlebih dahulu.')),
+        SnackBar(content: Text(context.t('Keranjang masih kosong, pilih menu terlebih dahulu.', 'Your cart is empty, please select menu items first.'))),
       );
       return;
     }
@@ -523,9 +532,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     if (_serviceType == OrderServiceType.dineIn &&
         (_selectedTableNo == null || _selectedTableNo!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Silakan scan QR Meja Anda terlebih dahulu untuk pesanan Makan di Tempat.'),
-          backgroundColor: Color(0xFFDC2626),
+        SnackBar(
+          content: Text(context.t('Silakan scan QR Meja Anda terlebih dahulu untuk pesanan Makan di Tempat.', 'Please scan your Table QR first for Dine-In orders.')),
+          backgroundColor: const Color(0xFFDC2626),
         ),
       );
       _scanTableQr();
@@ -535,7 +544,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     if (_serviceType == OrderServiceType.takeAway &&
         _deliveryAddressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Alamat pengantaran belum diisi. Pilih di peta OSM atau ketik alamat.')),
+        SnackBar(content: Text(context.t('Alamat pengantaran belum diisi. Pilih di peta OSM atau ketik alamat.', 'Delivery address is required. Select on OSM map or type address.'))),
       );
       return;
     }
@@ -591,16 +600,22 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     if (widget.db.appBiometricAuth) {
       final isAuth = await BiometricAuthDialog.authenticate(
         context: context,
-        title: 'Verifikasi Pembayaran Pesanan',
-        reason: 'Otorisasi sidik jari atau PIN diperlukan untuk memproses pesanan Anda.',
+        title: context.t('Verifikasi Pembayaran Pesanan', 'Verify Order Payment'),
+        reason: context.t(
+          'Otorisasi sidik jari atau PIN diperlukan untuk memproses pesanan Anda.',
+          'Fingerprint or PIN authorization is required to process your order.',
+        ),
         amountFormatted: _currencyFmt.format(_grandTotal),
       );
       if (!isAuth) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pembayaran dibatalkan: Otorisasi biometrik / PIN ditolak.'),
-            backgroundColor: Color(0xFFDC2626),
+          SnackBar(
+            content: Text(context.t(
+              'Pembayaran dibatalkan: Otorisasi biometrik / PIN ditolak.',
+              'Payment cancelled: Biometric / PIN authorization rejected.',
+            )),
+            backgroundColor: const Color(0xFFDC2626),
           ),
         );
         return;
@@ -722,7 +737,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     });
 
     if (!mounted) return;
-    AppLoadingAnimation.show(context, message: 'Menyiapkan transaksi pesanan...');
+    AppLoadingAnimation.show(context, message: context.t('Menyiapkan transaksi pesanan...', 'Preparing order transaction...'));
     await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
     AppLoadingAnimation.hide(context);
@@ -736,9 +751,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         db: widget.db,
         onPaymentSuccess: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: Color(0xFF16A34A),
-              content: Text('Pembayaran QRIS sukses diterima! Pesanan segera diproses.'),
+            SnackBar(
+              backgroundColor: const Color(0xFF16A34A),
+              content: Text(context.t(
+                'Pembayaran QRIS sukses diterima! Pesanan segera diproses.',
+                'QRIS payment received successfully! Order is being processed.',
+              )),
             ),
           );
           widget.onOrderSubmitted?.call();
@@ -757,9 +775,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         db: widget.db,
         onPaymentSuccess: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: Color(0xFF16A34A),
-              content: Text('Pembayaran Virtual Account terverifikasi lunas!'),
+            SnackBar(
+              backgroundColor: const Color(0xFF16A34A),
+              content: Text(context.t(
+                'Pembayaran Virtual Account terverifikasi lunas!',
+                'Virtual Account payment verified as paid!',
+              )),
             ),
           );
           widget.onOrderSubmitted?.call();
@@ -781,7 +802,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: const Color(0xFF16A34A),
-              content: Text('Pembayaran ${payId.toUpperCase()} sukses diproses!'),
+              content: Text(context.t(
+                'Pembayaran ${payId.toUpperCase()} sukses diproses!',
+                '${payId.toUpperCase()} payment successfully processed!',
+              )),
             ),
           );
           widget.onOrderSubmitted?.call();
@@ -816,10 +840,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             const SizedBox(height: 16),
             Text(
               isDeliveryOrder
-                  ? 'Pesanan Take Away Diterima!'
+                  ? context.t('Pesanan Take Away Diterima!', 'Take Away Order Received!')
                   : (_serviceType == OrderServiceType.selfPickUp
-                      ? 'Pesanan Self Pick-Up Disiapkan!'
-                      : 'Pesanan Meja Diteruskan!'),
+                      ? context.t('Pesanan Self Pick-Up Disiapkan!', 'Self Pick-Up Order Prepared!')
+                      : context.t('Pesanan Meja Diteruskan!', 'Table Order Sent!')),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -829,7 +853,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Nomor Pesanan: #${order.idOrder}\n${order.noMeja}',
+              '${context.t('Nomor Pesanan', 'Order Number')}: #${order.idOrder}\n${order.noMeja}',
               style: const TextStyle(
                 fontSize: 13,
                 color: Color(0xFF64748B),
@@ -851,7 +875,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${order.totalItem} Item Hidangan',
+                        '${order.totalItem} ${context.t('Item Hidangan', 'Dishes')}',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -872,9 +896,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Metode Bayar:',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                      Text(
+                        context.t('Metode Bayar:', 'Payment Method:'),
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                       ),
                       Text(
                         paymentMethodName,
@@ -885,7 +909,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   if (connectedMethod != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Saldo ${connectedMethod.provider.label} terpotong ${_currencyFmt.format(_grandTotal)} (Sisa: ${_currencyFmt.format(connectedMethod.balance)})',
+                      '${context.t('Saldo', 'Balance')} ${connectedMethod.provider.label} ${context.t('terpotong', 'deducted')} ${_currencyFmt.format(_grandTotal)} (${context.t('Sisa', 'Remaining')}: ${_currencyFmt.format(connectedMethod.balance)})',
                       style: const TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
@@ -905,13 +929,13 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               icon: const Icon(Icons.delivery_dining, size: 18),
-              label: const Text('Lacak Pesanan (GoFood)', style: TextStyle(fontWeight: FontWeight.bold)),
+              label: Text(context.t('Lacak Pesanan (GoFood)', 'Track Order (GoFood)'), style: const TextStyle(fontWeight: FontWeight.bold)),
               onPressed: () {
                 Navigator.of(ctx).pop();
                 GoFoodTrackingDialog.show(
                   context,
                   order: order,
-                  destinationAddress: savedAddress.isNotEmpty ? savedAddress : 'Alamat Pemesan',
+                  destinationAddress: savedAddress.isNotEmpty ? savedAddress : context.t('Alamat Pemesan', 'Customer Address'),
                   deliveryFee: savedDeliveryFee,
                   estimatedTime: savedEstTime,
                 );
@@ -929,7 +953,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
               widget.onOrderSubmitted?.call();
               widget.onNavigateToTab?.call(0);
             },
-            label: const Text('Lihat Proses Pesanan', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: Text(context.t('Lihat Proses Pesanan', 'View Order Progress'), style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -943,14 +967,14 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(
-          'Catatan: ${item.menu.namaMasakan}',
+          '${context.t('Catatan', 'Notes')}: ${item.menu.namaMasakan}',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         content: TextField(
           controller: noteController,
           autofocus: true,
           decoration: InputDecoration(
-            hintText: 'Masukkan Catatan Pesanan',
+            hintText: context.t('Masukkan Catatan Pesanan', 'Enter Order Notes'),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -962,7 +986,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Batal'),
+            child: Text(context.t('Batal', 'Cancel')),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
@@ -970,7 +994,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
               _setItemNote(item.menu.idMasakan, noteController.text.trim());
               Navigator.of(ctx).pop();
             },
-            child: const Text('Simpan'),
+            child: Text(context.t('Simpan', 'Save')),
           ),
         ],
       ),
@@ -1087,6 +1111,60 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     {'code': 'HEMAT20', 'tag': '20% OFF', 'label': 'Pesta Kuliner 20%', 'desc': 'Diskon 20% s.d. Rp 30.000'},
     {'code': 'MAKANENAK', 'tag': 'Rp 10RB', 'label': 'Kupon Santap Nikmat', 'desc': 'Potongan langsung Rp 10.000'},
   ];
+
+  static String _getCouponLabel(String code, bool isEnglish) {
+    if (!isEnglish) {
+      switch (code) {
+        case 'RASANTARA30': return 'Pesta Rasa Akhir Pekan';
+        case 'HEMAT15K': return 'Diskon Pelanggan Setia';
+        case 'BEBASONGKIR': return 'Bebas Ongkir Pengantaran';
+        case 'DISKONMEMBER': return 'Kupon Member Spesial';
+        case 'HEMAT20': return 'Pesta Kuliner 20%';
+        case 'MAKANENAK': return 'Kupon Santap Nikmat';
+        default: return code;
+      }
+    }
+    switch (code) {
+      case 'RASANTARA30': return 'Weekend Feast Discount';
+      case 'HEMAT15K': return 'Loyal Customer Deal';
+      case 'BEBASONGKIR': return 'Free Delivery Voucher';
+      case 'DISKONMEMBER': return 'Special Member Coupon';
+      case 'HEMAT20': return 'Culinary Party 20%';
+      case 'MAKANENAK': return 'Delicious Meal Coupon';
+      default: return code;
+    }
+  }
+
+  static String _getCouponDesc(String code, bool isEnglish) {
+    if (!isEnglish) {
+      switch (code) {
+        case 'RASANTARA30': return 'Diskon 30% s.d. Rp 30.000';
+        case 'HEMAT15K': return 'Potongan langsung Rp 15.000';
+        case 'BEBASONGKIR': return 'Gratis ongkir s.d. Rp 10.000';
+        case 'DISKONMEMBER': return 'Potongan langsung Rp 15.000';
+        case 'HEMAT20': return 'Diskon 20% s.d. Rp 30.000';
+        case 'MAKANENAK': return 'Potongan langsung Rp 10.000';
+        default: return '';
+      }
+    }
+    switch (code) {
+      case 'RASANTARA30': return '30% off up to Rp 30,000';
+      case 'HEMAT15K': return 'Instant Rp 15,000 discount';
+      case 'BEBASONGKIR': return 'Free delivery up to Rp 10,000';
+      case 'DISKONMEMBER': return 'Special member Rp 15,000 off';
+      case 'HEMAT20': return '20% off up to Rp 30,000';
+      case 'MAKANENAK': return 'Instant Rp 10,000 discount';
+      default: return '';
+    }
+  }
+
+  static String _getCouponTag(String tag, bool isEnglish) {
+    if (!isEnglish) return tag;
+    if (tag == 'GRATIS') return 'FREE';
+    if (tag == 'Rp 15RB') return '15K OFF';
+    if (tag == 'Rp 10RB') return '10K OFF';
+    return tag;
+  }
 
   // ── Bottom Sheet Pilihan Kupon Promo (Muncul Card dari Bawah) ──
   void _openCouponPickerModal(BuildContext parentContext, StateSetter parentSetState) {
@@ -1279,7 +1357,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    c['tag'] ?? 'PROMO',
+                                    _getCouponTag(c['tag'] ?? 'PROMO', context.isEnglish),
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
@@ -1290,7 +1368,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    c['label']!,
+                                    _getCouponLabel(code, context.isEnglish),
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
@@ -1305,7 +1383,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             subtitle: Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                c['desc']!,
+                                _getCouponDesc(code, context.isEnglish),
                                 style: TextStyle(fontSize: 11, color: context.textSecondary),
                               ),
                             ),
@@ -1639,7 +1717,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                           Padding(
                                             padding: const EdgeInsets.only(top: 2),
                                             child: Text(
-                                              'Catatan: "${item.catatan}"',
+                                              '${context.t('Catatan', 'Notes')}: "${item.catatan}"',
                                               style: const TextStyle(
                                                 fontSize: 11,
                                                 fontStyle: FontStyle.italic,
@@ -1652,11 +1730,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                             _openItemNoteDialog(item);
                                             setModalState(() {});
                                           },
-                                          child: const Padding(
-                                            padding: EdgeInsets.only(top: 3),
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(top: 3),
                                             child: Text(
-                                              '+ Tambah/Ubah Catatan',
-                                              style: TextStyle(
+                                              context.t('+ Tambah/Ubah Catatan', '+ Add/Edit Note'),
+                                              style: const TextStyle(
                                                 fontSize: 11,
                                                 color: Color(0xFFEA580C),
                                                 fontWeight: FontWeight.bold,
@@ -1888,7 +1966,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             _buildPaymentRadioTile(
                               id: 'dana',
                               title: 'DANA (Direct Debit SNAP BI)',
-                              subtitle: 'Terkoneksi resmi • Saldo otomatis 1-klik',
+                              subtitle: context.t('Terkoneksi resmi • Saldo otomatis 1-klik', 'Official link • Automatic 1-tap balance'),
                               icon: Icons.account_balance_wallet_rounded,
                               iconColor: const Color(0xFF118EEA),
                               isSelected: _selectedPaymentMethodId == 'dana',
@@ -1901,7 +1979,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             _buildPaymentRadioTile(
                               id: 'gopay',
                               title: 'GoPay',
-                              subtitle: 'E-Wallet instant payment terintegrasi',
+                              subtitle: context.t('E-Wallet instant payment terintegrasi', 'Integrated instant e-wallet payment'),
                               icon: Icons.wallet_rounded,
                               iconColor: const Color(0xFF00AED6),
                               isSelected: _selectedPaymentMethodId == 'gopay',
@@ -1914,7 +1992,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             _buildPaymentRadioTile(
                               id: 'm_banking',
                               title: 'M-Banking (BCA / Mandiri / BRI / BNI)',
-                              subtitle: 'Virtual Account & Transfer Bank Otomatis',
+                              subtitle: context.t('Virtual Account & Transfer Bank Otomatis', 'Automatic Virtual Account & Bank Transfer'),
                               icon: Icons.account_balance_rounded,
                               iconColor: const Color(0xFF4338CA),
                               isSelected: _selectedPaymentMethodId == 'm_banking',
@@ -1926,8 +2004,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             const SizedBox(height: 8),
                             _buildPaymentRadioTile(
                               id: 'qris',
-                              title: 'QRIS Dinamis (All Payment)',
-                              subtitle: 'Scan dari seluruh E-Wallet & M-Banking',
+                              title: context.t('QRIS Dinamis (All Payment)', 'Dynamic QRIS (All Payment)'),
+                              subtitle: context.t('Scan dari seluruh E-Wallet & M-Banking', 'Scan from all E-Wallets & M-Banking'),
                               icon: Icons.qr_code_2_rounded,
                               iconColor: const Color(0xFFEA580C),
                               isSelected: _selectedPaymentMethodId == 'qris',
@@ -1939,8 +2017,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             const SizedBox(height: 8),
                             _buildPaymentRadioTile(
                               id: 'tunai',
-                              title: 'Bayar Tunai di Kasir',
-                              subtitle: 'Pelunasan langsung di kasir restoran',
+                              title: context.t('Bayar Tunai di Kasir', 'Cash at Cashier'),
+                              subtitle: context.t('Pelunasan langsung di kasir restoran', 'Direct payment at restaurant cashier'),
                               icon: Icons.payments_outlined,
                               iconColor: const Color(0xFF16A34A),
                               isSelected: _selectedPaymentMethodId == 'tunai',
@@ -1957,23 +2035,40 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         const SizedBox(height: 14),
 
                         // 4. RINGKASAN BIAYA
-                        _buildCostRow('Subtotal Hidangan ($_cartTotalItems item)', _currencyFmt.format(_cartTotalHarga)),
+                        _buildCostRow(
+                          '${context.t('Subtotal Hidangan', 'Dishes Subtotal')} ($_cartTotalItems ${context.t('item', 'items')})',
+                          _currencyFmt.format(_cartTotalHarga),
+                        ),
                         if (_diskonEventAmount > 0)
-                          _buildCostRow('Diskon Event Promo', '- ${_currencyFmt.format(_diskonEventAmount)}', isHighlight: true),
+                          _buildCostRow(
+                            context.t('Diskon Event Promo', 'Promo Event Discount'),
+                            '- ${_currencyFmt.format(_diskonEventAmount)}',
+                            isHighlight: true,
+                          ),
                         if (_couponDiscount > 0)
                           _buildCostRow(
                             _appliedCoupons.length > 1
-                                ? 'Diskon Kupon (${_appliedCoupons.length} Kupon Diterapkan)'
-                                : 'Diskon Kupon ($_couponCode)',
+                                ? '${context.t('Diskon Kupon', 'Coupon Discount')} (${_appliedCoupons.length} ${context.t('Kupon Diterapkan', 'Coupons Applied')})'
+                                : '${context.t('Diskon Kupon', 'Coupon Discount')} ($_couponCode)',
                             '- ${_currencyFmt.format(_couponDiscount)}',
                             isHighlight: true,
                           ),
                         if (_potonganPoinAmount > 0)
-                          _buildCostRow('Potongan Poin Kuliner', '- ${_currencyFmt.format(_potonganPoinAmount)}', isHighlight: true),
+                          _buildCostRow(
+                            context.t('Potongan Poin Kuliner', 'Culinary Points Discount'),
+                            '- ${_currencyFmt.format(_potonganPoinAmount)}',
+                            isHighlight: true,
+                          ),
                         if (_packagingFee > 0)
-                          _buildCostRow('Biaya Kemasan Higienis', _currencyFmt.format(_packagingFee)),
+                          _buildCostRow(
+                            context.t('Biaya Kemasan Higienis', 'Packaging Fee'),
+                            _currencyFmt.format(_packagingFee),
+                          ),
                         if (_currentDeliveryFee > 0)
-                          _buildCostRow('Ongkir Pengantaran (${_deliveryDistanceKm.toStringAsFixed(1)} km)', _currencyFmt.format(_currentDeliveryFee)),
+                          _buildCostRow(
+                            '${context.t('Ongkir Pengantaran', 'Delivery Fee')} (${_deliveryDistanceKm.toStringAsFixed(1)} km)',
+                            _currencyFmt.format(_currentDeliveryFee),
+                          ),
                         const SizedBox(height: 6),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2043,10 +2138,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                             : (_selectedPaymentMethodId == 'dana'
                                                 ? 'DANA'
                                                 : (_selectedPaymentMethodId == 'qris'
-                                                    ? 'QRIS Dinamis'
+                                                    ? context.t('QRIS Dinamis', 'Dynamic QRIS')
                                                     : (_selectedPaymentMethodId == 'm_banking'
                                                         ? 'Virtual Account'
-                                                        : 'Bayar Tunai'))),
+                                                        : context.t('Bayar Tunai', 'Cash Payment')))),
                                         style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -2071,9 +2166,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: context.isDarkMode ? const Color(0xFF7C2D12) : const Color(0xFFFFEDD5)),
                             ),
-                            child: const Text(
-                              'Midtrans Aktif',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                            child: Text(
+                              context.t('Midtrans Aktif', 'Midtrans Active'),
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                             ),
                           ),
                         ],
@@ -2096,8 +2191,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               },
                         child: Text(
                           _serviceType == OrderServiceType.takeAway
-                              ? 'Pesan dan antar sekarang'
-                              : 'Pesan Sekarang (${_currencyFmt.format(_grandTotal)})',
+                              ? context.t('Pesan dan antar sekarang', 'Order and deliver now')
+                              : '${context.t('Pesan Sekarang', 'Order Now')} (${_currencyFmt.format(_grandTotal)})',
                           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
@@ -2973,7 +3068,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        menu.status.label,
+                        menu.status.localizedLabel(context.isEnglish),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -2989,7 +3084,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
                     const SizedBox(width: 2),
                     Text(
-                      '${(4.7 + (menu.idMasakan % 4) * 0.1).toStringAsFixed(1)} (1rb+) • 100+ terjual',
+                      '${(4.7 + (menu.idMasakan % 4) * 0.1).toStringAsFixed(1)} (${context.t('1rb+', '1k+')}) • 100+ ${context.t('terjual', 'sold')}',
                       style: TextStyle(fontSize: 10.5, color: context.textSecondary, fontWeight: FontWeight.w500),
                     ),
                   ],
@@ -3016,9 +3111,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                       ),
                     ),
                     if (!menu.isTersedia)
-                      const Text(
-                        'Habis',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold),
+                      Text(
+                        context.t('Habis', 'Sold Out'),
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold),
                       )
                     else if (qty == 0)
                       InkWell(

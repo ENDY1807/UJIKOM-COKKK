@@ -116,13 +116,13 @@ class ReceiptDialog extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Metadata Transaksi
-                      _buildReceiptRow('No. Transaksi', '#TRX-${transaction.idTransaksi.toString().padLeft(5, '0')}'),
-                      _buildReceiptRow('No. Pesanan', '#ORD-${order.idOrder}'),
-                      _buildReceiptRow('Waktu Transaksi', dateFmt.format(transaction.tanggal)),
-                      _buildReceiptRow('Layanan / Meja', order.noMeja),
-                      _buildReceiptRow('Nama Pelanggan', order.namaPelanggan),
-                      _buildReceiptRow('Kasir Pemroses', transaction.namaKasir),
-                      _buildReceiptRow('Metode Pembayaran', transaction.metodePembayaran, isBoldValue: true),
+                      _buildReceiptRow(context.t('No. Transaksi', 'Transaction No.'), '#TRX-${transaction.idTransaksi.toString().padLeft(5, '0')}'),
+                      _buildReceiptRow(context.t('No. Pesanan', 'Order No.'), '#ORD-${order.idOrder}'),
+                      _buildReceiptRow(context.t('Waktu Transaksi', 'Transaction Time'), dateFmt.format(transaction.tanggal)),
+                      _buildReceiptRow(context.t('Layanan / Meja', 'Service / Table'), order.noMeja),
+                      _buildReceiptRow(context.t('Nama Pelanggan', 'Customer Name'), order.namaPelanggan),
+                      _buildReceiptRow(context.t('Kasir Pemroses', 'Cashier'), transaction.namaKasir),
+                      _buildReceiptRow(context.t('Metode Pembayaran', 'Payment Method'), transaction.metodePembayaran, isBoldValue: true),
 
                       const SizedBox(height: 12),
                       _buildDashedLine(),
@@ -150,7 +150,7 @@ class ReceiptDialog extends StatelessWidget {
                                     ),
                                     if (item.catatan.isNotEmpty)
                                       Text(
-                                        'Catatan: ${item.catatan}',
+                                        '${context.t('Catatan', 'Notes')}: ${item.catatan}',
                                         style: const TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Color(0xFF64748B)),
                                       ),
                                   ],
@@ -170,14 +170,14 @@ class ReceiptDialog extends StatelessWidget {
                       const SizedBox(height: 10),
 
                       // Rincian Biaya & Diskon
-                      _buildCostSummaryRow('Subtotal Hidangan', currencyFmt.format(subtotal)),
+                      _buildCostSummaryRow(context.t('Subtotal Hidangan', 'Dishes Subtotal'), currencyFmt.format(subtotal)),
                       if (diskonEvent > 0)
-                        _buildCostSummaryRow('Diskon Event Promo', '- ${currencyFmt.format(diskonEvent)}', isDiscount: true),
+                        _buildCostSummaryRow(context.t('Diskon Event Promo', 'Promo Event Discount'), '- ${currencyFmt.format(diskonEvent)}', isDiscount: true),
                       if (diskonKupon > 0)
-                        _buildCostSummaryRow('Diskon Kupon ${kodeKupon.isNotEmpty ? "($kodeKupon)" : ""}', '- ${currencyFmt.format(diskonKupon)}', isDiscount: true),
+                        _buildCostSummaryRow('${context.t('Diskon Kupon', 'Coupon Discount')} ${kodeKupon.isNotEmpty ? "($kodeKupon)" : ""}', '- ${currencyFmt.format(diskonKupon)}', isDiscount: true),
                       if (potonganPoin > 0)
-                        _buildCostSummaryRow('Potongan Poin Kuliner (1 Poin = Rp 1)', '- ${currencyFmt.format(potonganPoin)}', isDiscount: true),
-                      _buildCostSummaryRow('Pajak Restoran PB1 (10%)', 'Sudah Termasuk', isMuted: true),
+                        _buildCostSummaryRow(context.t('Potongan Poin Kuliner (1 Poin = Rp 1)', 'Culinary Points Discount (1 Point = Rp 1)'), '- ${currencyFmt.format(potonganPoin)}', isDiscount: true),
+                      _buildCostSummaryRow(context.t('Pajak Restoran PB1 (10%)', 'Restaurant Tax PB1 (10%)'), context.t('Sudah Termasuk', 'Included'), isMuted: true),
 
                       const SizedBox(height: 8),
                       _buildDashedLine(),
@@ -187,9 +187,9 @@ class ReceiptDialog extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'TOTAL TAGIHAN',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
+                          Text(
+                            context.t('TOTAL TAGIHAN', 'TOTAL BILL'),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
                           ),
                           Text(
                             currencyFmt.format(grandTotal),
@@ -198,8 +198,8 @@ class ReceiptDialog extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      _buildReceiptRow('Jumlah Dibayar', currencyFmt.format(transaction.jumlahBayar)),
-                      _buildReceiptRow('Kembalian', currencyFmt.format(transaction.kembalian), isBoldValue: true),
+                      _buildReceiptRow(context.t('Jumlah Dibayar', 'Amount Paid'), currencyFmt.format(transaction.jumlahBayar)),
+                      _buildReceiptRow(context.t('Kembalian', 'Change'), currencyFmt.format(transaction.kembalian), isBoldValue: true),
 
                       const SizedBox(height: 16),
 
@@ -215,14 +215,14 @@ class ReceiptDialog extends StatelessWidget {
                               dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF1E293B)),
                             ),
                             const SizedBox(height: 6),
-                            const Text(
-                              'Pindai QR untuk verifikasi keaslian struk digital',
-                              style: TextStyle(fontSize: 9.5, color: Color(0xFF94A3B8)),
+                            Text(
+                              context.t('Pindai QR untuk verifikasi keaslian struk digital', 'Scan QR to verify digital receipt authenticity'),
+                              style: const TextStyle(fontSize: 9.5, color: Color(0xFF94A3B8)),
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              '*** TERIMA KASIH ATAS KUNJUNGAN ANDA ***',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Color(0xFF475569)),
+                            Text(
+                              context.t('*** TERIMA KASIH ATAS KUNJUNGAN ANDA ***', '*** THANK YOU FOR YOUR VISIT ***'),
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Color(0xFF475569)),
                             ),
                           ],
                         ),
@@ -253,7 +253,7 @@ class ReceiptDialog extends StatelessWidget {
                           );
                         },
                         icon: const Icon(Icons.print_rounded, size: 18),
-                        label: const Text('Cetak Struk', style: TextStyle(fontWeight: FontWeight.bold)),
+                        label: Text(context.t('Cetak Struk', 'Print Receipt'), style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -265,7 +265,7 @@ class ReceiptDialog extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: Text(context.t('Tutup', 'Close'), style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],

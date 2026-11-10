@@ -273,13 +273,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.shield_outlined, color: Color(0xFFEA580C)),
-                  title: const Text('Pengaturan Profil & Keamanan', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Password, Google OAuth, Saldo & Alamat', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                  title: Text(context.t('Pengaturan Profil & Keamanan', 'Profile & Security Settings'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  subtitle: Text(context.t('Password, Google OAuth, Saldo & Alamat', 'Password, Google OAuth, Balance & Address'), style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
                   trailing: const Icon(Icons.chevron_right, size: 20),
                   onTap: () {
                     Navigator.of(ctx).pop();
                     final destinations = _getDestinationsForRole(role);
-                    final pIdx = destinations.indexWhere((d) => d.label.contains('Profil'));
+                    final pIdx = destinations.indexWhere((d) => d.label.contains('Profil') || d.label.contains('Profile'));
                     if (pIdx != -1) {
                       setState(() => _currentIndex = pIdx);
                     } else {
@@ -307,7 +307,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.logout, color: AppTheme.statusRed),
-                  title: const Text('Keluar dari Akun', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.statusRed)),
+                  title: Text(context.t('Keluar dari Akun', 'Log Out'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.statusRed)),
                   onTap: () {
                     Navigator.of(ctx).pop();
                     widget.db.logout();
@@ -950,7 +950,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ListTile(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             leading: const Icon(Icons.settings_outlined, color: AppTheme.textMuted),
-            title: Text('Pengaturan Aplikasi', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: context.textPrimary)),
+            title: Text(context.t('Pengaturan Aplikasi', 'App Settings'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: context.textPrimary)),
             onTap: () {
               Navigator.of(context).pop();
               Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen(db: widget.db)));
@@ -967,9 +967,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               icon: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 18),
-              label: const Text(
-                'Keluar dari Akun',
-                style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold, fontSize: 13),
+              label: Text(
+                context.t('Keluar dari Akun', 'Log Out'),
+                style: const TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold, fontSize: 13),
               ),
               onPressed: () {
                 Navigator.of(context).pop();
@@ -987,21 +987,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 22),
-            SizedBox(width: 8),
-            Text('Konfirmasi Keluar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 22),
+            const SizedBox(width: 8),
+            Text(context.t('Konfirmasi Keluar', 'Confirm Logout'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: const Text(
-          'Apakah Anda yakin ingin keluar dari sesi akun Rasantara?',
-          style: TextStyle(fontSize: 13, color: Color(0xFF475569)),
+        content: Text(
+          context.t(
+            'Apakah Anda yakin ingin keluar dari sesi akun Rasantara?',
+            'Are you sure you want to log out of your Rasantara session?',
+          ),
+          style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B))),
+            child: Text(context.t('Batal', 'Cancel'), style: const TextStyle(color: Color(0xFF64748B))),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -1013,7 +1016,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               widget.db.logout();
               widget.onLogout();
             },
-            child: const Text('Ya, Keluar'),
+            child: Text(context.t('Ya, Keluar', 'Yes, Log Out')),
           ),
         ],
       ),
