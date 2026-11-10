@@ -34,7 +34,7 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: Build Android APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release --no-tree-shake-icons --verbose
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
