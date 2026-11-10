@@ -21,7 +21,7 @@ class SupabaseConfig {
       '124635820971-lr7jvkgi3hur5pukh3nasrlo4j6b9ktk.apps.googleusercontent.com';
   static const String googleClientSecret = String.fromEnvironment(
     'GOOGLE_CLIENT_SECRET',
-    defaultValue: 'YOUR_GOOGLE_CLIENT_SECRET',
+    defaultValue: '',
   );
 
   // Redirect deep link scheme untuk OAuth callback

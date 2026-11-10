@@ -9,6 +9,7 @@ import '../models/user_model.dart';
 import '../services/database_service.dart';
 import '../services/desktop_oauth_service.dart';
 import '../services/supabase_config.dart';
+import '../services/supabase_service.dart';
 import '../services/web_oauth_helper.dart';
 import '../services/whatsapp_otp_service.dart';
 import '../theme/app_theme.dart';
@@ -722,6 +723,24 @@ class _LoginScreenState extends State<LoginScreen>
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.open_in_browser, size: 16, color: Color(0xFF64748B)),
+              label: const Text('Browser Google', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                try {
+                  await SupabaseService().signInWithGoogleOAuth(
+                    customRedirect: SupabaseConfig.redirectUrl,
+                  );
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal membuka browser: $e')),
+                    );
+                  }
+                }
+              },
             ),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
