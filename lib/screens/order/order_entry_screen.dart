@@ -9,6 +9,7 @@ import '../../models/order_model.dart';
 import '../../models/payment_method_model.dart';
 import '../../services/database_service.dart';
 import '../../widgets/osm_map_widget.dart';
+import '../../widgets/qris_payment_dialog.dart';
 import '../../widgets/va_payment_dialog.dart';
 import '../../widgets/snap_payment_dialog.dart';
 import '../../widgets/menu_detail_dialog.dart';
@@ -726,19 +727,18 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     if (!mounted) return;
     AppLoadingAnimation.hide(context);
 
-    // 1. Jika metode QRIS, buka Midtrans Snap Hosted Checkout Page
+    // 1. Jika metode QRIS, buka dialog template resmi QRIS Nasional (Sesuai Foto 2)
     if (payId == 'qris') {
-      SnapPaymentDialog.show(
+      QrisPaymentDialog.show(
         context,
         order: order,
         totalAmount: grandTotalFinal,
-        providerName: 'QRIS',
         db: widget.db,
         onPaymentSuccess: () {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               backgroundColor: Color(0xFF16A34A),
-              content: Text('Pembayaran QRIS Midtrans Snap sukses diterima! Pesanan diproses.'),
+              content: Text('Pembayaran QRIS sukses diterima! Pesanan diproses.'),
             ),
           );
           widget.onOrderSubmitted?.call();
