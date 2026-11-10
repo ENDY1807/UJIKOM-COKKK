@@ -47,51 +47,60 @@ class FloatingOrderTrackerBar extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: Text(
-                          '1',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Text(
+                            '1',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Total Pesanan',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: Colors.white70,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Total Pesanan',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              fmt.format(order.grandTotalSetelahDiskon),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        Text(
-                          fmt.format(order.grandTotalSetelahDiskon),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: const [
@@ -100,14 +109,14 @@ class FloatingOrderTrackerBar extends StatelessWidget {
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 13.5,
+                        fontSize: 13,
                       ),
                     ),
-                    SizedBox(width: 6),
+                    SizedBox(width: 4),
                     Icon(
                       Icons.arrow_forward_rounded,
                       color: Colors.white,
-                      size: 18,
+                      size: 16,
                     ),
                   ],
                 ),
@@ -216,50 +225,59 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
 
                   // Header Sheet
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 6, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(16, 6, 12, 12),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF7ED),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFFFEDD5)),
-                              ),
-                              child: const Icon(
-                                Icons.receipt_long_rounded,
-                                color: Color(0xFFEA580C),
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Pantau Pesanan',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF1E293B),
-                                  ),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF7ED),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFFFEDD5)),
                                 ),
-                                Text(
-                                  'Detail checkout & live tracking #${widget.order.idOrder}',
-                                  style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                                child: const Icon(
+                                  Icons.receipt_long_rounded,
+                                  color: Color(0xFFEA580C),
+                                  size: 20,
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Pantau Pesanan',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      'Detail tracking #${widget.order.idOrder}',
+                                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: currentStep >= 4
                                     ? const Color(0xFFF0FDF4)
@@ -278,7 +296,7 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                               child: Text(
                                 statusText,
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.bold,
                                   color: currentStep >= 4
                                       ? const Color(0xFF16A34A)
@@ -288,7 +306,7 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 2),
                             IconButton(
                               icon: const Icon(Icons.close_rounded, size: 22, color: Color(0xFF64748B)),
                               onPressed: () => Navigator.of(context).pop(),
@@ -994,3 +1012,4 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
     );
   }
 }
+

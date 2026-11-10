@@ -1013,27 +1013,34 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Rincian Pesanan Rasantara',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E293B),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Rincian Pesanan Rasantara',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              Text(
-                                _serviceType.label,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFFEA580C),
-                                  fontWeight: FontWeight.bold,
+                                Text(
+                                  _serviceType.label,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFFEA580C),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B)),
                             onPressed: () => Navigator.of(ctx).pop(),
@@ -1651,52 +1658,61 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F5F9),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  _selectedPaymentMethodId == 'gopay'
-                                      ? Icons.wallet_rounded
-                                      : (_selectedPaymentMethodId == 'dana'
-                                          ? Icons.account_balance_wallet_rounded
-                                          : (_selectedPaymentMethodId == 'qris'
-                                              ? Icons.qr_code_2_rounded
-                                              : (_selectedPaymentMethodId == 'm_banking'
-                                                  ? Icons.account_balance_rounded
-                                                  : Icons.payments_outlined))),
-                                  size: 18,
-                                  color: _selectedPaymentMethodId == 'gopay' ? const Color(0xFF00AED6) : const Color(0xFFEA580C),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
                                     _selectedPaymentMethodId == 'gopay'
-                                        ? 'GoPay'
+                                        ? Icons.wallet_rounded
                                         : (_selectedPaymentMethodId == 'dana'
-                                            ? 'DANA'
+                                            ? Icons.account_balance_wallet_rounded
                                             : (_selectedPaymentMethodId == 'qris'
-                                                ? 'QRIS Dinamis'
+                                                ? Icons.qr_code_2_rounded
                                                 : (_selectedPaymentMethodId == 'm_banking'
-                                                    ? 'Virtual Account'
-                                                    : 'Bayar Tunai'))),
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                                    ? Icons.account_balance_rounded
+                                                    : Icons.payments_outlined))),
+                                    size: 18,
+                                    color: _selectedPaymentMethodId == 'gopay' ? const Color(0xFF00AED6) : const Color(0xFFEA580C),
                                   ),
-                                  Text(
-                                    _currencyFmt.format(_grandTotal),
-                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _selectedPaymentMethodId == 'gopay'
+                                            ? 'GoPay'
+                                            : (_selectedPaymentMethodId == 'dana'
+                                                ? 'DANA'
+                                                : (_selectedPaymentMethodId == 'qris'
+                                                    ? 'QRIS Dinamis'
+                                                    : (_selectedPaymentMethodId == 'm_banking'
+                                                        ? 'Virtual Account'
+                                                        : 'Bayar Tunai'))),
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        _currencyFmt.format(_grandTotal),
+                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
@@ -2681,26 +2697,35 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Rasantara Resto & Cafe',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                  ),
-                  SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Icon(Icons.star_rounded, size: 16, color: Color(0xFFF59E0B)),
-                      SizedBox(width: 4),
-                      Text(
-                        '4.9 (23rb+) • 20-30 min (1.8 km)',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                ],
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Rasantara Resto & Cafe',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(Icons.star_rounded, size: 16, color: Color(0xFFF59E0B)),
+                        SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            '4.9 (23rb+) • 20-30 min (1.8 km)',
+                            style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: const BoxDecoration(
@@ -2872,28 +2897,35 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'Flash Sale Rasantara',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
+                    const SizedBox(width: 6),
+                    const Expanded(
+                      child: Text(
+                        'Flash Sale Rasantara',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    child: const Text(
-                      '01 : 51 : 43',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        '01 : 51 : 43',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
             ],
           ),
@@ -3025,48 +3057,58 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '$_cartTotalItems',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Total Pesanan',
-                          style: TextStyle(fontSize: 10.5, color: Colors.white70, fontWeight: FontWeight.w600),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        Text(
-                          _currencyFmt.format(_grandTotal),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
+                        child: Text(
+                          '$_cartTotalItems',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Total Pesanan',
+                              style: TextStyle(fontSize: 10.5, color: Colors.white70, fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              _currencyFmt.format(_grandTotal),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 const Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'Lihat Keranjang',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
-                    SizedBox(width: 6),
-                    Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
                   ],
                 ),
               ],

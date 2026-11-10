@@ -393,7 +393,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               FilledButton.tonalIcon(
                                 style: FilledButton.styleFrom(
@@ -401,22 +404,24 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                                   foregroundColor: const Color(0xFF1E293B),
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 icon: const Icon(Icons.photo_library_outlined, size: 14),
                                 label: const Text('Ganti Foto', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                                 onPressed: _pickProfilePhoto,
                               ),
-                              if (_selectedAvatar.isNotEmpty || _customImageBytes != null) ...[
-                                const SizedBox(width: 8),
+                              if (_selectedAvatar.isNotEmpty || _customImageBytes != null)
                                 TextButton(
                                   style: TextButton.styleFrom(
                                     foregroundColor: const Color(0xFFDC2626),
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                   ),
                                   onPressed: _removeProfilePhoto,
                                   child: const Text('Hapus', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                                 ),
-                              ],
                             ],
                           ),
                         ],

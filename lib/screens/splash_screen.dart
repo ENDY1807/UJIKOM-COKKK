@@ -151,8 +151,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 // Animasi Loading Interaktif Gojek & Rasantara Style
                 const AppLoadingAnimation(
                   size: 42,
-                  primaryColor: Color(0xFF00AA13),
-                  secondaryColor: Color(0xFFEA580C),
+                  primaryColor: Color(0xFFEA580C),
+                  secondaryColor: Color(0xFFF97316),
                 ),
               ],
             ),
