@@ -1,12 +1,9 @@
 import 'dart:convert';
-import 'dart:js_interop';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-// Import web package conditionally or with web guard
-import 'package:web/web.dart' as web;
+import 'web_audio_helper.dart';
 
 /// Layanan Audio Feedback dan In-App / System Notification Rasantara
 class AudioNotificationService {
@@ -20,11 +17,7 @@ class AudioNotificationService {
   /// Meminta izin notifikasi sistem / OS langsung ke Windows & HP
   static Future<void> requestSystemNotificationPermission() async {
     if (!kIsWeb) return;
-    try {
-      if (web.Notification.permission != 'granted') {
-        await web.Notification.requestPermission().toDart;
-      }
-    } catch (_) {}
+    webRequestNotificationPermission();
   }
 
   /// Menampilkan Notifikasi Sistem Asli ke Windows Action Center / HP Notification Drawer
@@ -33,29 +26,7 @@ class AudioNotificationService {
     required String message,
   }) {
     if (!kIsWeb) return;
-    try {
-      if (web.Notification.permission == 'granted') {
-        web.Notification(
-          title,
-          web.NotificationOptions(
-            body: message,
-            icon: 'icons/Icon-192.png',
-          ),
-        );
-      } else if (web.Notification.permission != 'denied') {
-        web.Notification.requestPermission().toDart.then((perm) {
-          if (perm.toDart == 'granted') {
-            web.Notification(
-              title,
-              web.NotificationOptions(
-                body: message,
-                icon: 'icons/Icon-192.png',
-              ),
-            );
-          }
-        });
-      }
-    } catch (_) {}
+    webShowNotification(title, message);
   }
 
   /// Inisialisasi audio synth
@@ -130,10 +101,7 @@ class AudioNotificationService {
       if (kIsWeb) {
         _ensureAudioBuffers();
         if (_orderReceivedWavDataUrl != null) {
-          final audio = web.HTMLAudioElement();
-          audio.src = _orderReceivedWavDataUrl!;
-          audio.volume = 0.85;
-          audio.play();
+          webPlayAudio(_orderReceivedWavDataUrl!, 0.85);
         }
       } else {
         await SystemSound.play(SystemSoundType.click);
@@ -149,10 +117,7 @@ class AudioNotificationService {
       if (kIsWeb) {
         _ensureAudioBuffers();
         if (_promoChimeWavDataUrl != null) {
-          final audio = web.HTMLAudioElement();
-          audio.src = _promoChimeWavDataUrl!;
-          audio.volume = 0.75;
-          audio.play();
+          webPlayAudio(_promoChimeWavDataUrl!, 0.75);
         }
       } else {
         await SystemSound.play(SystemSoundType.click);
