@@ -47,6 +47,7 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
+  bool _isDesktopSidebarVisible = true;
   String? _scannedTableFromQr;
   MenuCategory? _selectedCategoryForOrder;
   String? _searchQueryForOrder;
@@ -352,11 +353,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           },
           child: Scaffold(
             key: _scaffoldKey,
-          drawer: !isDesktop ? _buildDrawer(currentUser, role, destinations) : null,
+          drawer: _buildDrawer(currentUser, role, destinations),
           appBar: AppBar(
             backgroundColor: AppTheme.white,
             elevation: 0.5,
-            titleSpacing: 8,
+            titleSpacing: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.menu_rounded, color: Color(0xFF1E293B), size: 24),
+              tooltip: 'Menu Sidebar',
+              onPressed: () {
+                if (!isDesktop) {
+                  if (_scaffoldKey.currentState?.isDrawerOpen == true) {
+                    _scaffoldKey.currentState?.closeDrawer();
+                  } else {
+                    _scaffoldKey.currentState?.openDrawer();
+                  }
+                } else {
+                  setState(() {
+                    _isDesktopSidebarVisible = !_isDesktopSidebarVisible;
+                  });
+                }
+              },
+            ),
             title: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -426,12 +444,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ? Row(
                   children: [
                     // Desktop Sidebar Navigation
-                    Container(
-                      width: 220,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.white,
-                        border: Border(right: BorderSide(color: AppTheme.borderSubtle)),
-                      ),
+                    if (_isDesktopSidebarVisible)
+                      Container(
+                        width: 220,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.white,
+                          border: Border(right: BorderSide(color: AppTheme.borderSubtle)),
+                        ),
                       child: Column(
                         children: [
                           const SizedBox(height: 12),

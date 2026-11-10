@@ -1949,23 +1949,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text(
-          'Pemesanan Rasantara',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1E293B),
-        elevation: 0,
-        actions: [
-          if (_serviceType == OrderServiceType.dineIn)
-            IconButton(
-              icon: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C)),
-              tooltip: 'Scan QR Meja',
-              onPressed: _scanTableQr,
-            ),
-        ],
-      ),
       body: Column(
         children: [
           // ── 1. Tab Selector Tipe Layanan (Disembunyikan jika Makan di Tempat via scan QR) ──
