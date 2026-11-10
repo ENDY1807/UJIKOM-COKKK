@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/user_model.dart';
+import '../models/order_model.dart';
 import '../services/database_service.dart';
+import '../services/order_simulation_service.dart';
+import '../widgets/order_tracker_sheet.dart';
 import '../theme/app_theme.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'order/order_entry_screen.dart';
@@ -518,9 +522,93 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
           // ─── BOTTOM NAVBAR TAMPILAN MOBILE: CRAFTED ANTI-SLOP ───
           bottomNavigationBar: !isDesktop
-              ? _buildCraftedBottomNav(context, currentUser, role, destinations)
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildFloatingOrderTracker(context, currentUser),
+                    _buildCraftedBottomNav(context, currentUser, role, destinations),
+                  ],
+                )
               : null,
           ),
+        );
+      },
+    );
+  }
+
+  /// Floating pill bar Pantau Pesanan (gaya Gojek) yang melayang di atas navigation bar
+  Widget _buildFloatingOrderTracker(BuildContext context, UserModel? currentUser) {
+    if (currentUser == null) return const SizedBox.shrink();
+
+    // Sembunyikan jika di tab pemesanan agar tidak bertumpuk dengan floating cart bar
+    if (_currentIndex == 1) return const SizedBox.shrink();
+
+    final simService = OrderSimulationService();
+    simService.attachDatabase(widget.db);
+
+    return ListenableBuilder(
+      listenable: simService,
+      builder: (context, _) {
+        final activeOrders = widget.db.orders.where((o) =>
+          o.status != OrderStatus.selesai && o.status != OrderStatus.dibatalkan
+        ).toList();
+
+        final userOrders = activeOrders.where((o) =>
+          o.idUser == currentUser.idUser ||
+          o.namaPelanggan.toString().toLowerCase().trim() == currentUser.namaUser.toLowerCase().trim()
+        ).toList();
+
+        dynamic targetOrder = userOrders.isNotEmpty ? userOrders.first : null;
+        if (targetOrder == null) {
+          final allUserOrders = widget.db.orders.where((o) =>
+            o.idUser == currentUser.idUser ||
+            o.namaPelanggan.toString().toLowerCase().trim() == currentUser.namaUser.toLowerCase().trim()
+          ).toList();
+          if (allUserOrders.isNotEmpty) {
+            targetOrder = allUserOrders.first;
+          }
+        }
+
+        if (targetOrder == null && currentUser.role != UserRole.pelanggan) {
+          targetOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
+        }
+
+        if (targetOrder == null || targetOrder is! OrderModel) {
+          return const SizedBox.shrink();
+        }
+
+        if (simService.isOrderExpired(targetOrder.idOrder)) {
+          return const SizedBox.shrink();
+        }
+
+        final progress = simService.getOrCreateProgress(targetOrder);
+        if (progress.isExpired) {
+          return const SizedBox.shrink();
+        }
+
+        final currentStep = progress.currentStep;
+        final statusText = currentStep >= 4
+            ? 'Selesai'
+            : (currentStep == 3
+                ? 'Diantar'
+                : (currentStep == 2 ? 'Sedang Dimasak' : 'Diterima Resto'));
+
+        final fmt = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+        return FloatingOrderTrackerBar(
+          order: targetOrder,
+          fmt: fmt,
+          statusText: statusText,
+          onTap: () {
+            showOrderTrackerModal(
+              context,
+              db: widget.db,
+              order: targetOrder,
+              onNavigateToTab: (idx) {
+                setState(() => _currentIndex = idx);
+              },
+            );
+          },
         );
       },
     );
