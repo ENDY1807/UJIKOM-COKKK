@@ -32,17 +32,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   bool _isSavingProfile = false;
 
   // Settings Aplikasi
-  late bool _soundFx;
-  late bool _notifications;
-  late bool _promoNotifications;
-  late bool _autoPrint;
-  late bool _haptic;
-  late String _mapStyle;
-  late String _themeMode;
-  late String _language;
-  late String _fontSize;
-  late bool _dataSaver;
-  late bool _biometric;
+  bool _soundFx = true;
+  bool _notifications = true;
+  bool _promoNotifications = true;
+  bool _autoPrint = false;
+  bool _haptic = true;
+  String _mapStyle = 'osm';
+  String _themeMode = 'light';
+  String _language = 'id';
+  String _fontSize = 'standard';
+  bool _dataSaver = false;
+  bool _biometric = false;
   Uint8List? _customImageBytes;
 
   Future<void> _pickProfilePhoto() async {
