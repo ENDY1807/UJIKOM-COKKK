@@ -1,18 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import '../../models/payment_method_model.dart';
+import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
-import 'manage_payments_screen.dart';
-import 'manage_addresses_screen.dart';
 import 'settings_screen.dart';
 
-/// Layar Profil Pengguna & Pengaturan Terintegrasi:
-/// 1. Koneksi Akun Google (Tautkan / Putuskan Google OAuth)
-/// 2. Keamanan Akun & Autentikasi 2 Langkah (2FA / 2-Auth)
-/// 3. Kelola & Tambah Metode Pembayaran Terkoneksi Nyata (DANA, GoPay, M-Banking BCA/Mandiri/BRI)
-/// 4. Top Up Saldo & Atur Metode Utama
-/// 5. Membership & Riwayat Alamat Pengantaran
+/// Layar Profil Akun & Hak Akses Pengguna KasirNih (Table Service Restoran - UKK Paket 1)
 class ProfileScreen extends StatefulWidget {
   final DatabaseService db;
   final VoidCallback onLogout;
@@ -28,735 +20,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _currencyFmt = NumberFormat.currency(
-    locale: 'id_ID',
-    symbol: 'Rp ',
-    decimalDigits: 0,
-  );
-
-  // ── 1. AUTENTIKASI DUA LANGKAH (2FA / 2-AUTH) ──
-  void _openTwoFactorSetupDialog() {
-    final user = widget.db.currentUser;
-    if (user == null) return;
-
-    final otpController = TextEditingController();
-    const mockSecretKey = 'RASAN-TARA-2026-X89K';
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (dialogCtx, setDialogState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Row(
-              children: [
-                Icon(Icons.shield_outlined, color: Color(0xFFEA580C)),
-                SizedBox(width: 8),
-                Text('Aktivasi 2-Factor Auth', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Lindungi akun dan transaksi pembayaran e-wallet Anda dengan verifikasi 2 langkah.',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Visual QR Acuan Authenticator
-                  Center(
-                    child: Container(
-                      width: 130,
-                      height: 130,
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFCBD5E1)),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.qr_code_2_rounded, size: 76, color: Color(0xFF1E293B)),
-                          Text(
-                            mockSecretKey,
-                            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Pindai QR di atas menggunakan aplikasi Google Authenticator, atau masukkan kode kunci rahasia.',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Kode OTP Input
-                  const Text('Masukkan 6-Digit Kode Verifikasi:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: otpController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 6),
-                    decoration: InputDecoration(
-                      hintText: 'Kode Verifikasi',
-                      counterText: '',
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Color(0xFFEA580C), width: 1.5),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Batal')),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
-                onPressed: () {
-                  final code = otpController.text.trim();
-                  if (code.length < 6) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Masukkan 6 digit kode OTP')),
-                    );
-                    return;
-                  }
-
-                  widget.db.updateTwoFactor(user.idUser, isEnabled: true, type: 'Google Authenticator');
-                  Navigator.of(ctx).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      backgroundColor: Color(0xFF16A34A),
-                      content: Text('Autentikasi 2 Langkah (2FA) Berhasil Diaktifkan!'),
-                    ),
-                  );
-                },
-                child: const Text('Verifikasi & Aktifkan'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void _showDisableTwoFactorDialog() {
-    final user = widget.db.currentUser;
-    if (user == null) return;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nonaktifkan 2FA?'),
-        content: const Text('Keamanan akun akan berkurang saat melakukan transaksi dan pergantian perangkat.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Batal')),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
-            onPressed: () {
-              widget.db.updateTwoFactor(user.idUser, isEnabled: false);
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Autentikasi 2 Langkah telah dinonaktifkan.')),
-              );
-            },
-            child: const Text('Nonaktifkan'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── 3. TAMBAH & KELOLA METODE PEMBAYARAN TERKONEKSI ──
-  void _openAddPaymentMethodDialog() {
-    PaymentMethodProvider selectedProvider = PaymentMethodProvider.dana;
-    final accountController = TextEditingController();
-    final nameController = TextEditingController();
-    bool isDefaultCheck = false;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (dialogCtx, setDialogState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Row(
-              children: [
-                Icon(Icons.add_card_rounded, color: Color(0xFFEA580C)),
-                SizedBox(width: 8),
-                Text('Koneksikan Metode Pembayaran', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Pilih Penyedia Layanan:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: PaymentMethodProvider.values.map((p) {
-                      final isSelected = selectedProvider == p;
-                      return ChoiceChip(
-                        selected: isSelected,
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(p.icon, size: 14, color: isSelected ? Colors.white : p.brandColor),
-                            const SizedBox(width: 4),
-                            Text(p.label),
-                          ],
-                        ),
-                        selectedColor: p.brandColor,
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : const Color(0xFF1E293B),
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          fontSize: 11,
-                        ),
-                        onSelected: (val) {
-                          if (val) {
-                            setDialogState(() {
-                              selectedProvider = p;
-                            });
-                          }
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 14),
-
-                  if (selectedProvider == PaymentMethodProvider.dana) ...[
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFBFDBFE)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.verified_rounded, size: 16, color: Color(0xFF1D4ED8)),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Terhubung ke DANA Sandbox Gateway',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF)),
-                                ),
-                                Text(
-                                  'Merchant ID: 216620010001053576081 (api.sandbox.dana.id)',
-                                  style: TextStyle(fontSize: 10, color: Color(0xFF1E3A8A)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  Text(
-                    selectedProvider.category == PaymentMethodCategory.eWallet
-                        ? 'Nomor HP Akun ${selectedProvider.label}:'
-                        : 'Nomor Rekening Bank ${selectedProvider.label}:',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: accountController,
-                    keyboardType: selectedProvider.category == PaymentMethodCategory.eWallet
-                        ? TextInputType.phone
-                        : TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: selectedProvider.category == PaymentMethodCategory.eWallet ? 'Nomor HP' : 'Nomor Rekening',
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  const Text('Nama Pemilik Akun:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      hintText: 'Nama Pemilik Akun',
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: isDefaultCheck,
-                        activeColor: const Color(0xFFEA580C),
-                        onChanged: (val) => setDialogState(() => isDefaultCheck = val ?? false),
-                      ),
-                      const Expanded(
-                        child: Text(
-                          'Jadikan metode pembayaran utama (Default)',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Batal')),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
-                onPressed: () {
-                  final acc = accountController.text.trim();
-                  final name = nameController.text.trim();
-
-                  if (acc.isEmpty || name.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Lengkapi nomor akun/HP dan nama pemilik')),
-                    );
-                    return;
-                  }
-
-                  Navigator.of(ctx).pop();
-
-                  if (selectedProvider.category == PaymentMethodCategory.eWallet) {
-                    _showEWalletOtpDialog(
-                      provider: selectedProvider,
-                      accountNumber: acc,
-                      accountName: name,
-                      balance: 0,
-                      isDefault: isDefaultCheck,
-                    );
-                  } else {
-                    widget.db.addPaymentMethod(
-                      provider: selectedProvider,
-                      accountNumber: acc,
-                      accountName: name,
-                      initialBalance: 0,
-                      isDefault: isDefaultCheck,
-                    );
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: const Color(0xFF16A34A),
-                        content: Text('${selectedProvider.label} ($acc) berhasil dikoneksikan ke database!'),
-                      ),
-                    );
-                  }
-                },
-                child: const Text('Koneksikan Sekarang'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void _showEWalletOtpDialog({
-    required PaymentMethodProvider provider,
-    required String accountNumber,
-    required String accountName,
-    required int balance,
-    required bool isDefault,
-  }) {
-    final generatedOtp = (1000 + (DateTime.now().millisecondsSinceEpoch % 9000)).toString();
-    final otpCtrl = TextEditingController(text: generatedOtp);
-    bool isVerifying = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (dCtx, setDState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: provider.brandColor.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(provider.icon, color: provider.brandColor, size: 22),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Verifikasi Akun ${provider.label}',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Status Otorisasi Akun
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFBFDBFE)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.verified_user_rounded, size: 16, color: Color(0xFF2563EB)),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Otorisasi Cepat Terhubung (${provider.label})',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Kode otorisasi otomatis: $generatedOtp. Akun Anda siap dikoneksikan ke sistem restoran secara langsung tanpa perlu menunggu SMS.',
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF1E293B)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  const Text(
-                    'Kode verifikasi koneksi:',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: otpCtrl,
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 8),
-                    decoration: InputDecoration(
-                      hintText: 'Kode OTP',
-                      counterText: '',
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: provider.brandColor, width: 2),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isVerifying ? null : () => Navigator.of(ctx).pop(),
-                child: const Text('Batal'),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: provider.brandColor),
-                onPressed: isVerifying
-                    ? null
-                    : () async {
-                        final otp = otpCtrl.text.trim();
-                        if (otp.length < 4) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Masukkan kode OTP valid')),
-                          );
-                          return;
-                        }
-
-                        setDState(() => isVerifying = true);
-                        await Future.delayed(const Duration(milliseconds: 600));
-
-                        widget.db.addPaymentMethod(
-                          provider: provider,
-                          accountNumber: accountNumber,
-                          accountName: accountName,
-                          initialBalance: balance,
-                          isDefault: isDefault,
-                        );
-
-                        if (!ctx.mounted) return;
-                        Navigator.of(ctx).pop();
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: const Color(0xFF16A34A),
-                            content: Text('Akun ${provider.label} ($accountNumber) berhasil terverifikasi & terkoneksi!'),
-                          ),
-                        );
-                      },
-                child: isVerifying
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Konfirmasi & Hubungkan'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void _showTopUpDialog(ConnectedPaymentMethod method) {
-    int selectedAmount = 100000;
-    final amounts = [50000, 100000, 200000, 500000];
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (dialogCtx, setDialogState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Row(
-              children: [
-                Icon(method.provider.icon, color: method.provider.brandColor),
-                const SizedBox(width: 8),
-                Text('Top Up ${method.provider.label}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Saldo saat ini: ${_currencyFmt.format(method.balance)}',
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 16),
-                const Text('Pilih Nominal Top Up:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: amounts.map((amt) {
-                    final isSel = selectedAmount == amt;
-                    return ChoiceChip(
-                      selected: isSel,
-                      label: Text(_currencyFmt.format(amt)),
-                      selectedColor: const Color(0xFFEA580C),
-                      labelStyle: TextStyle(
-                        color: isSel ? Colors.white : const Color(0xFF1E293B),
-                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 12,
-                      ),
-                      onSelected: (val) {
-                        if (val) setDialogState(() => selectedAmount = amt);
-                      },
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Batal')),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
-                onPressed: () {
-                  widget.db.topUpPaymentMethod(method.id, selectedAmount);
-                  Navigator.of(ctx).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: const Color(0xFF16A34A),
-                      content: Text('Top up ${_currencyFmt.format(selectedAmount)} ke ${method.provider.label} berhasil!'),
-                    ),
-                  );
-                },
-                child: const Text('Isi Saldo'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void _showMutationHistoryDialog(ConnectedPaymentMethod method) {
-    final mutations = widget.db.getMutationsForMethod(method.id);
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(Icons.receipt_long_rounded, color: method.provider.brandColor),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Mutasi ${method.provider.label}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: 460,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${method.provider.label} • ${method.maskedNumber}',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(method.accountName, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text('Saldo Terkoneksi', style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-                        Text(
-                          _currencyFmt.format(method.balance),
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              const Text('Histori Transaksi Akun:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
-              const SizedBox(height: 8),
-              if (mutations.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8F9FA),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'Belum ada riwayat transaksi pada akun ini.\nSaldo otomatis terdebit saat memesan menu atau bertambah saat Top Up.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4),
-                    ),
-                  ),
-                )
-              else
-                SizedBox(
-                  height: 240,
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: mutations.length,
-                    separatorBuilder: (context, index) => const Divider(height: 1),
-                    itemBuilder: (_, i) {
-                      final m = mutations[i];
-                      final isCredit = m.tipe == MutationType.credit;
-                      final dateStr = DateFormat('dd MMM, HH:mm').format(m.tanggal);
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: isCredit ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E8),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-                                size: 16,
-                                color: isCredit ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    m.keterangan,
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '$dateStr ${m.referensiId != null ? "• ${m.referensiId}" : ""}',
-                                    style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '${isCredit ? "+" : "-"}${_currencyFmt.format(m.nominal)}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: isCredit ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                                  ),
-                                ),
-                                Text(
-                                  'Sisa: ${_currencyFmt.format(m.saldoSesudah)}',
-                                  style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Tutup'),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ── 1. Dialog Ubah Kata Sandi ──
   void _showChangePasswordDialog() {
     final oldPassController = TextEditingController();
     final newPassController = TextEditingController();
@@ -781,7 +45,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Kata Sandi Saat Ini',
-                hintText: 'Masukkan Kata Sandi Saat Ini',
+                hintText: 'Masukkan kata sandi saat ini',
               ),
             ),
             const SizedBox(height: 10),
@@ -790,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Kata Sandi Baru',
-                hintText: 'Masukkan Kata Sandi Baru',
+                hintText: 'Masukkan kata sandi baru',
               ),
             ),
             const SizedBox(height: 10),
@@ -799,13 +63,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Konfirmasi Kata Sandi Baru',
-                hintText: 'Masukkan Konfirmasi Kata Sandi Baru',
+                hintText: 'Ulangi kata sandi baru',
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Batal'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
             onPressed: () {
@@ -843,17 +110,202 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ── 2. Dialog Autentikasi 2 Langkah (2FA) ──
+  void _openTwoFactorSetupDialog() {
+    final user = widget.db.currentUser;
+    if (user == null) return;
+
+    final otpController = TextEditingController();
+    const mockSecretKey = 'KASIRNIH-2026-SEC89';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.shield_outlined, color: Color(0xFFEA580C)),
+            SizedBox(width: 8),
+            Text('Aktivasi 2-Factor Auth', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Tingkatkan keamanan akun restoran Anda dengan verifikasi 2 langkah untuk setiap sesi login.',
+                style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: Container(
+                  width: 130,
+                  height: 130,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.qr_code_2_rounded, size: 76, color: Color(0xFF1E293B)),
+                      Text(
+                        mockSecretKey,
+                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Masukkan 6-Digit Kode Verifikasi:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              TextField(
+                controller: otpController,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 6),
+                decoration: InputDecoration(
+                  hintText: '000000',
+                  counterText: '',
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFEA580C), width: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Batal')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
+            onPressed: () {
+              final code = otpController.text.trim();
+              if (code.length < 6) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Masukkan 6 digit kode OTP verifikasi')),
+                );
+                return;
+              }
+
+              widget.db.updateTwoFactor(user.idUser, isEnabled: true, type: 'Google Authenticator');
+              Navigator.of(ctx).pop();
+              setState(() {});
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  backgroundColor: Color(0xFF16A34A),
+                  content: Text('Autentikasi 2 Langkah (2FA) Berhasil Diaktifkan!'),
+                ),
+              );
+            },
+            child: const Text('Verifikasi & Aktifkan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDisableTwoFactorDialog() {
+    final user = widget.db.currentUser;
+    if (user == null) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nonaktifkan 2FA?'),
+        content: const Text('Proteksi verifikasi dua langkah akan dimatikan untuk akun ini.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Batal')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            onPressed: () {
+              widget.db.updateTwoFactor(user.idUser, isEnabled: false);
+              Navigator.of(ctx).pop();
+              setState(() {});
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Autentikasi 2 Langkah dinonaktifkan.')),
+              );
+            },
+            child: const Text('Nonaktifkan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 3. Dialog Konfirmasi Logout ──
+  void _confirmLogout() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 22),
+            SizedBox(width: 8),
+            Text('Konfirmasi Keluar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar dari sesi akun KasirNih Restoran?',
+          style: TextStyle(fontSize: 13, color: Color(0xFF475569)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              widget.db.logout();
+              widget.onLogout();
+            },
+            child: const Text('Ya, Keluar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = widget.db.currentUser;
+    final role = user?.role ?? UserRole.pelanggan;
     final is2Fa = user?.isTwoFactorEnabled == true;
-    final paymentMethods = widget.db.connectedPaymentMethods;
+
+    // Foto profil aman tanpa error
+    final photoUrl = user?.displayPhoto ?? '';
+    final initial = (user != null && user.namaUser.isNotEmpty)
+        ? user.namaUser[0].toUpperCase()
+        : 'K';
+
+    final usernameText = user != null && user.username.isNotEmpty
+        ? '@${user.username}'
+        : '@pengguna';
+
+    final phoneText = (user != null && user.phoneNumber.isNotEmpty)
+        ? user.phoneNumber
+        : 'Belum diatur';
 
     return Scaffold(
       backgroundColor: context.surfaceBg,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -869,16 +321,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     CircleAvatar(
                       radius: 32,
                       backgroundColor: const Color(0xFFFFF7ED),
-                      backgroundImage: user?.displayPhoto.isNotEmpty == true
-                          ? NetworkImage(user!.displayPhoto)
-                          : null,
-                      child: (user?.displayPhoto.isEmpty ?? true)
+                      backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+                      child: photoUrl.isEmpty
                           ? Text(
-                              (user?.namaUser.isNotEmpty == true ? user!.namaUser[0] : 'R').toUpperCase(),
+                              initial,
                               style: const TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.bold,
@@ -887,41 +338,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             )
                           : null,
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            user?.namaUser ?? 'Tamu Rasantara',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: context.textPrimary,
-                            ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  user?.namaUser ?? 'Pengguna KasirNih',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: context.textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEA580C).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFFEA580C).withValues(alpha: 0.3)),
+                                ),
+                                child: Text(
+                                  role.label.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFEA580C),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 3),
                           Text(
-                            user?.displayEmail ?? 'pelanggan@rasantara.resto',
-                            style: TextStyle(fontSize: 12, color: context.textSecondary),
+                            usernameText,
+                            style: TextStyle(fontSize: 13, color: context.textSecondary, fontWeight: FontWeight.w500),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            user?.telepon.isNotEmpty == true
-                                ? user!.telepon
-                                : 'Pelanggan Terverifikasi',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: context.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          Row(
+                            children: [
+                              Icon(Icons.phone_outlined, size: 13, color: context.textSecondary),
+                              const SizedBox(width: 4),
+                              Text(
+                                phoneText,
+                                style: TextStyle(fontSize: 12, color: context.textSecondary),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.settings_outlined, color: AppTheme.textMuted),
-                      tooltip: 'Pengaturan Akun & Aplikasi',
+                      tooltip: 'Pengaturan Aplikasi',
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -937,9 +413,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
 
-              // ── 2. Keamanan Akun & Two-Factor Auth (2FA / 2-Auth) (Di bawah Akun, Di atas Metode Pembayaran) ──
+              // ── 2. Informasi Hak Akses & Privilese UKK 2134 ──
+              _buildSectionHeader('Hak Akses & Privilese Peran (UKK Paket 1)'),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.surfaceCard,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: context.borderSubtle),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEA580C).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.badge_outlined, color: Color(0xFFEA580C), size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Peran Aktif: ${role.label}',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.textPrimary),
+                              ),
+                              Text(
+                                'Aplikasi Kasir Restoran Table Service',
+                                style: TextStyle(fontSize: 11.5, color: context.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    const Divider(height: 1),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Matriks Fitur yang Diizinkan:',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildPrivilegeItem('Login & Logout Sistem', true),
+                    _buildPrivilegeItem('Entri Order (Pemesanan Meja Restoran)', role.canCreateOrder),
+                    _buildPrivilegeItem('Entri Transaksi (Kasir & Pembayaran)', role.canProcessTransactions),
+                    _buildPrivilegeItem('Entri Referensi (Kelola Menu & Harga)', role.canManageReferences),
+                    _buildPrivilegeItem('Generate Laporan (Rekap Penjualan)', role.canViewReports),
+                    _buildPrivilegeItem('Registrasi User (Tambah Akun Pengguna)', role.canRegisterUsers),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // ── 3. Keamanan Akun & Kredensial ──
               _buildSectionHeader('Keamanan Akun & 2-Factor Auth (2FA)'),
               Container(
                 decoration: BoxDecoration(
@@ -974,14 +509,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  context.t('Autentikasi Dua Langkah (2-Auth)', 'Two-Factor Authentication (2FA)'),
+                                  'Autentikasi Dua Langkah (2FA)',
                                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   is2Fa
-                                      ? '${context.t('Aktif via', 'Active via')} ${user?.twoFactorType ?? "Authenticator App"}'
-                                      : context.t('Tambahkan proteksi kode verifikasi untuk transaksi dan pesanan.', 'Add verification code protection for your account.'),
+                                      ? 'Aktif via Authenticator App'
+                                      : 'Tambahkan proteksi kode verifikasi untuk keamanan login.',
                                   style: TextStyle(fontSize: 11, color: context.textSecondary),
                                 ),
                               ],
@@ -1023,12 +558,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    context.t('Ubah Kata Sandi', 'Change Password'),
+                                    'Ubah Kata Sandi',
                                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    context.t('Perbarui password lokal untuk keamanan login', 'Update local password for secure account login'),
+                                    'Perbarui kata sandi lokal untuk login akun restoran',
                                     style: TextStyle(fontSize: 11, color: context.textSecondary),
                                   ),
                                 ],
@@ -1042,474 +577,122 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
 
-              // ── 3. Metode Pembayaran Terkoneksi Nyata (DANA, GoPay, Saldo Rasantara, dsb.) ──
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildSectionHeader('Metode Pembayaran Terkoneksi'),
-                  InkWell(
-                    onTap: () => ManagePaymentsScreen.navigate(context, widget.db),
-                    child: const Padding(
-                      padding: EdgeInsets.only(bottom: 8, right: 4),
-                      child: Row(
-                        children: [
-                          Icon(Icons.tune_rounded, size: 14, color: Color(0xFF0284C7)),
-                          SizedBox(width: 4),
-                          Text(
-                            'Manage Payments >',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF0284C7),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (paymentMethods.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: context.surfaceCard,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: context.borderSubtle),
-                  ),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        const Icon(Icons.credit_card_off_rounded, size: 36, color: Color(0xFF94A3B8)),
-                        const SizedBox(height: 8),
-                        const Text('Belum ada metode pembayaran yang terkoneksi', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-                        const SizedBox(height: 10),
-                        FilledButton(
-                          style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
-                          onPressed: _openAddPaymentMethodDialog,
-                          child: const Text('Koneksikan DANA / GoPay / M-Banking'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                ...paymentMethods.map((method) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: context.surfaceCard,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: method.isDefault ? const Color(0xFFEA580C) : context.borderSubtle,
-                        width: method.isDefault ? 1.5 : 1.0,
-                      ),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0x06000000), blurRadius: 8, offset: Offset(0, 2)),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: method.provider.brandColor.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(method.provider.icon, color: method.provider.brandColor, size: 24),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        method.provider.label,
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
-                                      ),
-                                      if (method.isDefault) ...[
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: context.isDarkMode
-                                                ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
-                                                : const Color(0xFFFFF7ED),
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(
-                                              color: context.isDarkMode
-                                                  ? const Color(0xFF7C2D12)
-                                                  : const Color(0xFFFFEDD5),
-                                            ),
-                                          ),
-                                          child: const Text(
-                                            'UTAMA',
-                                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${method.maskedNumber} • ${method.accountName}',
-                                    style: TextStyle(fontSize: 11, color: context.textSecondary),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text('Saldo Aktif', style: TextStyle(fontSize: 10, color: context.textSecondary)),
-                                Text(
-                                  _currencyFmt.format(method.balance),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                    color: context.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Divider(height: 1),
-                        const SizedBox(height: 8),
-
-                        // Action buttons per payment method
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            if (!method.isDefault)
-                              TextButton(
-                                style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                                onPressed: () => widget.db.setDefaultPaymentMethod(method.id),
-                                child: const Text('Jadikan Utama', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                              ),
-                            TextButton.icon(
-                              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                              icon: const Icon(Icons.receipt_long_rounded, size: 14, color: Color(0xFF64748B)),
-                              label: const Text('Mutasi', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                              onPressed: () => _showMutationHistoryDialog(method),
-                            ),
-                            TextButton.icon(
-                              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                              icon: const Icon(Icons.add, size: 14, color: Color(0xFFEA580C)),
-                              label: const Text('Top Up', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
-                              onPressed: () => _showTopUpDialog(method),
-                            ),
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFF94A3B8)),
-                              tooltip: 'Hapus Koneksi',
-                              onPressed: () => widget.db.removePaymentMethod(method.id),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              const SizedBox(height: 16),
-
-              // ── 3. Alamat Pengantaran (Delivery & Take Away) ──
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Alamat Pengantaran (Delivery & Take Away)',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => ManageAddressesScreen.navigate(context, widget.db),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.tune_rounded, size: 14, color: Color(0xFFEA580C)),
-                          SizedBox(width: 4),
-                          Text(
-                            'Kelola Alamat',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFFEA580C),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
+              // ── 4. Preferensi Sistem Aplikasi ──
+              _buildSectionHeader('Preferensi & Tampilan Aplikasi'),
               Container(
-                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: context.surfaceCard,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: context.borderSubtle),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x06000000), blurRadius: 8, offset: Offset(0, 2)),
-                  ],
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (widget.db.userAddresses.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Column(
-                            children: [
-                              const Icon(Icons.location_off_outlined, size: 36, color: Color(0xFF94A3B8)),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Belum ada alamat pengantaran tersimpan di akun Anda.',
-                                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                              ),
-                              const SizedBox(height: 10),
-                              FilledButton.icon(
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: const Color(0xFFEA580C),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                ),
-                                icon: const Icon(Icons.add_location_alt_rounded, size: 16),
-                                label: const Text('Tambah Alamat Pertama', style: TextStyle(fontSize: 12)),
-                                onPressed: () => ManageAddressesScreen.navigate(context, widget.db),
-                              ),
-                            ],
-                          ),
+                    ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
                         ),
-                      )
-                    else ...[
-                      // Highlight Primary Address
-                      Builder(
-                        builder: (context) {
-                          final primaryAddr = widget.db.primaryAddress ?? widget.db.userAddresses.first;
-                          return Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF7ED),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFFFEDD5)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFFEA580C),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(Icons.location_on_rounded, size: 14, color: Colors.white),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      primaryAddr.label,
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.textPrimary),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFEA580C),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Text(
-                                        'UTAMA',
-                                        style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    if (primaryAddr.latitude != null && primaryAddr.longitude != null)
-                                      const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.gps_fixed_rounded, size: 12, color: Color(0xFF16A34A)),
-                                          SizedBox(width: 3),
-                                          Text('GPS Aktif', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
-                                        ],
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '${primaryAddr.recipientName} • ${primaryAddr.recipientPhone}',
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11.5, color: Color(0xFF334155)),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  primaryAddr.formattedFullAddress,
-                                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.35),
-                                ),
-                                if (primaryAddr.notes.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Patokan/Catatan: ${primaryAddr.notes}',
-                                    style: const TextStyle(fontSize: 10.5, fontStyle: FontStyle.italic, color: Color(0xFF94A3B8)),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
+                        child: const Icon(Icons.palette_outlined, color: Color(0xFF2563EB), size: 20),
+                      ),
+                      title: Text('Mode Tampilan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary)),
+                      subtitle: Text(
+                        widget.db.appThemeMode == 'dark' ? 'Mode Gelap (Dark)' : 'Mode Terang (Light)',
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                      ),
+                      trailing: Switch(
+                        value: widget.db.appThemeMode == 'dark',
+                        activeThumbColor: const Color(0xFF2563EB),
+                        onChanged: (val) {
+                          widget.db.updateAppSettings(themeMode: val ? 'dark' : 'light');
+                          setState(() {});
                         },
                       ),
-                      if (widget.db.userAddresses.length > 1) ...[
-                        const SizedBox(height: 10),
-                        const Text(
-                          'Pilih Cepat Alamat Utama:',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                    ),
+                    const Divider(height: 1, indent: 64),
+                    ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
                         ),
-                        const SizedBox(height: 6),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: widget.db.userAddresses.map((addr) {
-                              final isCurrentPrimary = addr.isPrimary;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: ChoiceChip(
-                                  selected: isCurrentPrimary,
-                                  onSelected: (selected) {
-                                    if (selected) {
-                                      widget.db.setPrimaryAddress(addr.idAlamat);
-                                      setState(() {});
-                                    }
-                                  },
-                                  avatar: Icon(
-                                    addr.label.toLowerCase().contains('kantor')
-                                        ? Icons.business_rounded
-                                        : Icons.home_rounded,
-                                    size: 14,
-                                    color: isCurrentPrimary ? Colors.white : const Color(0xFF64748B),
-                                  ),
-                                  label: Text(addr.label, style: const TextStyle(fontSize: 11)),
-                                  selectedColor: const Color(0xFFEA580C),
-                                  labelStyle: TextStyle(
-                                    color: isCurrentPrimary ? Colors.white : const Color(0xFF334155),
-                                    fontWeight: isCurrentPrimary ? FontWeight.bold : FontWeight.normal,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFFEA580C),
-                                side: const BorderSide(color: Color(0xFFEA580C)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                              ),
-                              icon: const Icon(Icons.add_location_alt_outlined, size: 16),
-                              label: const Text('Tambah Alamat', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                              onPressed: () => ManageAddressesScreen.navigate(context, widget.db),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: FilledButton.tonalIcon(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFFF1F5F9),
-                                foregroundColor: const Color(0xFF334155),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                              ),
-                              icon: const Icon(Icons.list_alt_rounded, size: 16),
-                              label: Text('Semua (${widget.db.userAddresses.length})', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                              onPressed: () => ManageAddressesScreen.navigate(context, widget.db),
-                            ),
-                          ),
-                        ],
+                        child: const Icon(Icons.translate_rounded, color: Color(0xFF16A34A), size: 20),
                       ),
-                    ],
+                      title: Text('Bahasa Sistem', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary)),
+                      subtitle: Text(
+                        widget.db.appLanguage == 'en' ? 'English (EN)' : 'Bahasa Indonesia (ID)',
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                      ),
+                      trailing: TextButton(
+                        onPressed: () {
+                          final newLang = widget.db.appLanguage == 'id' ? 'en' : 'id';
+                          widget.db.updateAppSettings(language: newLang);
+                          setState(() {});
+                        },
+                        child: Text(
+                          widget.db.appLanguage == 'id' ? 'Ganti ke EN' : 'Ganti ke ID',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              // ── 5. Tombol Keluar / Logout ──
-              FilledButton.tonalIcon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFFEE2E2),
-                  foregroundColor: const Color(0xFFDC2626),
-                  minimumSize: const Size.fromHeight(46),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              // ── 5. Tombol Keluar dari Akun ──
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFDC2626),
+                    side: const BorderSide(color: Color(0xFFFCA5A5)),
+                    backgroundColor: const Color(0xFFFEF2F2),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.logout_rounded, size: 18),
+                  label: const Text(
+                    'Keluar dari Akun',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  onPressed: _confirmLogout,
                 ),
-                icon: const Icon(Icons.logout_rounded, size: 18),
-                label: const Text(
-                  'Keluar dari Akun',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      title: const Row(
-                        children: [
-                          Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 22),
-                          SizedBox(width: 8),
-                          Text('Konfirmasi Keluar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      content: const Text(
-                        'Apakah Anda yakin ingin keluar dari sesi akun Rasantara?',
-                        style: TextStyle(fontSize: 13, color: Color(0xFF475569)),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B))),
-                        ),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFDC2626),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            widget.db.logout();
-                            widget.onLogout();
-                          },
-                          child: const Text('Ya, Keluar'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPrivilegeItem(String label, bool isAllowed) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            isAllowed ? Icons.check_circle_rounded : Icons.cancel_outlined,
+            size: 16,
+            color: isAllowed ? const Color(0xFF16A34A) : const Color(0xFF94A3B8),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: isAllowed ? context.textPrimary : context.textSecondary,
+                fontWeight: isAllowed ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
