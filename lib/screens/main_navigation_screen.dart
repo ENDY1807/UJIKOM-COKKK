@@ -210,7 +210,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           Text(
                             (user?.username.isNotEmpty ?? false) && user?.username != 'pelanggan'
                                 ? '@${user!.username}'
-                                : 'Pelanggan KasirNih Terverifikasi',
+                                : 'Pelanggan Rasantara Terverifikasi',
                             style: TextStyle(fontSize: 12, color: context.textSecondary),
                           ),
                         ],
@@ -350,7 +350,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    'KasirNih',
+                    'Rasantara',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: -0.3, color: context.textPrimary),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -483,7 +483,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'KasirNih POS',
+                                    'Rasantara POS',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
@@ -745,7 +745,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'KasirNih',
+                        'Rasantara',
                         style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, letterSpacing: -0.4, color: context.textPrimary),
                       ),
                       const SizedBox(height: 2),
@@ -854,8 +854,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ),
         content: Text(
           context.t(
-            'Apakah Anda yakin ingin keluar dari sesi akun KasirNih?',
-            'Are you sure you want to log out of your KasirNih session?',
+            'Apakah Anda yakin ingin keluar dari sesi akun Rasantara?',
+            'Are you sure you want to log out of your Rasantara session?',
           ),
           style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
         ),

@@ -395,7 +395,7 @@ class _LoginScreenState extends State<LoginScreen>
         if (didPop) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Aplikasi KasirNih tetap aktif.'),
+            content: Text('Aplikasi Rasantara tetap aktif.'),
             duration: Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
           ),
@@ -484,7 +484,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   const SizedBox(height: 24),
                   const Text(
-                    'KasirNih',
+                    'Rasantara',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
@@ -559,7 +559,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'KasirNih',
+                  'Rasantara',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w900,

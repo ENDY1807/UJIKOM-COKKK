@@ -202,7 +202,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           runSpacing: 4,
                           children: [
                             Text(
-                              'KasirNih',
+                              'Rasantara',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w900,

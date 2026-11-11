@@ -4,7 +4,7 @@ import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
 import 'settings_screen.dart';
 
-/// Layar Profil Akun & Hak Akses Pengguna KasirNih (Table Service Restoran - UKK Paket 1)
+/// Layar Profil Akun & Hak Akses Pengguna Rasantara (Table Service Restoran - UKK Paket 1)
 class ProfileScreen extends StatefulWidget {
   final DatabaseService db;
   final VoidCallback onLogout;
@@ -256,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         content: const Text(
-          'Apakah Anda yakin ingin keluar dari sesi akun KasirNih Restoran?',
+          'Apakah Anda yakin ingin keluar dari sesi akun Rasantara Restoran?',
           style: TextStyle(fontSize: 13, color: Color(0xFF475569)),
         ),
         actions: [
@@ -347,7 +347,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               Flexible(
                                 child: Text(
-                                  user?.namaUser ?? 'Pengguna KasirNih',
+                                  user?.namaUser ?? 'Pengguna Rasantara',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,

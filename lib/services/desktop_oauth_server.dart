@@ -225,7 +225,7 @@ class DesktopOAuthServer {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Login Berhasil · KasirNih</title>
+        <title>Login Berhasil · Rasantara</title>
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #FFF8F4; color: #1A1A2E; }
           .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; max-width: 420px; border-top: 6px solid #EA580C; }
@@ -242,7 +242,7 @@ class DesktopOAuthServer {
             </svg>
           </div>
           <h2>Login Google Berhasil!</h2>
-          <p>Autentikasi akun Google Anda telah terverifikasi. Anda dapat menutup tab ini dan kembali ke aplikasi <b>KasirNih</b>.</p>
+          <p>Autentikasi akun Google Anda telah terverifikasi. Anda dapat menutup tab ini dan kembali ke aplikasi <b>Rasantara</b>.</p>
         </div>
         <script>setTimeout(() => window.close(), 2500);</script>
       </body>

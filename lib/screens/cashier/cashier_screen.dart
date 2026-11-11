@@ -33,7 +33,7 @@ class _CashierScreenState extends State<CashierScreen> {
   void _selectOrder(OrderModel order) {
     setState(() {
       _selectedOrder = order;
-      _bayarController.text = '${order.totalHarga}';
+      _bayarController.text = '${order.grandTotalSetelahDiskon}';
     });
   }
 
@@ -44,13 +44,13 @@ class _CashierScreenState extends State<CashierScreen> {
 
   int get _kembalian {
     if (_selectedOrder == null) return 0;
-    final diff = _parsedBayar - _selectedOrder!.totalHarga;
+    final diff = _parsedBayar - _selectedOrder!.grandTotalSetelahDiskon;
     return diff > 0 ? diff : 0;
   }
 
   bool get _isPaymentValid {
     if (_selectedOrder == null) return false;
-    return _parsedBayar >= _selectedOrder!.totalHarga;
+    return _parsedBayar >= _selectedOrder!.grandTotalSetelahDiskon;
   }
 
   void _quickCash(int amount) {
@@ -66,7 +66,7 @@ class _CashierScreenState extends State<CashierScreen> {
       QrisPaymentDialog.show(
         context,
         order: _selectedOrder!,
-        totalAmount: _selectedOrder!.totalHarga,
+        totalAmount: _selectedOrder!.grandTotalSetelahDiskon,
         db: widget.db,
         onPaymentSuccess: () {
           setState(() {
@@ -373,13 +373,55 @@ class _CashierScreenState extends State<CashierScreen> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.isDarkMode ? const Color(0xFF7C2D12) : AppTheme.orangeBorder),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  Text('Total Tagihan:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.textPrimary)),
-                  Text(
-                    _currencyFormat.format(order.totalHarga),
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Subtotal Menu:', style: TextStyle(fontSize: 13, color: context.textSecondary)),
+                      Text(_currencyFormat.format(order.totalHarga), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.textPrimary)),
+                    ],
+                  ),
+                  if (order.diskonMember > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Diskon Langganan (VIP 10%):', style: TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
+                        Text('- ${_currencyFormat.format(order.diskonMember)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                      ],
+                    ),
+                  ],
+                  if (order.diskonEvent > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Diskon Event:', style: TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
+                        Text('- ${_currencyFormat.format(order.diskonEvent)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                      ],
+                    ),
+                  ],
+                  if (order.diskonKupon > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Diskon Kupon:', style: TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
+                        Text('- ${_currencyFormat.format(order.diskonKupon)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                      ],
+                    ),
+                  ],
+                  const Divider(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Total Tagihan:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.textPrimary)),
+                      Text(
+                        _currencyFormat.format(order.grandTotalSetelahDiskon),
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -430,7 +472,7 @@ class _CashierScreenState extends State<CashierScreen> {
               children: [
                 ActionChip(
                   label: const Text('Uang Pas'),
-                  onPressed: () => _quickCash(order.totalHarga),
+                  onPressed: () => _quickCash(order.grandTotalSetelahDiskon),
                 ),
                 ActionChip(
                   label: const Text('Rp 50.000'),

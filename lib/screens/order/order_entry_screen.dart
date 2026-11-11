@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/menu_model.dart';
 import '../../models/order_model.dart';
+import '../../models/user_model.dart';
 import '../../models/payment_method_model.dart';
 import '../../services/database_service.dart';
 import '../../widgets/va_payment_dialog.dart';
@@ -115,6 +116,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     } else {
       _customerNameController.text = '';
     }
+    _customerNameController.addListener(_onCustomerNameChanged);
 
     if (widget.initialTableNo != null && widget.initialTableNo!.isNotEmpty) {
       _selectedTableNo = widget.initialTableNo;
@@ -159,6 +161,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
   @override
   void dispose() {
+    _customerNameController.removeListener(_onCustomerNameChanged);
     _customerNameController.dispose();
     _phoneController.dispose();
     _deliveryAddressController.dispose();
@@ -220,9 +223,37 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     return 0;
   }
 
+  void _onCustomerNameChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool get _isCurrentCustomerSubscribed {
+    final curUser = widget.db.currentUser;
+    if (curUser != null && curUser.role == UserRole.pelanggan && curUser.isSubscribed) {
+      return true;
+    }
+    final enteredName = _customerNameController.text.trim().toLowerCase();
+    final enteredPhone = _phoneController.text.trim();
+    if (enteredName.isNotEmpty || enteredPhone.isNotEmpty) {
+      return widget.db.users.any((u) =>
+        u.isSubscribed && (
+          (enteredName.isNotEmpty && (u.namaUser.toLowerCase() == enteredName || u.username.toLowerCase() == enteredName)) ||
+          (enteredPhone.isNotEmpty && u.phoneNumber.isNotEmpty && u.phoneNumber == enteredPhone)
+        )
+      );
+    }
+    return false;
+  }
+
+  // Potongan harga khusus Pelanggan Langganan (10% dari total pesanan hidangan)
+  int get _diskonMemberAmount {
+    if (!_isCurrentCustomerSubscribed) return 0;
+    return (_cartTotalHarga * 0.10).round();
+  }
+
   int get _potonganPoinAmount {
     if (!_usePointsDiscount) return 0;
-    final remainingCost = (_cartTotalHarga - _diskonEventAmount - _couponDiscount).clamp(0, _cartTotalHarga);
+    final remainingCost = (_cartTotalHarga - _diskonEventAmount - _couponDiscount - _diskonMemberAmount).clamp(0, _cartTotalHarga);
     // 1 Poin = Potongan Rp 1 (sesuai poin pelanggan, bukan ribuan)
     return widget.db.userPoints.clamp(0, remainingCost);
   }
@@ -233,7 +264,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   int get _packagingFee => (_serviceType != OrderServiceType.dineIn) ? 2000 : 0;
   int get _currentDeliveryFee => (_serviceType == OrderServiceType.takeAway) ? _deliveryFee : 0;
   int get _grandTotal {
-    final raw = _cartTotalHarga + _packagingFee + _currentDeliveryFee - _diskonEventAmount - _couponDiscount - _potonganPoinAmount;
+    final raw = _cartTotalHarga + _packagingFee + _currentDeliveryFee - _diskonEventAmount - _couponDiscount - _potonganPoinAmount - _diskonMemberAmount;
     return raw > 0 ? raw : 0;
   }
 
@@ -659,6 +690,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     final effDiskonEvent = _diskonEventAmount;
     final effDiskonKupon = _couponDiscount;
     final effPotonganPoin = _potonganPoinAmount;
+    final effDiskonMember = _diskonMemberAmount;
     final effKodeKupon = _couponCode.isNotEmpty ? _couponCode : null;
 
     // Buat order di database
@@ -670,6 +702,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       diskonEvent: effDiskonEvent,
       diskonKupon: effDiskonKupon,
       potonganPoin: effPotonganPoin,
+      diskonMember: effDiskonMember,
       kodeKupon: effKodeKupon,
     );
 
@@ -692,6 +725,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         diskonEvent: effDiskonEvent,
         diskonKupon: effDiskonKupon,
         potonganPoin: effPotonganPoin,
+        diskonMember: effDiskonMember,
         kodeKupon: effKodeKupon,
       );
     } else if (connectedMethod != null) {
@@ -709,6 +743,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         diskonEvent: effDiskonEvent,
         diskonKupon: effDiskonKupon,
         potonganPoin: effPotonganPoin,
+        diskonMember: effDiskonMember,
         kodeKupon: effKodeKupon,
       );
     }
@@ -2042,6 +2077,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             '- ${_currencyFmt.format(_potonganPoinAmount)}',
                             isHighlight: true,
                           ),
+                        if (_diskonMemberAmount > 0)
+                          _buildCostRow(
+                            context.t('Diskon Pelanggan Langganan (VIP 10%)', 'VIP Member Discount (10%)'),
+                            '- ${_currencyFmt.format(_diskonMemberAmount)}',
+                            isHighlight: true,
+                          ),
                         if (_packagingFee > 0)
                           _buildCostRow(
                             context.t('Biaya Kemasan Higienis', 'Packaging Fee'),
@@ -2393,18 +2434,37 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         child: Row(
           children: [
             Expanded(
-              child: TextField(
-                controller: _customerNameController,
-                style: TextStyle(fontSize: 13, color: context.textPrimary),
-                decoration: InputDecoration(
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  prefixIcon: Icon(Icons.person_outline_rounded, size: 18, color: context.textSecondary),
-                  prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                  hintText: context.t('Nama Tamu / Pelanggan', 'Customer Name'),
-                  hintStyle: TextStyle(fontSize: 12, color: context.textSecondary),
-                  border: InputBorder.none,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _customerNameController,
+                      style: TextStyle(fontSize: 13, color: context.textPrimary),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                        prefixIcon: Icon(Icons.person_outline_rounded, size: 18, color: context.textSecondary),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        hintText: context.t('Nama Tamu / Pelanggan', 'Customer Name'),
+                        hintStyle: TextStyle(fontSize: 12, color: context.textSecondary),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  if (_isCurrentCustomerSubscribed)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDCFCE7),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFF86EFAC)),
+                      ),
+                      child: const Text(
+                        'VIP 10%',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+                      ),
+                    ),
+                ],
               ),
             ),
             Container(width: 1, height: 24, color: context.borderSubtle),

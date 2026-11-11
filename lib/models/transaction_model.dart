@@ -13,6 +13,7 @@ class TransactionModel {
   final int diskonEvent;
   final int diskonKupon;
   final int potonganPoin;
+  final int diskonMember;
   final String kodeKupon;
 
   TransactionModel({
@@ -28,6 +29,7 @@ class TransactionModel {
     this.diskonEvent = 0,
     this.diskonKupon = 0,
     this.potonganPoin = 0,
+    this.diskonMember = 0,
     this.kodeKupon = '',
   });
 
@@ -68,6 +70,7 @@ class TransactionModel {
       diskonEvent: _parseInt(map['diskon_event'], fallback: order.diskonEvent),
       diskonKupon: _parseInt(map['diskon_kupon'], fallback: order.diskonKupon),
       potonganPoin: _parseInt(map['potongan_poin'], fallback: order.potonganPoin),
+      diskonMember: _parseInt(map['diskon_member'], fallback: order.diskonMember),
       kodeKupon: map['kode_kupon']?.toString() ?? order.kodeKupon,
     );
   }
@@ -86,6 +89,7 @@ class TransactionModel {
       'diskon_event': diskonEvent,
       'diskon_kupon': diskonKupon,
       'potongan_poin': potonganPoin,
+      'diskon_member': diskonMember,
       'kode_kupon': kodeKupon,
     };
   }

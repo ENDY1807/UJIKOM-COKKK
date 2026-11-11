@@ -560,7 +560,7 @@ class DatabaseService extends ChangeNotifier {
           id: 'dana_5469',
           provider: PaymentMethodProvider.dana,
           accountNumber: '0812-3456-5469',
-          accountName: _currentUser?.namaUser ?? 'Pelanggan KasirNih',
+          accountName: _currentUser?.namaUser ?? 'Pelanggan Rasantara',
           balance: 175000,
           isDefault: true,
         ),
@@ -568,7 +568,7 @@ class DatabaseService extends ChangeNotifier {
           id: 'gopay_5469',
           provider: PaymentMethodProvider.gopay,
           accountNumber: '0813-9876-5469',
-          accountName: _currentUser?.namaUser ?? 'Pelanggan KasirNih',
+          accountName: _currentUser?.namaUser ?? 'Pelanggan Rasantara',
           balance: 85000,
           isDefault: false,
         ),
@@ -879,7 +879,15 @@ class DatabaseService extends ChangeNotifier {
   }
 
   // --- USER MANAGEMENT (Admin, Waiter, Kasir) ---
-  void addUser(String username, String password, String namaUser, UserRole role) {
+  void addUser(
+    String username,
+    String password,
+    String namaUser,
+    UserRole role, {
+    String? email,
+    String? phoneNumber,
+    bool isSubscribed = false,
+  }) {
     final newId = (_users.map((u) => u.idUser).fold(0, (max, id) => id > max ? id : max)) + 1;
     final newUser = UserModel(
       idUser: newId,
@@ -887,6 +895,9 @@ class DatabaseService extends ChangeNotifier {
       password: password,
       namaUser: namaUser,
       role: role,
+      googleEmail: email,
+      phoneNumber: phoneNumber ?? '',
+      isSubscribed: isSubscribed,
     );
     _users.add(newUser);
     notifyListeners();
@@ -904,13 +915,24 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  void updateUser(int idUser, String namaUser, String password, UserRole role) {
+  void updateUser(
+    int idUser,
+    String namaUser,
+    String password,
+    UserRole role, {
+    String? email,
+    String? phoneNumber,
+    bool? isSubscribed,
+  }) {
     final index = _users.indexWhere((u) => u.idUser == idUser);
     if (index != -1) {
       _users[index] = _users[index].copyWith(
         namaUser: namaUser,
         password: password.isNotEmpty ? password : null,
         role: role,
+        googleEmail: email,
+        phoneNumber: phoneNumber,
+        isSubscribed: isSubscribed,
       );
       notifyListeners();
 
@@ -1087,6 +1109,7 @@ class DatabaseService extends ChangeNotifier {
     int diskonEvent = 0,
     int diskonKupon = 0,
     int potonganPoin = 0,
+    int diskonMember = 0,
     String? kodeKupon,
   }) {
     final newId = (_orders.map((o) => o.idOrder).fold(100, (max, id) => id > max ? id : max)) + 1;
@@ -1103,6 +1126,7 @@ class DatabaseService extends ChangeNotifier {
       diskonEvent: diskonEvent,
       diskonKupon: diskonKupon,
       potonganPoin: potonganPoin,
+      diskonMember: diskonMember,
       kodeKupon: kodeKupon ?? '',
     );
     _orders.insert(0, order);
@@ -1158,6 +1182,7 @@ class DatabaseService extends ChangeNotifier {
     int? diskonEvent,
     int? diskonKupon,
     int? potonganPoin,
+    int? diskonMember,
     String? kodeKupon,
   }) {
     final newId = (_transactions
@@ -1167,9 +1192,10 @@ class DatabaseService extends ChangeNotifier {
     final effDiskonEvent = diskonEvent ?? order.diskonEvent;
     final effDiskonKupon = diskonKupon ?? order.diskonKupon;
     final effPotonganPoin = potonganPoin ?? order.potonganPoin;
+    final effDiskonMember = diskonMember ?? order.diskonMember;
     final effKodeKupon = kodeKupon ?? order.kodeKupon;
 
-    final total = (order.totalHarga - effDiskonEvent - effDiskonKupon - effPotonganPoin).clamp(0, order.totalHarga);
+    final total = (order.totalHarga - effDiskonEvent - effDiskonKupon - effPotonganPoin - effDiskonMember).clamp(0, order.totalHarga);
     final kembalian = jumlahBayar - total;
 
     // Tentukan user kasir pemroses yang valid dari database
@@ -1196,6 +1222,7 @@ class DatabaseService extends ChangeNotifier {
       diskonEvent: effDiskonEvent,
       diskonKupon: effDiskonKupon,
       potonganPoin: effPotonganPoin,
+      diskonMember: effDiskonMember,
       kodeKupon: effKodeKupon,
     );
 
@@ -1386,7 +1413,7 @@ class DatabaseService extends ChangeNotifier {
       nominal: amount,
       saldoSebelum: before,
       saldoSesudah: _userBalance,
-      keterangan: notes ?? 'Top Up Saldo Akun KasirNih',
+      keterangan: notes ?? 'Top Up Saldo Akun Rasantara',
       referensiId: 'TOPUP-SALDO-${DateTime.now().millisecondsSinceEpoch}',
     );
     _paymentMutations.insert(0, mutation);
@@ -1406,7 +1433,7 @@ class DatabaseService extends ChangeNotifier {
         nominal: amount,
         saldoSebelum: before,
         saldoSesudah: _userBalance,
-        keterangan: notes ?? 'Pembayaran Pesanan Menu via Saldo KasirNih',
+        keterangan: notes ?? 'Pembayaran Pesanan Menu via Saldo Rasantara',
         referensiId: orderRef ?? 'ORD-${DateTime.now().millisecondsSinceEpoch}',
       );
       _paymentMutations.insert(0, mutation);

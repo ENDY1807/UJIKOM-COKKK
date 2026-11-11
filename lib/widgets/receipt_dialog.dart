@@ -20,6 +20,7 @@ class ReceiptDialog extends StatelessWidget {
     final diskonEvent = transaction.diskonEvent > 0 ? transaction.diskonEvent : order.diskonEvent;
     final diskonKupon = transaction.diskonKupon > 0 ? transaction.diskonKupon : order.diskonKupon;
     final potonganPoin = transaction.potonganPoin > 0 ? transaction.potonganPoin : order.potonganPoin;
+    final diskonMember = transaction.diskonMember > 0 ? transaction.diskonMember : order.diskonMember;
     final kodeKupon = transaction.kodeKupon.isNotEmpty ? transaction.kodeKupon : order.kodeKupon;
 
     final subtotal = order.totalHarga;
@@ -68,7 +69,7 @@ class ReceiptDialog extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'KASIRNIH',
+                      'RASANTARA',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
@@ -173,6 +174,8 @@ class ReceiptDialog extends StatelessWidget {
                       _buildCostSummaryRow(context.t('Subtotal Hidangan', 'Dishes Subtotal'), currencyFmt.format(subtotal)),
                       if (diskonEvent > 0)
                         _buildCostSummaryRow(context.t('Diskon Event Promo', 'Promo Event Discount'), '- ${currencyFmt.format(diskonEvent)}', isDiscount: true),
+                      if (diskonMember > 0)
+                        _buildCostSummaryRow(context.t('Diskon Pelanggan Langganan (VIP 10%)', 'VIP Member Discount (10%)'), '- ${currencyFmt.format(diskonMember)}', isDiscount: true),
                       if (diskonKupon > 0)
                         _buildCostSummaryRow('${context.t('Diskon Kupon', 'Coupon Discount')} ${kodeKupon.isNotEmpty ? "($kodeKupon)" : ""}', '- ${currencyFmt.format(diskonKupon)}', isDiscount: true),
                       if (potonganPoin > 0)

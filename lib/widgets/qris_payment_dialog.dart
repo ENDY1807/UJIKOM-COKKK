@@ -140,7 +140,7 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
       }
 
       final bytes = byteData.buffer.asUint8List();
-      final filename = 'QRIS-KasirNih-${widget.order.idOrder}.png';
+      final filename = 'QRIS-Rasantara-${widget.order.idOrder}.png';
 
       if (kIsWeb) {
         downloadFileWeb(
@@ -166,7 +166,7 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
         );
         await Printing.sharePdf(
           bytes: await doc.save(),
-          filename: 'QRIS-KasirNih-${widget.order.idOrder}.pdf',
+          filename: 'QRIS-Rasantara-${widget.order.idOrder}.pdf',
         );
       }
 

@@ -52,7 +52,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 children: [
                   const Center(
                     child: Text(
-                      'LAPORAN TRANSAKSI RESTORAN KASIRNIH (TABLE SERVICE)\nREKAPITULASI KASIR & PENJUALAN',
+                      'LAPORAN TRANSAKSI RESTORAN RASANTARA (TABLE SERVICE)\nREKAPITULASI KASIR & PENJUALAN',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -147,7 +147,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 await ExportReportService.exportTransactionsPdf(
                   transactions: widget.db.transactions,
                   totalOmzet: widget.db.totalOmzet,
-                  restaurantName: 'KasirNih Restoran (Table Service)',
+                  restaurantName: 'Rasantara Restoran (Table Service)',
                   address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
                 );
               },
@@ -219,7 +219,7 @@ class _ReportScreenState extends State<ReportScreen> {
                         await ExportReportService.exportTransactionsPdf(
                           transactions: widget.db.transactions,
                           totalOmzet: widget.db.totalOmzet,
-                          restaurantName: 'KasirNih Restoran (Table Service)',
+                          restaurantName: 'Rasantara Restoran (Table Service)',
                           address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
                         );
                       },

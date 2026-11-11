@@ -103,7 +103,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
                   // Nama Brand
                   Text(
-                    'KasirNih',
+                    'Rasantara',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
@@ -141,7 +141,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
                   // Footer Version
                   Text(
-                    'KasirNih v3.0 • Cepat & Presisi',
+                    'Rasantara v3.0 • Cepat & Presisi',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
