@@ -30,52 +30,32 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen>
-    with TickerProviderStateMixin {
-  // Login
+    with SingleTickerProviderStateMixin {
   final _loginUsernameController = TextEditingController();
   final _loginPasswordController = TextEditingController();
   bool _loginObscure = true;
 
-  // Register
-  final _regNameController = TextEditingController();
-  final _regEmailController = TextEditingController();
-  final _regPasswordController = TextEditingController();
-  final _regConfirmPasswordController = TextEditingController();
-  bool _regObscure = true;
-  bool _regIsSubscribed = true;
-
-  bool _isRegisterMode = false;
   bool _isGoogleLoading = false;
   String? _errorMessage;
   String? _successMessage;
   StreamSubscription<GoogleSignInAuthenticationEvent>? _gsiSub;
 
-  late AnimationController _slideController;
   late AnimationController _fadeController;
-  late Animation<double> _slideAnimation;
   late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _slideController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 350),
-    );
-    _slideAnimation = CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeInOutCubic,
     );
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
       curve: Curves.easeOut,
     );
-
     _fadeController.forward();
+
     if (kIsWeb) {
       _initWebGoogleListener();
       _checkWebOAuthCallback();
@@ -108,7 +88,6 @@ class _LoginScreenState extends State<LoginScreen>
         String? photo;
         String? uid;
 
-        // 1. Ekstrak langsung dari ID Token (JWT) yang di-sign oleh Google
         if (idToken != null && idToken.contains('.')) {
           try {
             final parts = idToken.split('.');
@@ -127,7 +106,6 @@ class _LoginScreenState extends State<LoginScreen>
           }
         }
 
-        // 2. Jika ID Token tidak lengkap, panggil OpenID Connect UserInfo API
         if ((email == null || uid == null) && accessToken != null) {
           final res = await http.get(
             Uri.parse('https://openidconnect.googleapis.com/v1/userinfo'),
@@ -205,27 +183,9 @@ class _LoginScreenState extends State<LoginScreen>
     _gsiSub?.cancel();
     _loginUsernameController.dispose();
     _loginPasswordController.dispose();
-    _regNameController.dispose();
-    _regEmailController.dispose();
-    _regPasswordController.dispose();
-    _regConfirmPasswordController.dispose();
-    _slideController.dispose();
     _fadeController.dispose();
     DesktopOAuthServer.stop();
     super.dispose();
-  }
-
-  void _toggleMode(bool register) {
-    setState(() {
-      _isRegisterMode = register;
-      _errorMessage = null;
-      _successMessage = null;
-    });
-    if (register) {
-      _slideController.forward();
-    } else {
-      _slideController.reverse();
-    }
   }
 
   Future<void> _handleLogin() async {
@@ -248,61 +208,9 @@ class _LoginScreenState extends State<LoginScreen>
         widget.onLoginSuccess();
       }
     } else {
-      setState(() => _errorMessage = widget.db.lastLoginError ?? 'Username/Email atau password tidak cocok');
-    }
-  }
-
-  Future<void> _handleRegister() async {
-    setState(() {
-      _errorMessage = null;
-      _successMessage = null;
-    });
-    final name = _regNameController.text.trim();
-    final email = _regEmailController.text.trim();
-    final password = _regPasswordController.text;
-    final confirm = _regConfirmPasswordController.text;
-
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Semua field wajib diisi');
-      return;
-    }
-    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-    if (!emailRegex.hasMatch(email)) {
-      setState(() => _errorMessage = 'Format email tidak valid (contoh: user@gmail.com)');
-      return;
-    }
-    if (password.length < 4) {
-      setState(() => _errorMessage = 'Password minimal 4 karakter');
-      return;
-    }
-    if (password != confirm) {
-      setState(() => _errorMessage = 'Konfirmasi password tidak cocok');
-      return;
-    }
-
-    try {
-      final newUser = await widget.db.registerUser(
-        username: email,
-        password: password,
-        namaUser: name,
-        email: email,
-        isSubscribed: _regIsSubscribed,
-      );
-      _loginUsernameController.text = email;
-      _loginPasswordController.text = password;
       setState(() {
-        _successMessage =
-            'Registrasi akun "${newUser.namaUser}" berhasil! Silakan masuk.';
+        _errorMessage = 'Username/Email atau password salah';
       });
-      _toggleMode(false);
-      _regNameController.clear();
-      _regEmailController.clear();
-      _regPasswordController.clear();
-      _regConfirmPasswordController.clear();
-    } catch (e) {
-      setState(
-        () => _errorMessage = e.toString().replaceAll('Exception: ', ''),
-      );
     }
   }
 
@@ -323,7 +231,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  Future<void> _handleGoogleLogin({bool isRegister = false}) async {
+  Future<void> _handleGoogleLogin() async {
     if (_isGoogleLoading) return;
 
     setState(() {
@@ -335,7 +243,6 @@ class _LoginScreenState extends State<LoginScreen>
     try {
       GoogleSignInAccount? account;
 
-      // 1. Coba Google Sign-In SDK resmi
       try {
         await _ensureGoogleSignInInitialized();
         if (GoogleSignIn.instance.supportsAuthenticate()) {
@@ -348,43 +255,26 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (account != null) {
         final email = account.email;
-        final name =
-            account.displayName ??
-            (email.isNotEmpty ? email.split('@').first : 'Pengguna Google');
+        final name = account.displayName ?? email.split('@').first;
         final photo = account.photoUrl;
-        final uid = account.id;
 
         final user = await widget.db.loginWithGoogleSupabase(
-          googleUid: uid,
+          googleUid: account.id,
           googleEmail: email,
           displayName: name,
           photoUrl: photo,
         );
 
-        if (user.role == UserRole.pelanggan && !user.isSubscribed) {
-          widget.db.logout();
-          if (mounted) {
-            setState(() {
-              _isGoogleLoading = false;
-              _errorMessage =
-                  'Akun Google Anda (${user.displayEmail}) adalah Pelanggan Reguler. Pemesanan mandiri hanya untuk Pelanggan Berlangganan (VIP). Silakan pesan melalui Waiter di meja.';
-            });
-          }
-          return;
-        }
-
         if (mounted) {
           setState(() {
             _isGoogleLoading = false;
-            _successMessage =
-                'Berhasil masuk dengan Google sebagai $name (${user.role.label})';
+            _successMessage = 'Berhasil masuk sebagai $name (${user.role.label})';
           });
           _completeUserLogin(user);
         }
         return;
       }
 
-      // 2. Web platform: Buka form login / pemilih akun resmi Google (accounts.google.com)
       if (kIsWeb) {
         final origin = Uri.base.origin;
         final nonce = DateTime.now().millisecondsSinceEpoch.toString();
@@ -401,7 +291,6 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      // 3. Desktop (Windows / macOS / Linux): Direct Google OAuth 2.0 loopback server
       if (!kIsWeb &&
           defaultTargetPlatform != TargetPlatform.android &&
           defaultTargetPlatform != TargetPlatform.iOS) {
@@ -529,8 +418,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   // ─── DESKTOP ──────────────────────────────────────────────────────────────
   Widget _buildDesktop() {
-    const w = 1000.0;
-    const h = 620.0;
+    const w = 900.0;
+    const h = 540.0;
     const half = w / 2;
 
     return Center(
@@ -540,170 +429,89 @@ class _LoginScreenState extends State<LoginScreen>
         margin: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: context.surfaceCard,
-          borderRadius: BorderRadius.circular(36),
+          borderRadius: BorderRadius.circular(32),
           border: Border.all(color: context.borderSubtle),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.10),
-              blurRadius: 60,
-              spreadRadius: 0,
-              offset: const Offset(0, 24),
-            ),
-            BoxShadow(
-              color: AppTheme.orangePrimary.withValues(alpha: 0.06),
               blurRadius: 40,
-              offset: const Offset(0, 8),
+              offset: const Offset(0, 16),
             ),
           ],
         ),
         clipBehavior: Clip.antiAlias,
-        child: Stack(
+        child: Row(
           children: [
-            // Left panel white content (register form area)
-            Positioned(
-              left: 0,
-              top: 0,
+            // Left branding panel
+            Container(
               width: half,
               height: h,
-              child: AnimatedBuilder(
-                animation: _slideAnimation,
-                builder: (context, _) => IgnorePointer(
-                  ignoring: _slideAnimation.value < 0.5,
-                  child: _buildWhiteFormArea(isLogin: false),
-                ),
-              ),
-            ),
-
-            // Right panel white content (login form area)
-            Positioned(
-              left: half,
-              top: 0,
-              width: half,
-              height: h,
-              child: AnimatedBuilder(
-                animation: _slideAnimation,
-                builder: (context, _) => IgnorePointer(
-                  ignoring: _slideAnimation.value > 0.5,
-                  child: _buildWhiteFormArea(isLogin: true),
-                ),
-              ),
-            ),
-
-            // ─── Sliding Orange Panel ───
-            AnimatedBuilder(
-              animation: _slideAnimation,
-              builder: (context, child) {
-                // Login: orange on LEFT (0). Register: orange slides to RIGHT (half).
-                final left = _slideAnimation.value * half;
-                return Positioned(
-                  left: left,
-                  top: 0,
-                  width: half,
-                  height: h,
-                  child: child!,
-                );
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFFF7300),
-                      Color(0xFFEA580C),
-                      Color(0xFFCC4A0B),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(36),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x14000000),
-                      blurRadius: 16,
-                      offset: Offset(0, 4),
-                    ),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFFF7300),
+                    Color(0xFFEA580C),
+                    Color(0xFFCC4A0B),
                   ],
                 ),
-                child: Stack(
-                  children: [
-                    // Decorative circles
-                    Positioned(
-                      top: -60,
-                      right: -60,
-                      child: _buildDecorCircle(200, Colors.white, 0.07),
+              ),
+              padding: const EdgeInsets.all(44),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.white,
                     ),
-                    Positioned(
-                      bottom: -80,
-                      left: -40,
-                      child: _buildDecorCircle(240, Colors.white, 0.05),
-                    ),
-                    Positioned(
-                      top: 120,
-                      right: 40,
-                      child: _buildDecorCircle(80, Colors.white, 0.1),
-                    ),
-
-                    // Content inside orange panel with smooth cross-fade during sliding
-                    Positioned.fill(
-                      child: AnimatedBuilder(
-                        animation: _slideAnimation,
-                        builder: (context, _) {
-                          final loginOpacity =
-                              (1.0 - _slideAnimation.value * 2.0).clamp(
-                                0.0,
-                                1.0,
-                              );
-                          final registerOpacity =
-                              ((_slideAnimation.value - 0.5) * 2.0).clamp(
-                                0.0,
-                                1.0,
-                              );
-
-                          return Stack(
-                            children: [
-                              if (loginOpacity > 0.0)
-                                Positioned.fill(
-                                  child: Opacity(
-                                    opacity: loginOpacity,
-                                    child: Transform.translate(
-                                      offset: Offset(
-                                        -20 * _slideAnimation.value,
-                                        0,
-                                      ),
-                                      child: IgnorePointer(
-                                        ignoring: _slideAnimation.value > 0.3,
-                                        child: _buildOrangePanelInfo(
-                                          key: const ValueKey('info_login'),
-                                          isRegisterSide: false,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              if (registerOpacity > 0.0)
-                                Positioned.fill(
-                                  child: Opacity(
-                                    opacity: registerOpacity,
-                                    child: Transform.translate(
-                                      offset: Offset(
-                                        20 * (1.0 - _slideAnimation.value),
-                                        0,
-                                      ),
-                                      child: IgnorePointer(
-                                        ignoring: _slideAnimation.value < 0.7,
-                                        child: _buildOrangePanelInfo(
-                                          key: const ValueKey('info_register'),
-                                          isRegisterSide: true,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        'assets/images/kasirnih_logo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (c, e, s) => const Icon(
+                          Icons.storefront,
+                          color: Color(0xFFEA580C),
+                          size: 32,
+                        ),
                       ),
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'KasirNih',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sistem Kasir & Pemesanan Restoran',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Right form panel
+            Expanded(
+              child: Container(
+                color: context.surfaceCard,
+                padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 36),
+                alignment: Alignment.center,
+                child: SingleChildScrollView(
+                  child: _buildLoginForm(),
                 ),
               ),
             ),
@@ -713,142 +521,74 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildDecorCircle(double size, Color color, double opacity) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: opacity),
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-
-  // Orange panel: branding info + toggle button
-  Widget _buildOrangePanelInfo({Key? key, required bool isRegisterSide}) {
-    return Padding(
-      key: key,
-      padding: const EdgeInsets.all(44),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Icon + Brand
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.white,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    'assets/images/kasirnih_logo.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (c, e, s) => const Icon(Icons.storefront, color: Color(0xFFEA580C)),
+  // ─── MOBILE ───────────────────────────────────────────────────────────────
+  Widget _buildMobile() {
+    return SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFEA580C).withValues(alpha: 0.18),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'KasirNih',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -0.5,
-                  height: 1.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 48),
-
-          Text(
-            isRegisterSide
-                ? 'Bergabung\nBersama Kami!'
-                : 'Selamat\nDatang Kembali!',
-            style: const TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              height: 1.15,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isRegisterSide
-                ? 'Buat akun baru untuk memesan\nmenu restoran kami dengan mudah.'
-                : 'Cita Rasa Kuliner Nusantara\nSistem Pemesanan & Kasir Restoran.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.85),
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 40),
-
-          // CTA button
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _toggleMode(!isRegisterSide),
-              borderRadius: BorderRadius.circular(50),
-              child: Ink(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(50),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      isRegisterSide
-                          ? 'Sudah punya akun? Masuk'
-                          : 'Belum punya akun? Daftar',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.orangePrimary,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      'assets/images/kasirnih_logo.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (c, e, s) => Container(
+                        color: const Color(0xFFEA580C),
+                        child: const Icon(Icons.storefront, color: Colors.white, size: 36),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      isRegisterSide ? Icons.login : Icons.person_add,
-                      size: 18,
-                      color: AppTheme.orangePrimary,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 16),
+                Text(
+                  'KasirNih',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                    color: context.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                  decoration: BoxDecoration(
+                    color: context.surfaceCard,
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: context.borderSubtle),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 30,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: _buildLoginForm(),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  // White form area (right for login, left for register in desktop)
-  Widget _buildWhiteFormArea({required bool isLogin}) {
-    return Container(
-      color: context.surfaceCard,
-      padding: const EdgeInsets.symmetric(horizontal: 44, vertical: 40),
-      child: SingleChildScrollView(
-        child: isLogin ? _buildLoginForm() : _buildRegisterForm(),
+        ),
       ),
     );
   }
@@ -857,26 +597,20 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildLoginForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           'Masuk',
           style: TextStyle(
-            fontSize: 32,
+            fontSize: 26,
             fontWeight: FontWeight.w900,
             color: context.textPrimary,
           ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Gunakan akun KasirNih Anda untuk masuk',
-          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-        ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
-        // Feedback
         if (_successMessage != null) _feedbackBanner(_successMessage!, true),
-        if (_errorMessage != null && !_isRegisterMode)
-          _feedbackBanner(_errorMessage!, false),
+        if (_errorMessage != null) _feedbackBanner(_errorMessage!, false),
 
         _inputField(
           controller: _loginUsernameController,
@@ -894,36 +628,9 @@ class _LoginScreenState extends State<LoginScreen>
           onToggle: () => setState(() => _loginObscure = !_loginObscure),
           onSubmit: (_) => _handleLogin(),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
 
-        // Catatan Table Service
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF7ED),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFFFEDD5)),
-          ),
-          child: const Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.info_outline, size: 15, color: Color(0xFFEA580C)),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Sistem Layanan Meja: Waiter mencatat pesanan di meja. Pemesanan mandiri melalui aplikasi untuk Pelanggan Berlangganan (VIP).',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF9A3412), height: 1.3),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18),
-
-        _primaryButton('Masuk Sekarang', Icons.login, _handleLogin),
-        const SizedBox(height: 14),
-
-        _roleShortcutSection(),
+        _primaryButton('Masuk', Icons.login, _handleLogin),
         const SizedBox(height: 16),
 
         _orDivider(),
@@ -931,184 +638,6 @@ class _LoginScreenState extends State<LoginScreen>
 
         _googleSignInButton(),
       ],
-    );
-  }
-
-  // ─── REGISTER FORM ─────────────────────────────────────────────────────────
-  Widget _buildRegisterForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Daftar Akun',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w900,
-            color: context.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Daftar sebagai Pelanggan Berlangganan (VIP) untuk memesan menu',
-          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-        ),
-        const SizedBox(height: 20),
-
-        if (_errorMessage != null && _isRegisterMode)
-          _feedbackBanner(_errorMessage!, false),
-
-        _inputField(
-          controller: _regNameController,
-          label: 'Nama Lengkap',
-          icon: Icons.badge_outlined,
-        ),
-        const SizedBox(height: 12),
-        _inputField(
-          controller: _regEmailController,
-          label: 'Email',
-          hintText: 'nama@email.com',
-          icon: Icons.email_outlined,
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 12),
-        _inputField(
-          controller: _regPasswordController,
-          label: 'Password Baru',
-          icon: Icons.lock_outline,
-          isPassword: true,
-          obscure: _regObscure,
-          onToggle: () => setState(() => _regObscure = !_regObscure),
-        ),
-        const SizedBox(height: 12),
-        _inputField(
-          controller: _regConfirmPasswordController,
-          label: 'Konfirmasi Password',
-          icon: Icons.lock_reset,
-          isPassword: true,
-          obscure: _regObscure,
-          onToggle: () => setState(() => _regObscure = !_regObscure),
-        ),
-        const SizedBox(height: 12),
-
-        // Opsi Berlangganan VIP
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: context.surfaceCard,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: context.borderSubtle),
-          ),
-          child: InkWell(
-            onTap: () => setState(() => _regIsSubscribed = !_regIsSubscribed),
-            child: Row(
-              children: [
-                Checkbox(
-                  value: _regIsSubscribed,
-                  activeColor: const Color(0xFFEA580C),
-                  onChanged: (val) => setState(() => _regIsSubscribed = val ?? true),
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Pelanggan Berlangganan (VIP)',
-                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        'Dapat login dan memesan mandiri langsung dari aplikasi di meja',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 18),
-
-        _primaryButton('Buat Akun Sekarang', Icons.person_add, _handleRegister),
-        const SizedBox(height: 16),
-
-        _orDivider(),
-        const SizedBox(height: 16),
-
-        _googleSignInButton(isRegister: true),
-      ],
-    );
-  }
-
-  Widget _roleShortcutSection() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.surfaceCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.borderSubtle),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.badge_outlined, size: 14, color: Color(0xFFEA580C)),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Akun Pengujian Cepat (UKK Paket 1):',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: context.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              _roleChip('Admin', 'admin', '123'),
-              _roleChip('Waiter', 'waiter', '123'),
-              _roleChip('Kasir', 'kasir', '123'),
-              _roleChip('Owner', 'owner', '123'),
-              _roleChip('Pelanggan VIP', 'pelanggan', '123'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _roleChip(String label, String username, String pass) {
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _loginUsernameController.text = username;
-          _loginPasswordController.text = pass;
-        });
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFEA580C).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFEA580C).withValues(alpha: 0.3)),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFFEA580C),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1177,42 +706,37 @@ class _LoginScreenState extends State<LoginScreen>
         suffixIcon: isPassword
             ? IconButton(
                 icon: Icon(
-                  obscure
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
+                  obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                   size: 20,
-                  color: Colors.grey[400],
+                  color: context.textSecondary,
                 ),
                 onPressed: onToggle,
               )
             : null,
         filled: true,
         fillColor: context.fillSubtle,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: context.borderSubtle),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: context.borderSubtle),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppTheme.orangePrimary, width: 1.8),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.orangePrimary, width: 1.8),
         ),
       ),
     );
   }
 
-  Widget _primaryButton(String label, IconData icon, VoidCallback onTap) {
+  Widget _primaryButton(String label, IconData icon, VoidCallback onPressed) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: onPressed,
         borderRadius: BorderRadius.circular(14),
         child: Ink(
           decoration: BoxDecoration(
@@ -1230,7 +754,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 15),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1254,30 +778,28 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _orDivider() {
     return Row(
       children: [
-        Expanded(child: Divider(color: Colors.grey[200], thickness: 1)),
+        Expanded(child: Divider(color: context.borderSubtle, thickness: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'atau',
             style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[400],
+              fontSize: 12,
+              color: context.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
         ),
-        Expanded(child: Divider(color: Colors.grey[200], thickness: 1)),
+        Expanded(child: Divider(color: context.borderSubtle, thickness: 1)),
       ],
     );
   }
 
-  Widget _googleSignInButton({bool isRegister = false}) {
+  Widget _googleSignInButton() {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: _isGoogleLoading
-            ? null
-            : () => _handleGoogleLogin(isRegister: isRegister),
+        onTap: _isGoogleLoading ? null : _handleGoogleLogin,
         borderRadius: BorderRadius.circular(14),
         child: Ink(
           decoration: BoxDecoration(
@@ -1292,7 +814,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 13),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1315,16 +837,15 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
               ] else ...[
-                // Google 'G' logo
                 SizedBox(
                   width: 20,
                   height: 20,
                   child: CustomPaint(painter: _GoogleLogoPainter()),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  isRegister ? 'Daftar dengan Google' : 'Masuk dengan Google',
-                  style: const TextStyle(
+                const Text(
+                  'Masuk dengan Google',
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF444444),
@@ -1332,299 +853,6 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ],
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── MOBILE ───────────────────────────────────────────────────────────────
-  Widget _buildMobile() {
-    return Stack(
-      children: [
-        // Background gradient
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFFFF3E8), Color(0xFFF8F4F0)],
-            ),
-          ),
-        ),
-
-        // Floating decorative elements
-        Positioned(
-          top: -80,
-          right: -80,
-          child: _buildDecorCircle(280, AppTheme.orangePrimary, 0.08),
-        ),
-        Positioned(
-          top: 60,
-          left: -60,
-          child: _buildDecorCircle(180, AppTheme.orangePrimary, 0.05),
-        ),
-
-        SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 20),
-                // Logo area
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFEA580C).withValues(alpha: 0.18),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.asset(
-                      'assets/images/kasirnih_logo.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (c, e, s) => Container(
-                        color: const Color(0xFFEA580C),
-                        child: const Icon(Icons.storefront, color: Colors.white, size: 36),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'KasirNih',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                    color: context.textPrimary,
-                  ),
-                ),
-                Text(
-                  'Sistem Kasir & Pemesanan Modern',
-                  style: TextStyle(fontSize: 13, color: context.textSecondary),
-                ),
-                const SizedBox(height: 32),
-
-                // Card
-                Container(
-                  decoration: BoxDecoration(
-                    color: context.surfaceCard,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: context.borderSubtle),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 30,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Tab switcher
-                      Container(
-                        margin: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: context.fillSubtle,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            _mobileTab(
-                              'Masuk',
-                              !_isRegisterMode,
-                              () => _toggleMode(false),
-                            ),
-                            _mobileTab(
-                              'Daftar',
-                              _isRegisterMode,
-                              () => _toggleMode(true),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Form content
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          transitionBuilder: (child, anim) {
-                            final isReg = child.key == const ValueKey('m_reg');
-                            final offsetTween = Tween<Offset>(
-                              begin: Offset(isReg ? 0.08 : -0.08, 0),
-                              end: Offset.zero,
-                            );
-                            return FadeTransition(
-                              opacity: anim,
-                              child: SlideTransition(
-                                position: offsetTween.animate(
-                                  CurvedAnimation(
-                                    parent: anim,
-                                    curve: Curves.easeOutCubic,
-                                  ),
-                                ),
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: _isRegisterMode
-                              ? Column(
-                                  key: const ValueKey('m_reg'),
-                                  children: [
-                                    if (_errorMessage != null &&
-                                        _isRegisterMode)
-                                      _feedbackBanner(_errorMessage!, false),
-                                    _inputField(
-                                      controller: _regNameController,
-                                      label: 'Nama Lengkap',
-                                      icon: Icons.badge_outlined,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _inputField(
-                                      controller: _regEmailController,
-                                      label: 'Email',
-                                      hintText: 'nama@email.com',
-                                      icon: Icons.email_outlined,
-                                      keyboardType: TextInputType.emailAddress,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _inputField(
-                                      controller: _regPasswordController,
-                                      label: 'Password',
-                                      icon: Icons.lock_outline,
-                                      isPassword: true,
-                                      obscure: _regObscure,
-                                      onToggle: () => setState(
-                                        () => _regObscure = !_regObscure,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _inputField(
-                                      controller: _regConfirmPasswordController,
-                                      label: 'Konfirmasi Password',
-                                      icon: Icons.lock_reset,
-                                      isPassword: true,
-                                      obscure: _regObscure,
-                                      onToggle: () => setState(
-                                        () => _regObscure = !_regObscure,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 22),
-                                    _primaryButton(
-                                      'Buat Akun',
-                                      Icons.person_add,
-                                      _handleRegister,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _orDivider(),
-                                    const SizedBox(height: 16),
-                                    _googleSignInButton(isRegister: true),
-                                  ],
-                                )
-                              : Column(
-                                  key: const ValueKey('m_login'),
-                                  children: [
-                                    if (_successMessage != null)
-                                      _feedbackBanner(_successMessage!, true),
-                                    if (_errorMessage != null &&
-                                        !_isRegisterMode)
-                                      _feedbackBanner(_errorMessage!, false),
-                                    _inputField(
-                                      controller: _loginUsernameController,
-                                      label: 'Username/Email',
-                                      hintText: 'Masukkan username atau email',
-                                      icon: Icons.person_outline,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _inputField(
-                                      controller: _loginPasswordController,
-                                      label: 'Password',
-                                      icon: Icons.lock_outline,
-                                      isPassword: true,
-                                      obscure: _loginObscure,
-                                      onToggle: () => setState(
-                                        () => _loginObscure = !_loginObscure,
-                                      ),
-                                      onSubmit: (_) => _handleLogin(),
-                                    ),
-                                    const SizedBox(height: 22),
-                                    _primaryButton(
-                                      'Masuk Sekarang',
-                                      Icons.login,
-                                      _handleLogin,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _roleShortcutSection(),
-                                    const SizedBox(height: 16),
-                                    _orDivider(),
-                                    const SizedBox(height: 16),
-                                    _googleSignInButton(),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-                Text(
-                  'KasirNih POS © 2026',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _mobileTab(String label, bool isActive, VoidCallback onTap) {
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.all(4),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? (context.isDarkMode ? const Color(0xFF334155) : Colors.white)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : [],
-            ),
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: isActive ? AppTheme.orangePrimary : Colors.grey[400],
-              ),
-            ),
           ),
         ),
       ),
@@ -1641,7 +869,6 @@ class _GoogleLogoPainter extends CustomPainter {
     final center = Offset(w / 2, h / 2);
     final radius = w / 2;
 
-    // Blue arc (top-right)
     final bluePaint = Paint()
       ..color = const Color(0xFF4285F4)
       ..style = PaintingStyle.fill;
@@ -1653,7 +880,6 @@ class _GoogleLogoPainter extends CustomPainter {
       bluePaint,
     );
 
-    // Green arc (bottom-right)
     final greenPaint = Paint()
       ..color = const Color(0xFF34A853)
       ..style = PaintingStyle.fill;
@@ -1665,7 +891,6 @@ class _GoogleLogoPainter extends CustomPainter {
       greenPaint,
     );
 
-    // Yellow arc (bottom-left)
     final yellowPaint = Paint()
       ..color = const Color(0xFFFBBC05)
       ..style = PaintingStyle.fill;
@@ -1677,7 +902,6 @@ class _GoogleLogoPainter extends CustomPainter {
       yellowPaint,
     );
 
-    // Red arc (top-left)
     final redPaint = Paint()
       ..color = const Color(0xFFEA4335)
       ..style = PaintingStyle.fill;
@@ -1689,19 +913,16 @@ class _GoogleLogoPainter extends CustomPainter {
       redPaint,
     );
 
-    // White inner circle to create the 'G' shape
     final whitePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius * 0.55, whitePaint);
 
-    // Blue horizontal bar (the inner part of G)
     canvas.drawRect(
       Rect.fromLTWH(w * 0.48, h * 0.38, w * 0.52, h * 0.24),
       bluePaint,
     );
 
-    // White cutout above the bar
     canvas.drawRect(
       Rect.fromLTWH(w * 0.48, h * 0.0, w * 0.52, h * 0.38),
       whitePaint,

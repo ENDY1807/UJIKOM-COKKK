@@ -22,7 +22,7 @@ void main() {
     OrderSimulationService().stop();
   });
 
-  testWidgets('App starts on LoginScreen with Google OAuth and Register toggle',
+  testWidgets('App starts on LoginScreen with Username/Email, Password, and Google OAuth',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
@@ -37,9 +37,9 @@ void main() {
     // Verify Login Screen is displayed
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.text('Masuk dengan Google'), findsOneWidget);
-
-    // Verify Toggle Register
-    expect(find.text('Belum punya akun? Daftar'), findsOneWidget);
+    expect(find.text('Username/Email'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+    expect(find.text('Masuk'), findsWidgets);
   });
 
   testWidgets('MainNavigationScreen renders bottom navbar on mobile',
