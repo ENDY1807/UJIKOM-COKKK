@@ -164,7 +164,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     }
 
     _showSnackbar('Mengirim kode verifikasi...');
-    final sendResult = await PhoneOtpService.instance.sendOtp(
+    await PhoneOtpService.instance.sendOtp(
       rawPhone: rawPhone,
     );
 
@@ -174,7 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       context,
       phoneNumber: rawPhone,
       title: 'Verifikasi Nomor Telepon',
-      subtitle: sendResult.message,
+      subtitle: 'Masukkan 6 digit kode yang dikirim ke ${PhoneOtpService.formatDisplayPhone(rawPhone)}',
       onVerified: () {
         _showSnackbar('Nomor telepon berhasil diverifikasi.');
         setState(() {});

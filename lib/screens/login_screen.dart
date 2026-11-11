@@ -479,7 +479,7 @@ class _LoginScreenState extends State<LoginScreen>
   void _showTwoFactorDialog(UserModel user) async {
     final rawPhone = user.phoneNumber.isNotEmpty ? user.phoneNumber : '081234567890';
 
-    final sendResult = await PhoneOtpService.instance.sendOtp(
+    await PhoneOtpService.instance.sendOtp(
       rawPhone: rawPhone,
     );
 
@@ -489,7 +489,7 @@ class _LoginScreenState extends State<LoginScreen>
       context,
       phoneNumber: rawPhone,
       title: 'Verifikasi Dua Langkah',
-      subtitle: sendResult.message,
+      subtitle: 'Masukkan 6 digit kode yang dikirim ke ${PhoneOtpService.formatDisplayPhone(rawPhone)}',
       onVerified: () {
         widget.onLoginSuccess();
       },

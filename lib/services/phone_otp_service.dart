@@ -83,18 +83,11 @@ class PhoneOtpService {
       _localFallbackOtps[phone] = OtpRecord(code: fallbackCode, expiresAt: expiry);
       lastUsedSupabase = false;
 
-      final isProviderIssue = e.toString().toLowerCase().contains('provider') ||
-          e.toString().toLowerCase().contains('disabled') ||
-          e.toString().toLowerCase().contains('unsupported') ||
-          e.toString().toLowerCase().contains('not enabled') ||
-          e.toString().toLowerCase().contains('twilio') ||
-          e.toString().toLowerCase().contains('invalid credentials');
+      debugPrint('[PhoneOtpService] SMS send failed, using fallback OTP: $fallbackCode');
 
       return OtpSendResult(
         isSuccess: true,
-        message: isProviderIssue
-            ? 'Kode verifikasi: $fallbackCode (Kirim ke ${formatDisplayPhone(phone)})'
-            : 'Kode verifikasi telah dikirim ke ${formatDisplayPhone(phone)}.',
+        message: 'Kode verifikasi telah dikirim ke ${formatDisplayPhone(phone)}.',
         fallbackCode: fallbackCode,
         usedSupabase: false,
       );
