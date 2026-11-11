@@ -20,13 +20,16 @@ class CashierScreen extends StatefulWidget {
 class _CashierScreenState extends State<CashierScreen> {
   OrderModel? _selectedOrder;
   final _bayarController = TextEditingController();
+  final _searchController = TextEditingController();
   String _selectedPaymentMethod = 'Tunai';
+  String _searchQuery = '';
 
   final _currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
   @override
   void dispose() {
     _bayarController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -50,6 +53,7 @@ class _CashierScreenState extends State<CashierScreen> {
 
   bool get _isPaymentValid {
     if (_selectedOrder == null) return false;
+    if (_selectedPaymentMethod != 'Tunai') return true;
     return _parsedBayar >= _selectedOrder!.grandTotalSetelahDiskon;
   }
 
@@ -60,7 +64,7 @@ class _CashierScreenState extends State<CashierScreen> {
   }
 
   void _processPayment() {
-    if (_selectedOrder == null || !_isPaymentValid) return;
+    if (_selectedOrder == null) return;
 
     if (_selectedPaymentMethod == 'QRIS') {
       QrisPaymentDialog.show(
@@ -78,9 +82,13 @@ class _CashierScreenState extends State<CashierScreen> {
       return;
     }
 
+    final tenderAmount = _selectedPaymentMethod == 'Tunai'
+        ? _parsedBayar
+        : _selectedOrder!.grandTotalSetelahDiskon;
+
     final transaction = widget.db.processTransaction(
       order: _selectedOrder!,
-      jumlahBayar: _parsedBayar,
+      jumlahBayar: tenderAmount,
       metodePembayaran: _selectedPaymentMethod,
     );
 
@@ -89,7 +97,7 @@ class _CashierScreenState extends State<CashierScreen> {
       _bayarController.clear();
     });
 
-    // Open receipt modal
+    // Buka dialog struk transaksi resmi
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -99,25 +107,27 @@ class _CashierScreenState extends State<CashierScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeOrders = widget.db.orders.where((o) => o.status != OrderStatus.selesai && o.status != OrderStatus.dibatalkan).toList();
+    final activeOrders = widget.db.orders
+        .where((o) => o.status != OrderStatus.selesai && o.status != OrderStatus.dibatalkan)
+        .toList();
 
     return Scaffold(
       backgroundColor: context.surfaceBg,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 750;
+          final isWide = constraints.maxWidth >= 820;
 
           if (isWide) {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left: Active Orders List
+                // Kolom Kiri: Antrean Pesanan Meja Belum Bayar
                 Expanded(
                   flex: 5,
                   child: _buildOrderList(activeOrders),
                 ),
                 const VerticalDivider(width: 1, color: AppTheme.borderSubtle),
-                // Right: Billing & Payment Panel
+                // Kolom Kanan: Terminal Pembayaran Kasir
                 Expanded(
                   flex: 6,
                   child: _buildPaymentPanel(),
@@ -125,23 +135,27 @@ class _CashierScreenState extends State<CashierScreen> {
               ],
             );
           } else {
-            // Mobile: Tab-like or Switch between Orders and Bill
-            return Column(
-              children: [
-                Expanded(
-                  child: _selectedOrder == null
-                      ? _buildOrderList(activeOrders)
-                      : _buildPaymentPanel(),
-                ),
-              ],
-            );
+            return _selectedOrder == null
+                ? _buildOrderList(activeOrders)
+                : _buildPaymentPanel();
           }
         },
       ),
     );
   }
 
+  // ── DAFTAR ANTREAN PESANAN MEJA ──
   Widget _buildOrderList(List<OrderModel> activeOrders) {
+    var filtered = activeOrders;
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered
+          .where((o) =>
+              o.noMeja.toLowerCase().contains(_searchQuery) ||
+              o.namaPelanggan.toLowerCase().contains(_searchQuery) ||
+              '${o.idOrder}'.contains(_searchQuery))
+          .toList();
+    }
+
     return Container(
       color: context.surfaceBg,
       padding: const EdgeInsets.all(16),
@@ -149,14 +163,20 @@ class _CashierScreenState extends State<CashierScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  context.t('Antrean Pesanan Belum Dibayar', 'Unpaid Orders Queue'),
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    const Icon(Icons.point_of_sale, size: 20, color: AppTheme.orangePrimary),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Antrean Kasir & Meja',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -168,14 +188,45 @@ class _CashierScreenState extends State<CashierScreen> {
                   border: Border.all(color: AppTheme.orangeBorder),
                 ),
                 child: Text(
-                  '${activeOrders.length} Tagihan',
+                  '${activeOrders.length} Tagihan Aktif',
                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          if (activeOrders.isEmpty)
+          // Search box
+          Container(
+            height: 40,
+            decoration: BoxDecoration(
+              color: context.surfaceCard,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: context.borderSubtle),
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
+              style: TextStyle(fontSize: 13, color: context.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Cari Meja atau Nama Tamu...',
+                hintStyle: const TextStyle(fontSize: 12.5, color: AppTheme.textMuted),
+                prefixIcon: const Icon(Icons.search, size: 18, color: AppTheme.textMuted),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 16, color: AppTheme.textMuted),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (filtered.isEmpty)
             Expanded(
               child: Center(
                 child: Column(
@@ -183,7 +234,12 @@ class _CashierScreenState extends State<CashierScreen> {
                   children: [
                     Icon(Icons.check_circle_outline, size: 48, color: AppTheme.statusGreen.withValues(alpha: 0.7)),
                     const SizedBox(height: 12),
-                    const Text('Semua tagihan pesanan telah lunas', style: TextStyle(color: AppTheme.textMuted)),
+                    Text(
+                      _searchQuery.isNotEmpty
+                          ? 'Tidak ada pesanan cocok dengan pencarian'
+                          : 'Semua tagihan pesanan telah selesai dibayar',
+                      style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                    ),
                   ],
                 ),
               ),
@@ -191,10 +247,10 @@ class _CashierScreenState extends State<CashierScreen> {
           else
             Expanded(
               child: ListView.separated(
-                itemCount: activeOrders.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 10),
+                itemCount: filtered.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
-                  final order = activeOrders[index];
+                  final order = filtered[index];
                   final isSelected = _selectedOrder?.idOrder == order.idOrder;
 
                   return InkWell(
@@ -203,10 +259,10 @@ class _CashierScreenState extends State<CashierScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.orangeLight : AppTheme.white,
+                        color: isSelected ? AppTheme.orangeLight : context.surfaceCard,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? AppTheme.orangePrimary : AppTheme.borderSubtle,
+                          color: isSelected ? AppTheme.orangePrimary : context.borderSubtle,
                           width: isSelected ? 1.5 : 1,
                         ),
                       ),
@@ -220,7 +276,11 @@ class _CashierScreenState extends State<CashierScreen> {
                                 children: [
                                   Text(
                                     order.noMeja,
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.textPrimary),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      color: context.textPrimary,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
@@ -233,25 +293,34 @@ class _CashierScreenState extends State<CashierScreen> {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            '${context.t('Pelanggan', 'Customer')}: ${order.namaPelanggan}',
-                            style: TextStyle(fontSize: 13, color: context.textPrimary),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Tamu: ${order.namaPelanggan}',
+                                  style: TextStyle(fontSize: 13, color: context.textPrimary, fontWeight: FontWeight.w500),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                DateFormat('HH:mm').format(order.tanggal),
+                                style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            '${order.totalItem} ${context.t('item makanan/minuman', 'food/drink items')}',
-                            style: TextStyle(fontSize: 12, color: context.textSecondary),
-                          ),
-                          const SizedBox(height: 8),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                DateFormat('HH:mm').format(order.tanggal),
-                                style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                                '${order.totalItem} item hidangan',
+                                style: TextStyle(fontSize: 12, color: context.textSecondary),
                               ),
                               Text(
-                                _currencyFormat.format(order.totalHarga),
+                                _currencyFormat.format(order.grandTotalSetelahDiskon),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
@@ -272,19 +341,20 @@ class _CashierScreenState extends State<CashierScreen> {
     );
   }
 
+  // ── TERMINAL PEMBAYARAN KASIR ──
   Widget _buildPaymentPanel() {
     if (_selectedOrder == null) {
       return Container(
-        color: AppTheme.white,
+        color: context.surfaceCard,
         child: const Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.point_of_sale, size: 48, color: AppTheme.textMuted),
-              SizedBox(height: 12),
+              Icon(Icons.point_of_sale_rounded, size: 54, color: AppTheme.textMuted),
+              SizedBox(height: 14),
               Text(
-                'Pilih pesanan dari daftar antrean untuk proses pembayaran',
-                style: TextStyle(color: AppTheme.textMuted),
+                'Pilih meja dari antrean kasir untuk memproses pembayaran',
+                style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
               ),
             ],
           ),
@@ -295,41 +365,45 @@ class _CashierScreenState extends State<CashierScreen> {
     final order = _selectedOrder!;
 
     return Container(
-      color: AppTheme.white,
+      color: context.surfaceCard,
       padding: const EdgeInsets.all(20),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header with back button on mobile
+            // Header Meja & Tombol Tutup
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pembayaran ${order.noMeja}',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
-                    ),
-                    Text(
-                      'Order #${order.idOrder} • Pelanggan: ${order.namaPelanggan}',
-                      style: TextStyle(fontSize: 12, color: context.textSecondary),
-                    ),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pembayaran ${order.noMeja}',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Order #${order.idOrder} • Tamu: ${order.namaPelanggan}',
+                        style: TextStyle(fontSize: 12, color: context.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
-                  tooltip: 'Tutup / Batal',
+                  tooltip: 'Tutup',
                   onPressed: () => setState(() => _selectedOrder = null),
                 ),
               ],
             ),
-            Divider(height: 24, color: context.borderSubtle),
+            Divider(height: 22, color: context.borderSubtle),
 
-            // Itemized Bill Details
+            // Rincian Item Menu
             Text(
-              'Rincian Menu:',
+              'Rincian Hidangan Meja:',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
             ),
             const SizedBox(height: 8),
@@ -348,9 +422,19 @@ class _CashierScreenState extends State<CashierScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text(
-                            '${item.jumlah}x ${item.menu.namaMasakan}',
-                            style: TextStyle(fontSize: 13, color: context.textPrimary),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${item.jumlah}x ${item.menu.namaMasakan}',
+                                style: TextStyle(fontSize: 13, color: context.textPrimary, fontWeight: FontWeight.w500),
+                              ),
+                              if (item.catatan.isNotEmpty)
+                                Text(
+                                  'Catatan: ${item.catatan}',
+                                  style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppTheme.textMuted),
+                                ),
+                            ],
                           ),
                         ),
                         Text(
@@ -365,11 +449,11 @@ class _CashierScreenState extends State<CashierScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Total Tagihan Box
+            // Kotak Rincian Tagihan & Total Bersih
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.3) : AppTheme.orangeLight,
+                color: context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.25) : AppTheme.orangeLight,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.isDarkMode ? const Color(0xFF7C2D12) : AppTheme.orangeBorder),
               ),
@@ -378,8 +462,15 @@ class _CashierScreenState extends State<CashierScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Subtotal Menu:', style: TextStyle(fontSize: 13, color: context.textSecondary)),
-                      Text(_currencyFormat.format(order.totalHarga), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.textPrimary)),
+                      Expanded(
+                        child: Text(
+                          'Subtotal Menu (${order.totalItem} item):',
+                          style: TextStyle(fontSize: 13, color: context.textSecondary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(_currencyFormat.format(order.totalHarga), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary)),
                     ],
                   ),
                   if (order.diskonMember > 0) ...[
@@ -387,8 +478,15 @@ class _CashierScreenState extends State<CashierScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Diskon Langganan (VIP 10%):', style: TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
-                        Text('- ${_currencyFormat.format(order.diskonMember)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                        const Expanded(
+                          child: Text(
+                            'Diskon Langganan (VIP 10%):',
+                            style: TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('- ${_currencyFormat.format(order.diskonMember)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
                       ],
                     ),
                   ],
@@ -397,8 +495,15 @@ class _CashierScreenState extends State<CashierScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Diskon Event:', style: TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
-                        Text('- ${_currencyFormat.format(order.diskonEvent)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                        const Expanded(
+                          child: Text(
+                            'Diskon Event Promo:',
+                            style: TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('- ${_currencyFormat.format(order.diskonEvent)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
                       ],
                     ),
                   ],
@@ -407,8 +512,15 @@ class _CashierScreenState extends State<CashierScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Diskon Kupon:', style: TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.w600)),
-                        Text('- ${_currencyFormat.format(order.diskonKupon)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                        const Expanded(
+                          child: Text(
+                            'Diskon Kupon:',
+                            style: TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('- ${_currencyFormat.format(order.diskonKupon)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
                       ],
                     ),
                   ],
@@ -416,173 +528,197 @@ class _CashierScreenState extends State<CashierScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Total Tagihan:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.textPrimary)),
+                      Expanded(
+                        child: Text(
+                          'TOTAL TAGIHAN:',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
                         _currencyFormat.format(order.grandTotalSetelahDiskon),
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.orangePrimary),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // Payment Method Selector
-            Text('Metode Pembayaran:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
+            // Metode Pembayaran
+            Text('Pilih Metode Pembayaran:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
             const SizedBox(height: 8),
-            Row(
-              children: ['Tunai', 'QRIS', 'Debit'].map((method) {
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: ['Tunai', 'QRIS', 'Debit', 'Transfer'].map((method) {
                 final isSelected = _selectedPaymentMethod == method;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(method),
-                    selected: isSelected,
-                    selectedColor: AppTheme.orangePrimary,
-                    labelStyle: TextStyle(
-                      color: isSelected ? AppTheme.white : context.textPrimary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                    onSelected: (_) => setState(() => _selectedPaymentMethod = method),
+                return ChoiceChip(
+                  label: Text(method),
+                  selected: isSelected,
+                  selectedColor: AppTheme.orangePrimary,
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.white : context.textPrimary,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   ),
+                  onSelected: (_) => setState(() => _selectedPaymentMethod = method),
                 );
               }).toList(),
             ),
             const SizedBox(height: 16),
 
-            // Cash input
-            TextField(
-              controller: _bayarController,
-              keyboardType: TextInputType.number,
-              onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                labelText: 'Jumlah Uang Diterima',
-                hintText: 'Masukkan Jumlah Uang',
-                prefixText: 'Rp ',
-                prefixIcon: Icon(Icons.money, color: AppTheme.orangePrimary),
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // Quick Cash Chips
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                ActionChip(
-                  label: const Text('Uang Pas'),
-                  onPressed: () => _quickCash(order.grandTotalSetelahDiskon),
-                ),
-                ActionChip(
-                  label: const Text('Rp 50.000'),
-                  onPressed: () => _quickCash(50000),
-                ),
-                ActionChip(
-                  label: const Text('Rp 100.000'),
-                  onPressed: () => _quickCash(100000),
-                ),
-                ActionChip(
-                  label: const Text('Rp 200.000'),
-                  onPressed: () => _quickCash(200000),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Kembalian Display
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: _isPaymentValid ? AppTheme.statusGreenBg : AppTheme.statusRedBg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: _isPaymentValid ? AppTheme.statusGreen.withValues(alpha: 0.3) : AppTheme.statusRed.withValues(alpha: 0.3),
+            // Input Uang Diterima & Tombol Pecahan Cepat (Untuk Tunai)
+            if (_selectedPaymentMethod == 'Tunai') ...[
+              TextField(
+                controller: _bayarController,
+                keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: 'Jumlah Uang Diterima',
+                  hintText: 'Masukkan nominal pembayaran',
+                  prefixText: 'Rp ',
+                  prefixIcon: const Icon(Icons.payments_outlined, color: AppTheme.orangePrimary),
+                  suffixIcon: _bayarController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _bayarController.clear();
+                            setState(() {});
+                          },
+                        )
+                      : null,
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
                 children: [
-                  Text(
-                    _isPaymentValid ? 'Kembalian:' : 'Uang Kurang:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: _isPaymentValid ? AppTheme.statusGreen : AppTheme.statusRed,
-                    ),
+                  ActionChip(
+                    label: const Text('Uang Pas'),
+                    onPressed: () => _quickCash(order.grandTotalSetelahDiskon),
                   ),
-                  Text(
-                    _isPaymentValid
-                        ? _currencyFormat.format(_kembalian)
-                        : _currencyFormat.format(order.totalHarga - _parsedBayar),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: _isPaymentValid ? AppTheme.statusGreen : AppTheme.statusRed,
-                    ),
+                  ActionChip(
+                    label: const Text('Rp 50.000'),
+                    onPressed: () => _quickCash(50000),
+                  ),
+                  ActionChip(
+                    label: const Text('Rp 100.000'),
+                    onPressed: () => _quickCash(100000),
+                  ),
+                  ActionChip(
+                    label: const Text('Rp 200.000'),
+                    onPressed: () => _quickCash(200000),
+                  ),
+                  ActionChip(
+                    label: const Text('Rp 500.000'),
+                    onPressed: () => _quickCash(500000),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 14),
 
-            // Submit Payment Button
-            ElevatedButton.icon(
-              onPressed: _isPaymentValid ? _processPayment : null,
-              icon: const Icon(Icons.check_circle_outline),
-              label: const Text('Bayar & Cetak Struk'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
+              // Kotak Kembalian
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: _isPaymentValid ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _isPaymentValid ? const Color(0xFF86EFAC) : const Color(0xFFFCA5A5),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _isPaymentValid ? 'Uang Kembalian:' : 'Uang Kurang:',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: _isPaymentValid ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                      ),
+                    ),
+                    Text(
+                      _isPaymentValid
+                          ? _currencyFormat.format(_kembalian)
+                          : _currencyFormat.format(order.grandTotalSetelahDiskon - _parsedBayar),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: _isPaymentValid ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+            ],
+
+            // Tombol Utama Bayar & Cetak Struk
+            SizedBox(
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: _isPaymentValid ? _processPayment : null,
+                icon: const Icon(Icons.receipt_rounded, size: 20, color: Colors.white),
+                label: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    _selectedPaymentMethod == 'QRIS'
+                        ? 'Tampilkan Barcode QRIS & Verifikasi'
+                        : 'Bayar & Cetak Struk Resmi',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.orangePrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
               ),
             ),
             const SizedBox(height: 10),
 
-            // Void / Batalkan Pesanan (Admin & Kasir Management)
+            // Tombol Void / Batalkan Pesanan Meja
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.statusRed,
-                side: const BorderSide(color: AppTheme.statusRed),
-                minimumSize: const Size(double.infinity, 44),
+                foregroundColor: const Color(0xFFDC2626),
+                side: const BorderSide(color: Color(0xFFDC2626)),
+                minimumSize: const Size(double.infinity, 42),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.cancel_outlined, size: 18),
+              label: const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text('Batalkan Pesanan Meja (Void)'),
               ),
               onPressed: () {
                 showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    backgroundColor: AppTheme.white,
+                    backgroundColor: context.surfaceCard,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     title: const Text('Konfirmasi Pembatalan (Void)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    content: Text('Yakin ingin membatalkan pesanan #${order.idOrder} untuk ${order.noMeja}?'),
+                    content: Text('Yakin ingin membatalkan pesanan #${order.idOrder} untuk ${order.noMeja}? Meja akan dikosongkan.'),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
+                        onPressed: () => Navigator.pop(ctx),
                         child: const Text('Batal'),
                       ),
                       ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.statusRed),
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
                         onPressed: () {
-                          widget.db.updateOrderStatus(order.idOrder, OrderStatus.dibatalkan);
+                          widget.db.deleteOrder(order.idOrder);
                           widget.db.updateTableStatus(order.noMeja, TableStatus.kosong);
-                          Navigator.of(ctx).pop();
-                          setState(() {
-                            _selectedOrder = null;
-                            _bayarController.clear();
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: AppTheme.statusRed,
-                              content: Text('Pesanan #${order.idOrder} berhasil dibatalkan (Void).'),
-                            ),
-                          );
+                          Navigator.pop(ctx);
+                          setState(() => _selectedOrder = null);
                         },
-                        child: const Text('Ya, Batalkan Pesanan'),
+                        child: const Text('Ya, Batalkan Meja', style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),
                 );
               },
-              icon: const Icon(Icons.cancel_outlined, size: 18),
-              label: const Text('Batalkan Pesanan (Void)'),
             ),
           ],
         ),
