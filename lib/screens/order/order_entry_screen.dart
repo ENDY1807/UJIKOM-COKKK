@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../../models/menu_model.dart';
 import '../../models/order_model.dart';
@@ -13,7 +11,6 @@ import '../../widgets/va_payment_dialog.dart';
 import '../../widgets/snap_payment_dialog.dart';
 import '../../widgets/qris_payment_dialog.dart';
 import '../../widgets/menu_detail_dialog.dart';
-import '../profile/manage_addresses_screen.dart';
 import 'gofood_tracking_dialog.dart';
 import '../../widgets/app_loading_animation.dart';
 import '../../widgets/biometric_auth_dialog.dart';
@@ -67,7 +64,7 @@ class OrderEntryScreen extends StatefulWidget {
 
 class _OrderEntryScreenState extends State<OrderEntryScreen> {
   // ── Mode Layanan Pemesanan ──
-  OrderServiceType _serviceType = OrderServiceType.takeAway;
+  OrderServiceType _serviceType = OrderServiceType.dineIn;
 
   // Form Fields
   final _customerNameController = TextEditingController();
@@ -84,7 +81,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   double _deliveryDistanceKm = 2.4;
   String _deliveryEstimatedTime = '20 - 30 Menit';
   Position? _currentPosition;
-  bool _isLoadingGps = false;
 
   // Filter & Search
   MenuCategory _selectedCategory = MenuCategory.semua;
@@ -126,11 +122,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
     if (widget.initialTableNo != null && widget.initialTableNo!.isNotEmpty) {
       _selectedTableNo = widget.initialTableNo;
-      _serviceType = OrderServiceType.dineIn;
     } else {
-      _selectedTableNo = null;
-      _serviceType = OrderServiceType.takeAway;
+      _selectedTableNo = 'Meja 01';
     }
+    _serviceType = OrderServiceType.dineIn;
 
     // Restore alamat take away persisten (tidak akan reset)
     final savedAddr = widget.db.savedTakeAwayAddress;
@@ -503,89 +498,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         _cart[idMasakan]!.catatan = note;
       }
     });
-  }
-
-  // ── Fitur Lokasi GPS (OpenStreetMap Nominatim) ──
-  Future<void> _getUserLocation() async {
-    setState(() => _isLoadingGps = true);
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        throw 'Layanan GPS pada perangkat belum aktif. Harap aktifkan GPS.';
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw 'Izin akses lokasi ditolak.';
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw 'Izin lokasi ditolak permanen. Buka setelan perangkat untuk mengizinkan.';
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 12),
-        ),
-      );
-
-      _currentPosition = position;
-      final lat = position.latitude.toStringAsFixed(5);
-      final lng = position.longitude.toStringAsFixed(5);
-
-      String detectedAddress = 'Titik GPS: $lat, $lng';
-      try {
-        final url = Uri.parse(
-          'https://nominatim.openstreetmap.org/reverse?lat=$lat&lon=$lng&format=json',
-        );
-        final response = await http
-            .get(url, headers: {'User-Agent': 'RasantaraRestoApp/1.0'})
-            .timeout(const Duration(seconds: 5));
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          final displayName = data['display_name'];
-          if (displayName != null && displayName.toString().isNotEmpty) {
-            detectedAddress = displayName.toString();
-          }
-        }
-      } catch (_) {}
-
-      setState(() {
-        _deliveryAddressController.text = detectedAddress;
-      });
-      widget.db.saveTakeAwayAddress(
-        detectedAddress,
-        lat: position.latitude,
-        lng: position.longitude,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: const Color(0xFF16A34A),
-            content: Text(context.t('Lokasi berhasil dideteksi: $lat, $lng', 'Location detected: $lat, $lng')),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: const Color(0xFFDC2626),
-            content: Text(context.t('Gagal membaca GPS: $e', 'Failed to read GPS: $e')),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingGps = false);
-      }
-    }
   }
 
   // ── Dialog Pemilih Peta OSM ──
@@ -2366,56 +2278,81 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         backgroundColor: context.surfaceBg,
         body: Column(
           children: [
-            // ── 1. Tab Selector Tipe Layanan ──
+            // ── 1. Table Service Banner ──
             Container(
               color: context.surfaceBg,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: context.fillSubtle,
+                  color: context.surfaceCard,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.borderSubtle),
                 ),
                 child: Row(
-                  children: [OrderServiceType.dineIn, OrderServiceType.takeAway, OrderServiceType.selfPickUp].map((type) {
-                    final isSelected = _serviceType == type;
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() => _serviceType = type);
-                          if (type == OrderServiceType.dineIn && (_selectedTableNo == null || _selectedTableNo!.isEmpty)) {
-                            _showSelectTableDialog();
-                          }
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFEA580C) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEA580C).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.table_restaurant_rounded, color: Color(0xFFEA580C), size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Icon(
-                                type.icon,
-                                size: 16,
-                                color: isSelected ? Colors.white : const Color(0xFF64748B),
-                              ),
-                              const SizedBox(width: 6),
                               Text(
-                                type.localizedLabel(context.isEnglish),
+                                _selectedTableNo ?? 'Meja 01',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                  color: isSelected ? Colors.white : const Color(0xFF64748B),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF16A34A).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'TABLE SERVICE',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF16A34A),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
+                          Text(
+                            _customerNameController.text.isNotEmpty
+                                ? 'Tamu: ${_customerNameController.text}'
+                                : 'Pilih menu hidangan untuk meja ini',
+                            style: TextStyle(fontSize: 11.5, color: context.textSecondary),
+                          ),
+                        ],
                       ),
-                    );
-                  }).toList(),
+                    ),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        foregroundColor: const Color(0xFFEA580C),
+                        side: const BorderSide(color: Color(0xFFEA580C)),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      ),
+                      onPressed: () => _showSelectTableDialog(),
+                      icon: const Icon(Icons.edit_calendar_rounded, size: 14),
+                      label: Text(context.t('Ganti Meja', 'Change Table'), style: const TextStyle(fontSize: 11)),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -2464,229 +2401,52 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   );
 }
 
-  // ── Widget Card Pengaturan Layanan Sesuai Tipe ──
+  // ── Widget Card Pengaturan Layanan Table Service ──
   Widget _buildServiceConfigCard() {
     return Container(
       color: context.surfaceBg,
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFFFF7ED),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFFFEDD5),
-          ),
+          color: context.surfaceCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: context.borderSubtle),
         ),
-        child: Column(
+        child: Row(
           children: [
-            if (_serviceType == OrderServiceType.dineIn) ...[
-              if (_selectedTableNo != null && _selectedTableNo!.isNotEmpty)
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF16A34A).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.table_restaurant_rounded, color: Color(0xFF16A34A), size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _selectedTableNo!,
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
-                          ),
-                          Text(
-                            context.t('Makan di Tempat (Dine-In)', 'Dine-In Table'),
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    ),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        foregroundColor: const Color(0xFFEA580C),
-                        side: const BorderSide(color: Color(0xFFEA580C)),
-                      ),
-                      onPressed: () => _showSelectTableDialog(),
-                      icon: const Icon(Icons.edit_calendar_rounded, size: 14),
-                      label: Text(context.t('Ganti Meja', 'Change Table'), style: const TextStyle(fontSize: 11)),
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _showSelectTableDialog(),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: context.surfaceCard,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFEA580C)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.table_restaurant_rounded, color: Color(0xFFEA580C), size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                context.t('Pilih Nomor Meja', 'Select Table Number'),
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+            Expanded(
+              child: TextField(
+                controller: _customerNameController,
+                style: TextStyle(fontSize: 13, color: context.textPrimary),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  prefixIcon: Icon(Icons.person_outline_rounded, size: 18, color: context.textSecondary),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  hintText: context.t('Nama Tamu / Pelanggan', 'Customer Name'),
+                  hintStyle: TextStyle(fontSize: 12, color: context.textSecondary),
+                  border: InputBorder.none,
                 ),
-            ] else if (_serviceType == OrderServiceType.takeAway) ...[
-              Row(
-                children: [
-                  const Icon(Icons.location_on_rounded, color: Color(0xFFEA580C), size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _deliveryAddressController.text.isNotEmpty
-                          ? _deliveryAddressController.text
-                          : context.t('Pilih titik antar rumah di peta OpenStreetMap', 'Select delivery location on OpenStreetMap'),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: _deliveryAddressController.text.isNotEmpty
-                            ? context.textPrimary
-                            : context.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  InkWell(
-                    onTap: _openOsmMapPicker,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEA580C),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.map_rounded, size: 12, color: Colors.white),
-                          const SizedBox(width: 4),
-                          Text(context.t('Peta OSM', 'OSM Map'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  InkWell(
-                    onTap: () async {
-                      final selectedAddr = await ManageAddressesScreen.selectAddress(context, widget.db);
-                      if (selectedAddr != null) {
-                        setState(() {
-                          _deliveryAddressController.text = selectedAddr.formattedFullAddress;
-                          if (selectedAddr.recipientName.isNotEmpty) {
-                            _customerNameController.text = selectedAddr.recipientName;
-                          }
-                          if (selectedAddr.recipientPhone.isNotEmpty) {
-                            _phoneController.text = selectedAddr.recipientPhone;
-                          }
-                          if (selectedAddr.latitude != null && selectedAddr.longitude != null) {
-                            final meters = Geolocator.distanceBetween(
-                              -6.2088,
-                              106.8456,
-                              selectedAddr.latitude!,
-                              selectedAddr.longitude!,
-                            );
-                            final dist = (meters / 1000.0).clamp(0.5, 30.0);
-                            _deliveryDistanceKm = dist;
-                            _deliveryFee = (8000 + (dist * 2500)).round();
-                            _deliveryEstimatedTime = '${(15 + (dist * 4)).round()} - ${(25 + (dist * 5)).round()} Menit';
-                          }
-                        });
-                        widget.db.saveTakeAwayAddress(
-                          selectedAddr.formattedFullAddress,
-                          lat: selectedAddr.latitude,
-                          lng: selectedAddr.longitude,
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.bookmark_added_rounded, size: 12, color: Colors.white),
-                          const SizedBox(width: 4),
-                          Text(context.t('Alamat Saya', 'My Addresses'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: _isLoadingGps
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.my_location_rounded, size: 18, color: Color(0xFFEA580C)),
-                    tooltip: context.t('Gunakan GPS', 'Use GPS Location'),
-                    onPressed: _isLoadingGps ? null : _getUserLocation,
-                  ),
-                ],
               ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${context.t('Jarak', 'Distance')}: ${_deliveryDistanceKm.toStringAsFixed(1)} km • Est. $_deliveryEstimatedTime',
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                  ),
-                  Text(
-                    '${context.t('Ongkir', 'Delivery Fee')}: ${_currencyFmt.format(_deliveryFee)}',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
-                  ),
-                ],
+            ),
+            Container(width: 1, height: 24, color: context.borderSubtle),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: _orderNotesController,
+                style: TextStyle(fontSize: 13, color: context.textPrimary),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  prefixIcon: Icon(Icons.notes_rounded, size: 18, color: context.textSecondary),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  hintText: context.t('Keterangan / Catatan Meja', 'Order Notes / Instructions'),
+                  hintStyle: TextStyle(fontSize: 12, color: context.textSecondary),
+                  border: InputBorder.none,
+                ),
               ),
-            ] else ...[
-              Row(
-                children: [
-                  const Icon(Icons.storefront_rounded, color: Color(0xFFEA580C), size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      context.t(
-                        'Self Pick-Up di Counter Restoran Rasantara (Jl. Soekarno-Hatta No. 590, Buahbatu, Bandung)',
-                        'Self Pick-Up at Rasantara Restaurant Counter (Jl. Soekarno-Hatta No. 590, Buahbatu, Bandung)',
-                      ),
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.textPrimary),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(context.t('Estimasi Waktu Siap: 15 - 20 Menit', 'Estimated Ready: 15 - 20 Mins'), style: TextStyle(fontSize: 11, color: context.textSecondary)),
-                  Text(context.t('Biaya Kemasan: Rp 2.000', 'Packaging: Rp 2,000'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
-                ],
-              ),
-            ],
+            ),
           ],
         ),
       ),

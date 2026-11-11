@@ -51,8 +51,8 @@ class AppLocalization {
       'pakai': 'Pakai',
       'detail_pesan': 'Detail & Pesan',
 
-      // Entri Order / Pemesanan
-      'order_title': 'Pemesanan KasirNih',
+      // Entri Order / Pemesanan Table Service
+      'order_title': 'Entri Order (Table Service)',
       'delivery_label': 'Take Away (Pengantaran)',
       'pickup_label': 'Self Pick-Up (Ambil Sendiri)',
       'dinein_label': 'Makan di Tempat (Dine In)',
@@ -137,7 +137,7 @@ class AppLocalization {
       'detail_pesan': 'Details & Order',
 
       // Order Entry
-      'order_title': 'KasirNih Ordering',
+      'order_title': 'Table Service Order Entry',
       'delivery_label': 'Take Away (Delivery)',
       'pickup_label': 'Self Pick-Up',
       'dinein_label': 'Dine In (Table)',

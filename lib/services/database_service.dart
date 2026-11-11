@@ -12,6 +12,17 @@ import '../models/event_model.dart';
 import 'supabase_service.dart';
 import 'app_localization.dart';
 
+final List<TableModel> seedDefaultTables = List.generate(20, (index) {
+  final num = (index + 1).toString().padLeft(2, '0');
+  final cap = index < 6 ? 2 : (index < 14 ? 4 : 6);
+  return TableModel(
+    idMeja: index + 1,
+    nomorMeja: 'Meja $num',
+    kapasitas: cap,
+    status: TableStatus.kosong,
+  );
+});
+
 class DatabaseService extends ChangeNotifier {
   // Current logged in user
   UserModel? _currentUser;
@@ -81,7 +92,7 @@ class DatabaseService extends ChangeNotifier {
     ),
   ];
   final List<MenuModel> _menus = [...seedDefaultMenus];
-  final List<TableModel> _tables = [];
+  final List<TableModel> _tables = [...seedDefaultTables];
   final List<OrderModel> _orders = [];
   final List<TransactionModel> _transactions = [];
 
@@ -1048,6 +1059,21 @@ class DatabaseService extends ChangeNotifier {
         _supabase.updateTable(_tables[index]);
       }
     }
+  }
+
+  void syncTableStatusWithOrders() {
+    for (int i = 0; i < _tables.length; i++) {
+      _tables[i] = _tables[i].copyWith(status: TableStatus.kosong);
+    }
+    for (final order in _orders) {
+      if (order.status != OrderStatus.selesai && order.status != OrderStatus.dibatalkan) {
+        final idx = _tables.indexWhere((t) => t.nomorMeja.toLowerCase() == order.noMeja.toLowerCase());
+        if (idx != -1) {
+          _tables[idx] = _tables[idx].copyWith(status: TableStatus.terisi);
+        }
+      }
+    }
+    notifyListeners();
   }
 
   // --- ENTRI ORDER (Admin, Waiter, Pelanggan) ---

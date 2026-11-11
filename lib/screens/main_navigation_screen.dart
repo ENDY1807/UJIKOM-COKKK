@@ -46,51 +46,50 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
   bool _isDesktopSidebarVisible = true;
-  String? _scannedTableFromQr;
+  String? _selectedTableForOrder;
   MenuCategory? _selectedCategoryForOrder;
   String? _searchQueryForOrder;
   String? _autoApplyCouponForOrder;
 
-  void _navigateToTab(int index, {MenuCategory? category, String? searchQuery, String? couponCode}) {
+  void _navigateToTab(int index, {MenuCategory? category, String? searchQuery, String? couponCode, String? tableNo}) {
     setState(() {
       _currentIndex = index;
       if (category != null) _selectedCategoryForOrder = category;
       if (searchQuery != null) _searchQueryForOrder = searchQuery;
       if (couponCode != null) _autoApplyCouponForOrder = couponCode;
+      if (tableNo != null) _selectedTableForOrder = tableNo;
     });
   }
 
   List<NavDestinationItem> _getDestinationsForRole(UserRole role) {
     final list = <NavDestinationItem>[];
 
-    // 1. Dashboard Utama: Seluruh role
+    // 1. Dashboard Denah Meja: Seluruh role
     list.add(NavDestinationItem(
       label: context.t('Beranda', 'Home'),
-      icon: Icons.dashboard_outlined,
+      icon: Icons.table_restaurant_rounded,
       screen: DashboardScreen(
         db: widget.db,
         onNavigateToTab: _navigateToTab,
       ),
     ));
 
-    // 2. Order Entry: Admin, Waiter, Pelanggan
+    // 2. Entri Order: Admin, Waiter, Pelanggan
     if (role.canCreateOrder) {
       list.add(NavDestinationItem(
-        label: role == UserRole.pelanggan
-            ? context.t('Pesan Menu', 'Order Menu')
-            : context.t('Entri Order', 'Order Entry'),
+        label: context.t('Entri Order', 'Order Entry'),
         icon: Icons.restaurant_menu_rounded,
         screen: OrderEntryScreen(
-          key: ValueKey('order-$_scannedTableFromQr-${_selectedCategoryForOrder?.name}-$_searchQueryForOrder-$_autoApplyCouponForOrder'),
+          key: ValueKey('order-$_selectedTableForOrder-${_selectedCategoryForOrder?.name}-$_searchQueryForOrder-$_autoApplyCouponForOrder'),
           db: widget.db,
-          initialTableNo: _scannedTableFromQr,
+          initialTableNo: _selectedTableForOrder,
           initialCategory: _selectedCategoryForOrder,
           initialSearch: _searchQueryForOrder,
           initialCoupon: _autoApplyCouponForOrder,
           onNavigateToTab: _navigateToTab,
           onOrderSubmitted: () {
             setState(() {
-              _scannedTableFromQr = null;
+              _selectedTableForOrder = null;
               _selectedCategoryForOrder = null;
               _searchQueryForOrder = null;
               _autoApplyCouponForOrder = null;
@@ -101,7 +100,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ));
     }
 
-    // 2b. Riwayat Pesanan Saya: Khusus Pelanggan
+    // 2b. Riwayat Pesanan: Khusus Pelanggan
     if (role == UserRole.pelanggan) {
       list.add(NavDestinationItem(
         label: context.t('Riwayat', 'History'),
@@ -110,10 +109,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ));
     }
 
-    // 3. Transaksi Kasir: Admin, Kasir
+    // 3. Entri Transaksi: Admin, Kasir
     if (role.canProcessTransactions) {
       list.add(NavDestinationItem(
-        label: context.t('Kasir & Tagihan', 'Cashier & Billing'),
+        label: context.t('Entri Transaksi', 'Transactions'),
         icon: Icons.point_of_sale_rounded,
         screen: CashierScreen(db: widget.db),
       ));
@@ -122,7 +121,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // 4. Entri Referensi: Admin only
     if (role.canManageReferences) {
       list.add(NavDestinationItem(
-        label: context.t('Referensi Menu', 'Menu Master'),
+        label: context.t('Entri Referensi', 'References'),
         icon: Icons.inventory_2_outlined,
         screen: MenuManagementScreen(db: widget.db),
       ));
@@ -131,18 +130,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // 5. Generate Laporan: Admin, Waiter, Kasir, Owner
     if (role.canViewReports) {
       list.add(NavDestinationItem(
-        label: context.t('Laporan', 'Reports'),
+        label: context.t('Generate Laporan', 'Reports'),
         icon: Icons.analytics_outlined,
         screen: ReportScreen(db: widget.db),
       ));
     }
 
-    // 6. Registrasi & Manajemen User: Admin, Waiter, Kasir
+    // 6. Registrasi User: Admin, Waiter, Kasir
     if (role.canRegisterUsers) {
       list.add(NavDestinationItem(
-        label: role == UserRole.administrator
-            ? context.t('Kelola User', 'Users')
-            : context.t('Registrasi', 'Registration'),
+        label: context.t('Registrasi User', 'Registration'),
         icon: Icons.people_outline,
         screen: UserManagementScreen(db: widget.db),
       ));
