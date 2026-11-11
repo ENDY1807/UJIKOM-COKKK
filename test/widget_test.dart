@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:kasir_restoran/main.dart';
 import 'package:kasir_restoran/models/user_model.dart';
 import 'package:kasir_restoran/screens/login_screen.dart';
@@ -9,6 +10,10 @@ import 'package:kasir_restoran/services/database_service.dart';
 import 'package:kasir_restoran/services/order_simulation_service.dart';
 
 void main() {
+  setUpAll(() async {
+    await initializeDateFormatting('id_ID', null);
+  });
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
@@ -16,6 +21,7 @@ void main() {
   tearDown(() {
     OrderSimulationService().stop();
   });
+
   testWidgets('App starts on LoginScreen with Google OAuth and Register toggle',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1280, 800);
@@ -25,7 +31,8 @@ void main() {
 
     await tester.pumpWidget(const KasirRestoranApp());
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 1500));
+    await tester.pumpAndSettle();
 
     // Verify Login Screen is displayed
     expect(find.byType(LoginScreen), findsOneWidget);
@@ -35,7 +42,7 @@ void main() {
     expect(find.text('Belum punya akun? Daftar'), findsOneWidget);
   });
 
-  testWidgets('MainNavigationScreen renders DANA-style bottom navbar on mobile',
+  testWidgets('MainNavigationScreen renders bottom navbar on mobile',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(400, 800);
     tester.view.devicePixelRatio = 1.0;
@@ -59,10 +66,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify DANA floating PINDAI button
-    expect(find.text('PINDAI'), findsOneWidget);
-    expect(find.byIcon(Icons.qr_code_scanner_rounded), findsOneWidget);
+    // Verify Mobile Navigation Tabs for Pelanggan
     expect(find.text('Beranda'), findsOneWidget);
+    expect(find.text('Entri Order'), findsOneWidget);
+    expect(find.text('Profil'), findsOneWidget);
   });
 
   testWidgets('Test MainNavigationScreen Desktop full render',
@@ -73,14 +80,13 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final db = DatabaseService();
-    // Simulate user exactly as shown in screenshot
+    // Simulate user
     db.loginWithGoogle(
       googleUid: 'google_user_123',
       googleEmail: 'pengguna.google@gmail.com',
       displayName: 'Akun Pengguna Google',
     );
 
-    // Also simulate Supabase dishes & orders if any
     await tester.pumpWidget(MaterialApp(
       home: MainNavigationScreen(
         db: db,
@@ -92,8 +98,8 @@ void main() {
     // Verify Beranda
     expect(tester.takeException(), isNull);
 
-    // Switch to Pesan Menu
-    await tester.tap(find.text('Pesan Menu'));
+    // Switch to Entri Order
+    await tester.tap(find.text('Entri Order'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 
@@ -112,7 +118,7 @@ void main() {
 
     final db = DatabaseService();
 
-    // Test Admin (has all screens)
+    // Test Admin (has all screens according to UKK 2134)
     db.switchRole(UserRole.administrator);
     await tester.pumpWidget(MaterialApp(
       home: MainNavigationScreen(db: db, onLogout: () {}),
@@ -125,28 +131,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 
-    // Kasir & Tagihan
-    await tester.tap(find.text('Kasir & Tagihan'));
+    // Entri Transaksi
+    await tester.tap(find.text('Entri Transaksi'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 
-    // Referensi Menu
-    await tester.tap(find.text('Referensi Menu'));
+    // Entri Referensi
+    await tester.tap(find.text('Entri Referensi'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 
-    // Laporan
-    await tester.tap(find.text('Laporan'));
+    // Generate Laporan
+    await tester.tap(find.text('Generate Laporan'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 
-    // Kelola User
-    await tester.tap(find.text('Kelola User'));
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-
-    // QR Meja
-    await tester.tap(find.text('QR Meja'));
+    // Registrasi User
+    await tester.tap(find.text('Registrasi User'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 

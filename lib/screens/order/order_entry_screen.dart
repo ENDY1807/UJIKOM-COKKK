@@ -3134,10 +3134,15 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  _currencyFmt.format(m.harga),
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                                Flexible(
+                                  child: Text(
+                                    _currencyFmt.format(m.harga),
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
+                                const SizedBox(width: 4),
                                 InkWell(
                                   onTap: () => _addToCart(m),
                                   child: Container(

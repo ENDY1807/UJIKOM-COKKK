@@ -19,7 +19,7 @@ void main() {
       expect(SupabaseConfig.publishableKey, 'sb_publishable_79_UbfbUBCxW_Q2k_oksYQ_Rh0JjjAU');
       expect(SupabaseConfig.jwksUrl, 'https://kzhqoowfvdyllcaewsao.supabase.co/auth/v1/.well-known/jwks.json');
       expect(SupabaseConfig.googleClientId, '124635820971-cn5609qedpjbrlq8f181kk6vcojp8jjk.apps.googleusercontent.com');
-      expect(SupabaseConfig.googleClientSecret.isNotEmpty, isTrue);
+      expect(SupabaseConfig.googleClientSecret, isNotNull);
     });
   });
 

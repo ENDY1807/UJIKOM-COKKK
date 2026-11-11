@@ -146,7 +146,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ── Header Card Restoran Table Service ──
   Widget _buildHeaderCard(UserModel? user, UserRole role) {
-    final dateFormat = DateFormat('EEEE, dd MMMM yyyy', 'id_ID');
+    String formattedDate;
+    try {
+      formattedDate = DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(_currentTime);
+    } catch (_) {
+      try {
+        formattedDate = DateFormat('EEEE, dd MMMM yyyy').format(_currentTime);
+      } catch (_) {
+        formattedDate = '${_currentTime.year}-${_currentTime.month.toString().padLeft(2, '0')}-${_currentTime.day.toString().padLeft(2, '0')}';
+      }
+    }
     final timeFormat = DateFormat('HH:mm:ss');
 
     return Container(
@@ -187,7 +196,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
                           children: [
                             Text(
                               'KasirNih',
@@ -198,7 +210,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 letterSpacing: -0.3,
                               ),
                             ),
-                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
@@ -208,15 +219,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               child: const Text(
                                 'TABLE SERVICE',
                                 style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: 0.8,
-                                ),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 0.8,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
                         const SizedBox(height: 2),
                         Text(
                           'Sistem Kasir & Layanan Meja Restoran (Paket 1)',
@@ -281,8 +292,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 12),
                 Divider(height: 1, color: context.borderSubtle),
                 const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -300,7 +314,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     Text(
-                      '${dateFormat.format(_currentTime)} · ${timeFormat.format(_currentTime)}',
+                      '$formattedDate · ${timeFormat.format(_currentTime)}',
                       style: TextStyle(
                         fontSize: 11,
                         color: context.textSecondary,
@@ -493,31 +507,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required int emptyCount,
     required int occupiedCount,
   }) {
-    return Row(
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 12,
+      runSpacing: 10,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Denah Meja Restoran (Table Service)',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: context.textPrimary,
-                ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Denah Meja Restoran (Table Service)',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: context.textPrimary,
               ),
-              Text(
-                'Klik meja kosong untuk memesan atau meja terisi untuk tagihan kasir',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: context.textSecondary,
-                ),
+            ),
+            Text(
+              'Klik meja kosong untuk memesan atau meja terisi untuk tagihan kasir',
+              style: TextStyle(
+                fontSize: 11.5,
+                color: context.textSecondary,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
@@ -525,34 +540,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: context.borderSubtle),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: TableFilterType.values.map((f) {
-              final isSelected = _selectedFilter == f;
-              String countLabel = '';
-              if (f == TableFilterType.all) countLabel = '$totalCount';
-              if (f == TableFilterType.kosong) countLabel = '$emptyCount';
-              if (f == TableFilterType.terisi) countLabel = '$occupiedCount';
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: TableFilterType.values.map((f) {
+                final isSelected = _selectedFilter == f;
+                String countLabel = '';
+                if (f == TableFilterType.all) countLabel = '$totalCount';
+                if (f == TableFilterType.kosong) countLabel = '$emptyCount';
+                if (f == TableFilterType.terisi) countLabel = '$occupiedCount';
 
-              return GestureDetector(
-                onTap: () => setState(() => _selectedFilter = f),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFEA580C) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${f.label} ($countLabel)',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                      color: isSelected ? Colors.white : context.textSecondary,
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedFilter = f),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFFEA580C) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${f.label} ($countLabel)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                        color: isSelected ? Colors.white : context.textSecondary,
+                      ),
                     ),
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           ),
         ),
       ],
@@ -587,10 +605,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context, constraints) {
         // Responsive grid: 2 col on mobile, 3-4 col on tablet, 5 on desktop
         int crossAxisCount = 2;
+        double childAspectRatio = 1.15;
         if (constraints.maxWidth >= 1000) {
           crossAxisCount = 4;
         } else if (constraints.maxWidth >= 650) {
           crossAxisCount = 3;
+        } else {
+          childAspectRatio = 0.95;
         }
 
         return GridView.builder(
@@ -600,7 +621,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.15,
+            childAspectRatio: childAspectRatio,
           ),
           itemCount: tables.length,
           itemBuilder: (context, index) {
@@ -637,7 +658,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         : context.surfaceCard;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(14),
@@ -654,35 +675,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: isOccupied
-                          ? const Color(0xFFEA580C).withValues(alpha: 0.15)
-                          : const Color(0xFF16A34A).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: isOccupied
+                            ? const Color(0xFFEA580C).withValues(alpha: 0.15)
+                            : const Color(0xFF16A34A).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.table_restaurant_rounded,
+                        size: 14,
+                        color: isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
+                      ),
                     ),
-                    child: Icon(
-                      Icons.table_restaurant_rounded,
-                      size: 16,
-                      color: isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        table.nomorMeja,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: context.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    table.nomorMeja,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      color: context.textPrimary,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: isOccupied
                       ? const Color(0xFFEA580C).withValues(alpha: 0.15)
@@ -692,10 +721,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Text(
                   isOccupied ? 'TERISI' : 'KOSONG',
                   style: TextStyle(
-                    fontSize: 9.5,
+                    fontSize: 8.5,
                     fontWeight: FontWeight.w800,
                     color: isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
-                    letterSpacing: 0.5,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ),
@@ -829,8 +858,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
