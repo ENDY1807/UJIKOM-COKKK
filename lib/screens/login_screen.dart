@@ -247,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen>
         widget.onLoginSuccess();
       }
     } else {
-      setState(() => _errorMessage = 'Username/Email atau password tidak cocok');
+      setState(() => _errorMessage = widget.db.lastLoginError ?? 'Username/Email atau password tidak cocok');
     }
   }
 
@@ -358,6 +358,18 @@ class _LoginScreenState extends State<LoginScreen>
           displayName: name,
           photoUrl: photo,
         );
+
+        if (user.role == UserRole.pelanggan && !user.isSubscribed) {
+          widget.db.logout();
+          if (mounted) {
+            setState(() {
+              _isGoogleLoading = false;
+              _errorMessage =
+                  'Akun Google Anda (${user.displayEmail}) adalah Pelanggan Reguler. Pemesanan mandiri hanya untuk Pelanggan Berlangganan (VIP). Silakan pesan melalui Waiter di meja.';
+            });
+          }
+          return;
+        }
 
         if (mounted) {
           setState(() {
@@ -492,7 +504,7 @@ class _LoginScreenState extends State<LoginScreen>
         if (didPop) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Aplikasi Rasantara tetap aktif.'),
+            content: Text('Aplikasi KasirNih tetap aktif.'),
             duration: Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
           ),
@@ -723,24 +735,29 @@ class _LoginScreenState extends State<LoginScreen>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.restaurant,
+                  borderRadius: BorderRadius.circular(12),
                   color: Colors.white,
-                  size: 24,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/images/kasirnih_logo.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (c, e, s) => const Icon(Icons.storefront, color: Color(0xFFEA580C)),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               const Text(
-                'Rasantara',
+                'KasirNih',
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
                   color: Colors.white,
+                  letterSpacing: -0.5,
                   height: 1.2,
                 ),
               ),
@@ -849,7 +866,7 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 6),
         Text(
-          'Gunakan akun Rasantara Anda untuk masuk',
+          'Gunakan akun KasirNih Anda untuk masuk',
           style: TextStyle(fontSize: 14, color: Colors.grey[500]),
         ),
         const SizedBox(height: 24),
@@ -1217,39 +1234,42 @@ class _LoginScreenState extends State<LoginScreen>
                 const SizedBox(height: 20),
                 // Logo area
                 Container(
-                  padding: const EdgeInsets.all(18),
+                  width: 72,
+                  height: 72,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFF7300), Color(0xFFEA580C)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: const [
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
                       BoxShadow(
-                        color: Color(0x14000000),
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
+                        color: const Color(0xFFEA580C).withValues(alpha: 0.18),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.restaurant,
-                    color: Colors.white,
-                    size: 36,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      'assets/images/kasirnih_logo.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (c, e, s) => Container(
+                        color: const Color(0xFFEA580C),
+                        child: const Icon(Icons.storefront, color: Colors.white, size: 36),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Rasantara',
+                  'KasirNih',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: 26,
                     fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
                     color: context.textPrimary,
                   ),
                 ),
                 Text(
-                  'Sistem Kasir & Layanan Meja',
+                  'Sistem Kasir & Pemesanan Modern',
                   style: TextStyle(fontSize: 13, color: context.textSecondary),
                 ),
                 const SizedBox(height: 32),
@@ -1417,7 +1437,7 @@ class _LoginScreenState extends State<LoginScreen>
 
                 const SizedBox(height: 24),
                 Text(
-                  'Rasantara Restoran © 2026',
+                  'KasirNih POS © 2026',
                   style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                 ),
               ],

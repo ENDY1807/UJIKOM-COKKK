@@ -94,7 +94,7 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> {
 
     if (_showSplash) {
       return MaterialApp(
-        title: 'Rasantara · Restoran Masakan Nusantara',
+        title: 'KasirNih · Sistem Kasir & Restoran',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
@@ -108,7 +108,7 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> {
     }
 
     return MaterialApp(
-      title: 'Rasantara · Restoran Masakan Nusantara',
+      title: 'KasirNih · Sistem Kasir & Restoran',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

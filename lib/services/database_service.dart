@@ -65,9 +65,19 @@ class DatabaseService extends ChangeNotifier {
       idUser: 5,
       username: 'pelanggan',
       password: '123',
-      namaUser: 'Pelanggan',
+      namaUser: 'Pelanggan VIP',
       role: UserRole.pelanggan,
       phoneNumber: '081234567894',
+      isSubscribed: true,
+    ),
+    UserModel(
+      idUser: 6,
+      username: 'pelanggan_reguler',
+      password: '123',
+      namaUser: 'Pelanggan Reguler',
+      role: UserRole.pelanggan,
+      phoneNumber: '081234567895',
+      isSubscribed: false,
     ),
   ];
   final List<MenuModel> _menus = [...seedDefaultMenus];
@@ -539,7 +549,7 @@ class DatabaseService extends ChangeNotifier {
           id: 'dana_5469',
           provider: PaymentMethodProvider.dana,
           accountNumber: '0812-3456-5469',
-          accountName: _currentUser?.namaUser ?? 'Pelanggan Rasantara',
+          accountName: _currentUser?.namaUser ?? 'Pelanggan KasirNih',
           balance: 175000,
           isDefault: true,
         ),
@@ -547,7 +557,7 @@ class DatabaseService extends ChangeNotifier {
           id: 'gopay_5469',
           provider: PaymentMethodProvider.gopay,
           accountNumber: '0813-9876-5469',
-          accountName: _currentUser?.namaUser ?? 'Pelanggan Rasantara',
+          accountName: _currentUser?.namaUser ?? 'Pelanggan KasirNih',
           balance: 85000,
           isDefault: false,
         ),
@@ -557,9 +567,11 @@ class DatabaseService extends ChangeNotifier {
   }
 
   // --- AUTHENTICATION & LOGIN ---
+  String? lastLoginError;
 
   /// Login sinkron lokal (mendukung Username atau Email)
   bool login(String usernameOrEmail, String password) {
+    lastLoginError = null;
     try {
       final clean = usernameOrEmail.trim().toLowerCase();
       final user = _users.firstWhere(
@@ -572,6 +584,14 @@ class DatabaseService extends ChangeNotifier {
              password == '${u.username}123' ||
              (u.password.isEmpty && u.authProvider == AuthProvider.google)),
       );
+
+      // Pengecekan Khusus Pelanggan: Hanya Pelanggan Berlangganan yang boleh login
+      if (user.role == UserRole.pelanggan && !user.isSubscribed) {
+        lastLoginError =
+            'Pemesanan mandiri via aplikasi hanya untuk Pelanggan Berlangganan (VIP). Silakan hubungi Waiter di meja Anda untuk memesan makanan.';
+        return false;
+      }
+
       _currentUser = user;
       _saveUserSession();
       notifyListeners();
@@ -583,9 +603,13 @@ class DatabaseService extends ChangeNotifier {
 
   /// Login asinkron dengan validasi langsung ke database Supabase (mendukung Username atau Email)
   Future<bool> loginAsync(String usernameOrEmail, String password) async {
+    lastLoginError = null;
     // 1. Cek dari memori lokal terlebih dahulu
     if (login(usernameOrEmail, password)) {
       return true;
+    }
+    if (lastLoginError != null) {
+      return false;
     }
 
     // 2. Jika belum ada di memori, query langsung ke Supabase
@@ -608,6 +632,12 @@ class DatabaseService extends ChangeNotifier {
                 (user.password.isEmpty && user.authProvider == AuthProvider.google);
 
             if (isMatch) {
+              if (user.role == UserRole.pelanggan && !user.isSubscribed) {
+                lastLoginError =
+                    'Pemesanan mandiri via aplikasi hanya untuk Pelanggan Berlangganan (VIP). Silakan hubungi Waiter di meja Anda untuk memesan makanan.';
+                return false;
+              }
+
               final idx = _users.indexWhere((u) => u.idUser == user.idUser);
               if (idx != -1) {
                 _users[idx] = user;
@@ -1328,7 +1358,7 @@ class DatabaseService extends ChangeNotifier {
       nominal: amount,
       saldoSebelum: before,
       saldoSesudah: _userBalance,
-      keterangan: notes ?? 'Top Up Saldo Akun Rasantara',
+      keterangan: notes ?? 'Top Up Saldo Akun KasirNih',
       referensiId: 'TOPUP-SALDO-${DateTime.now().millisecondsSinceEpoch}',
     );
     _paymentMutations.insert(0, mutation);
@@ -1348,7 +1378,7 @@ class DatabaseService extends ChangeNotifier {
         nominal: amount,
         saldoSebelum: before,
         saldoSesudah: _userBalance,
-        keterangan: notes ?? 'Pembayaran Pesanan Menu via Saldo Rasantara',
+        keterangan: notes ?? 'Pembayaran Pesanan Menu via Saldo KasirNih',
         referensiId: orderRef ?? 'ORD-${DateTime.now().millisecondsSinceEpoch}',
       );
       _paymentMutations.insert(0, mutation);

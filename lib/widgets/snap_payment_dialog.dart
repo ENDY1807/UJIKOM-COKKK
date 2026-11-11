@@ -86,10 +86,10 @@ class _SnapPaymentDialogState extends State<SnapPaymentDialog> {
     setState(() => _isLoading = true);
     try {
       final res = await PaymentGatewayService.createSnapTransaction(
-        orderId: 'RSN-${widget.providerName}-${widget.order.idOrder}-${DateTime.now().millisecondsSinceEpoch % 10000}',
+        orderId: 'KSN-${widget.providerName}-${widget.order.idOrder}-${DateTime.now().millisecondsSinceEpoch % 10000}',
         amount: widget.totalAmount,
-        customerName: widget.order.namaPelanggan.isNotEmpty ? widget.order.namaPelanggan : 'Pelanggan Rasantara',
-        email: 'pelanggan@rasantara.com',
+        customerName: widget.order.namaPelanggan.isNotEmpty ? widget.order.namaPelanggan : 'Pelanggan KasirNih',
+        email: 'pelanggan@kasirnih.com',
         enabledPayments: widget.providerName == 'QRIS' ? ['qris'] : null,
       );
       if (mounted) {

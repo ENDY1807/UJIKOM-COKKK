@@ -68,7 +68,7 @@ class ReceiptDialog extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'RASANTARA',
+                      'KASIRNIH',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,

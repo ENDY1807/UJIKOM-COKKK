@@ -10,10 +10,8 @@ import '../theme/app_theme.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'order/order_entry_screen.dart';
 import 'order/order_history_screen.dart';
-import 'order/qr_scanner_dialog.dart';
 import 'cashier/cashier_screen.dart';
 import 'reference/menu_management_screen.dart';
-import 'reference/table_qr_screen.dart';
 import 'reports/report_screen.dart';
 import 'users/user_management_screen.dart';
 import 'profile/profile_screen.dart';
@@ -60,41 +58,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       if (searchQuery != null) _searchQueryForOrder = searchQuery;
       if (couponCode != null) _autoApplyCouponForOrder = couponCode;
     });
-  }
-
-  // Buka Scanner QR Code Kamera (Tombol Utama di Navbar Gaya DANA)
-  Future<void> _openCameraQrScanner(List<NavDestinationItem> destinations) async {
-    final scannedTable = await QrScannerDialog.show(context);
-    if (scannedTable != null && scannedTable.isNotEmpty) {
-      // Cari index layar Pesan Menu / Entri Order
-      final orderIndex = destinations.indexWhere(
-        (d) => d.label.contains('Pesan') || d.label.contains('Order'),
-      );
-
-      setState(() {
-        _scannedTableFromQr = scannedTable;
-        if (orderIndex != -1) {
-          _currentIndex = orderIndex;
-        }
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: const Color(0xFFEA580C),
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text('QR Meja Terbaca: $scannedTable. Membuka menu pesanan...'),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-    }
   }
 
   List<NavDestinationItem> _getDestinationsForRole(UserRole role) {
@@ -185,16 +148,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ));
     }
 
-    // 7. Cetak & Buat QR Meja: Admin, Kasir, Owner
-    if (role == UserRole.administrator || role == UserRole.kasir || role == UserRole.owner) {
-      list.add(NavDestinationItem(
-        label: context.t('QR Meja', 'Table QR'),
-        icon: Icons.qr_code_2_rounded,
-        screen: TableQrScreen(db: widget.db),
-      ));
-    }
-
-    // 8. Profil & Pengaturan Akun: Semua Role
+    // Profil & Pengaturan Akun: Semua Role
     list.add(NavDestinationItem(
       label: context.t('Profil', 'Profile'),
       icon: Icons.person_outline_rounded,
@@ -259,7 +213,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           Text(
                             (user?.username.isNotEmpty ?? false) && user?.username != 'pelanggan'
                                 ? '@${user!.username}'
-                                : 'Pelanggan Rasantara Terverifikasi',
+                                : 'Pelanggan KasirNih Terverifikasi',
                             style: TextStyle(fontSize: 12, color: context.textSecondary),
                           ),
                         ],
@@ -391,13 +345,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFFEA580C).withValues(alpha: 0.2)),
                   ),
-                  child: const Icon(Icons.restaurant_menu, color: Color(0xFFEA580C), size: 16),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset('assets/images/kasirnih_logo.png', width: 26, height: 26, fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.storefront, color: Color(0xFFEA580C), size: 16)),
+                  ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    'Rasantara',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary),
+                    'KasirNih',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: -0.3, color: context.textPrimary),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -405,31 +362,35 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
             actions: [
               if (isDesktop) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: context.isDarkMode
-                        ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
-                        : const Color(0xFFFFF7ED),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
+                InkWell(
+                  onTap: () => _showUserAccountModal(context, currentUser, role),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
                       color: context.isDarkMode
-                          ? const Color(0xFF7C2D12)
-                          : const Color(0xFFFFEDD5),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.shield_outlined, size: 14, color: Color(0xFFEA580C)),
-                      const SizedBox(width: 6),
-                      Text(
-                        role == UserRole.pelanggan && (currentUser?.username.isNotEmpty ?? false) && currentUser?.username != 'pelanggan'
-                            ? '@${currentUser!.username}'
-                            : role.label,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                          ? const Color(0xFF7C2D12).withValues(alpha: 0.3)
+                          : const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: context.isDarkMode
+                            ? const Color(0xFF7C2D12)
+                            : const Color(0xFFFFEDD5),
                       ),
-                    ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.shield_outlined, size: 14, color: Color(0xFFEA580C)),
+                        const SizedBox(width: 6),
+                        Text(
+                          role == UserRole.pelanggan && (currentUser?.username.isNotEmpty ?? false) && currentUser?.username != 'pelanggan'
+                              ? '@${currentUser!.username}'
+                              : role.label,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -513,19 +474,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           ),
                           // Shortcut Scan QR Meja on Desktop
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            child: FilledButton.icon(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFFEA580C),
-                                minimumSize: const Size.fromHeight(42),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              icon: const Icon(Icons.qr_code_scanner, size: 18),
-                              label: const Text('Scan QR Meja', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                              onPressed: () => _openCameraQrScanner(destinations),
-                            ),
-                          ),
-                          Padding(
                             padding: const EdgeInsets.all(16),
                             child: Container(
                               padding: const EdgeInsets.all(12),
@@ -538,7 +486,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Rasantara Restoran',
+                                    'KasirNih POS',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
@@ -669,16 +617,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     List<NavDestinationItem> destinations,
   ) {
 
+    // Tampilkan destinasi sesuai role yang aktif (maksimal 5 tab di mobile)
+    final displayDestinations = destinations.length <= 5
+        ? destinations
+        : destinations.sublist(0, 5);
+
     return Container(
       decoration: BoxDecoration(
         color: context.surfaceCard,
         border: Border(
-          top: BorderSide(color: context.borderSubtle, width: 1.2),
+          top: BorderSide(color: context.borderSubtle, width: 1.0),
         ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
-            blurRadius: 10,
+            blurRadius: 8,
             offset: Offset(0, -2),
           ),
         ],
@@ -686,120 +639,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 64,
+          height: 60,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 1. Beranda
-              Expanded(
-                child: _buildNavItem(
-                  icon: Icons.dashboard_outlined,
-                  activeIcon: Icons.dashboard_rounded,
-                  label: context.t('Beranda', 'Home'),
-                  isSelected: _currentIndex == 0,
-                  onTap: () => setState(() => _currentIndex = 0),
-                ),
-              ),
+            children: displayDestinations.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final item = entry.value;
+              final isSelected = _currentIndex == idx;
+              final shortLabel = item.label.split(' & ').first.split(' / ').first;
 
-              // 2. Pesan Menu
-              Expanded(
+              return Expanded(
                 child: _buildNavItem(
-                  icon: Icons.restaurant_menu_outlined,
-                  activeIcon: Icons.restaurant_menu_rounded,
-                  label: context.t('Pesan', 'Order'),
-                  isSelected: _currentIndex == 1 && destinations.length > 1,
-                  onTap: () {
-                    if (destinations.length > 1) {
-                      setState(() => _currentIndex = 1);
-                    }
-                  },
+                  icon: item.icon,
+                  activeIcon: item.icon,
+                  label: shortLabel,
+                  isSelected: isSelected,
+                  onTap: () => setState(() => _currentIndex = idx),
                 ),
-              ),
-
-              // 3. Tombol Tengah Ergonomis: PINDAI QR MEJA
-              SizedBox(
-                width: 72,
-                child: Center(
-                  child: InkWell(
-                    onTap: () => _openCameraQrScanner(destinations),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEA580C),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x28EA580C),
-                                  blurRadius: 6,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.qr_code_scanner_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            context.t('PINDAI', 'SCAN'),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                              color: Color(0xFFEA580C),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // 4. Aktivitas / Riwayat
-              Expanded(
-                child: _buildNavItem(
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long_rounded,
-                  label: destinations.length > 2 ? destinations[2].label.split(' ').first : context.t('Riwayat', 'History'),
-                  isSelected: _currentIndex == 2 && destinations.length > 2,
-                  onTap: () {
-                    if (destinations.length > 2) {
-                      setState(() => _currentIndex = 2);
-                    }
-                  },
-                ),
-              ),
-
-              // 5. Akun Saya
-              Expanded(
-                child: _buildNavItem(
-                  icon: Icons.person_outline_rounded,
-                  activeIcon: Icons.person_rounded,
-                  label: context.t('Akun', 'Account'),
-                  isSelected: _currentIndex == destinations.indexWhere((d) => d.label.contains('Profil') || d.label.contains('Profile')),
-                  onTap: () {
-                    final pIdx = destinations.indexWhere((d) => d.label.contains('Profil') || d.label.contains('Profile'));
-                    if (pIdx != -1) {
-                      setState(() => _currentIndex = pIdx);
-                    } else {
-                      _showUserAccountModal(context, currentUser, role);
-                    }
-                  },
-                ),
-              ),
-            ],
+              );
+            }).toList(),
           ),
         ),
       ),
@@ -878,7 +736,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     color: const Color(0xFFEA580C),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.restaurant, color: Colors.white, size: 28),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset('assets/images/kasirnih_logo.png', fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.storefront, color: Colors.white, size: 28)),
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -887,12 +748,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Rasantara',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.textPrimary),
+                        'KasirNih',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, letterSpacing: -0.4, color: context.textPrimary),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Cita Rasa Kuliner Nusantara',
+                        'Sistem Kasir & Restoran Modern',
                         style: TextStyle(fontSize: 11, color: context.textSecondary),
                       ),
                       const SizedBox(height: 6),
@@ -996,8 +857,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ),
         content: Text(
           context.t(
-            'Apakah Anda yakin ingin keluar dari sesi akun Rasantara?',
-            'Are you sure you want to log out of your Rasantara session?',
+            'Apakah Anda yakin ingin keluar dari sesi akun KasirNih?',
+            'Are you sure you want to log out of your KasirNih session?',
           ),
           style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
         ),

@@ -146,7 +146,7 @@ class OrderSimulationService extends ChangeNotifier {
             if (_db!.appNotifications) {
               AudioNotificationService.showSystemNotification(
                 title: 'Pesanan #$orderId Sedang Dimasak',
-                message: 'Koki dapur Rasantara mulai meracik hidangan pesanan Anda.',
+                message: 'Koki dapur KasirNih mulai meracik hidangan pesanan Anda.',
               );
             }
           } else if (state.currentStep == 3) {
@@ -154,7 +154,7 @@ class OrderSimulationService extends ChangeNotifier {
             if (_db!.appNotifications) {
               AudioNotificationService.showSystemNotification(
                 title: 'Pesanan #$orderId Sedang Diantar!',
-                message: 'Driver kurir Rasantara sedang dalam perjalanan mengantar hidangan Anda.',
+                message: 'Driver kurir KasirNih sedang dalam perjalanan mengantar hidangan Anda.',
               );
             }
           } else if (state.currentStep >= 4) {

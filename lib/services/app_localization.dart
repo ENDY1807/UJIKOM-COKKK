@@ -38,11 +38,11 @@ class AppLocalization {
 
       // Beranda / Dashboard
       'hero_tagline': 'Cita Rasa Otentik Masakan Nusantara',
-      'resto_name': 'Rasantara Resto & Cafe',
+      'resto_name': 'KasirNih Resto & Cafe',
       'resto_desc': 'Nikmati hidangan warisan Nusantara dengan bumbu rempah pilihan',
       'search_hint': 'Cari menu favorit Anda...',
       'best_seller_title': 'Menu Best Seller & Rekomendasi',
-      'best_seller_sub': 'Paling banyak dipesan pelanggan Rasantara',
+      'best_seller_sub': 'Paling banyak dipesan pelanggan KasirNih',
       'kategori_title': 'Kategori Menu Pilihan',
       'kategori_sub': 'Jelajahi beragam cita rasa kuliner Nusantara',
       'voucher_title': 'Voucher & Kupon Hemat',
@@ -52,11 +52,11 @@ class AppLocalization {
       'detail_pesan': 'Detail & Pesan',
 
       // Entri Order / Pemesanan
-      'order_title': 'Pemesanan Rasantara',
+      'order_title': 'Pemesanan KasirNih',
       'delivery_label': 'Take Away (Pengantaran)',
       'pickup_label': 'Self Pick-Up (Ambil Sendiri)',
       'dinein_label': 'Makan di Tempat (Dine In)',
-      'flash_sale_title': 'Flash Sale Rasantara',
+      'flash_sale_title': 'Flash Sale KasirNih',
       'flash_sale_desc': 'Diskonnya s.d. 40%, serbu hidangan lezat sekarang!',
       'cat_semua': 'Semua',
       'cat_makanan': 'Makanan',
@@ -68,7 +68,7 @@ class AppLocalization {
       'pesan_sekarang': 'Pesan Sekarang',
       'pesan_dan_antar': 'Pesan dan antar sekarang',
       'keranjang_kosong': 'Keranjang masih kosong',
-      'rincian_pesanan': 'Rincian Pesanan Rasantara',
+      'rincian_pesanan': 'Rincian Pesanan KasirNih',
       'pilih_alamat': 'Pilih Alamat Pengantaran',
       'alamat_saya': 'Alamat Saya',
       'peta_osm': 'Peta OSM',
@@ -123,11 +123,11 @@ class AppLocalization {
 
       // Home / Dashboard
       'hero_tagline': 'Authentic Taste of Indonesian Heritage',
-      'resto_name': 'Rasantara Resto & Cafe',
+      'resto_name': 'KasirNih Resto & Cafe',
       'resto_desc': 'Indulge in time-honored Indonesian cuisine infused with aromatic herbs and spices',
       'search_hint': 'Search your favorite dishes...',
       'best_seller_title': 'Best Sellers & Recommendations',
-      'best_seller_sub': 'Most popular dishes loved by Rasantara guests',
+      'best_seller_sub': 'Most popular dishes loved by KasirNih guests',
       'kategori_title': 'Featured Categories',
       'kategori_sub': 'Explore a diverse culinary tapestry of Indonesia',
       'voucher_title': 'Vouchers & Savings Coupons',
@@ -137,11 +137,11 @@ class AppLocalization {
       'detail_pesan': 'Details & Order',
 
       // Order Entry
-      'order_title': 'Rasantara Ordering',
+      'order_title': 'KasirNih Ordering',
       'delivery_label': 'Take Away (Delivery)',
       'pickup_label': 'Self Pick-Up',
       'dinein_label': 'Dine In (Table)',
-      'flash_sale_title': 'Rasantara Flash Sale',
+      'flash_sale_title': 'KasirNih Flash Sale',
       'flash_sale_desc': 'Up to 40% OFF, feast on signature recipes today!',
       'cat_semua': 'All',
       'cat_makanan': 'Food',
@@ -153,7 +153,7 @@ class AppLocalization {
       'pesan_sekarang': 'Order Now',
       'pesan_dan_antar': 'Place order & deliver now',
       'keranjang_kosong': 'Your cart is still empty',
-      'rincian_pesanan': 'Rasantara Order Summary',
+      'rincian_pesanan': 'KasirNih Order Summary',
       'pilih_alamat': 'Select Delivery Address',
       'alamat_saya': 'My Addresses',
       'peta_osm': 'OSM Map',

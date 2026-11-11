@@ -118,7 +118,7 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
       final response = await http
           .get(
             url,
-            headers: {'User-Agent': 'Rasantara-Restoran-OpenStreetMap/1.0'},
+            headers: {'User-Agent': 'KasirNih-Restoran-OpenStreetMap/1.0'},
           )
           .timeout(const Duration(seconds: 5));
 
@@ -161,7 +161,7 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
       final response = await http
           .get(
             url,
-            headers: {'User-Agent': 'Rasantara-Restoran-OpenStreetMap/1.0'},
+            headers: {'User-Agent': 'KasirNih-Restoran-OpenStreetMap/1.0'},
           )
           .timeout(const Duration(seconds: 4));
 
@@ -740,7 +740,7 @@ class _OsmMapWidgetState extends State<OsmMapWidget> {
                       ? 'https://a.basemaps.cartocdn.com/light_all/$_zoom/$tileX/$tileY.png'
                       : 'https://tile.openstreetmap.org/$_zoom/$tileX/$tileY.png',
                   fit: BoxFit.cover,
-                  headers: const {'User-Agent': 'Rasantara-Restoran-App/1.0'},
+                  headers: const {'User-Agent': 'KasirNih-Restoran-App/1.0'},
                   errorBuilder: (ctx, err, stack) {
                     return Container(
                       color: const Color(0xFFF1F5F9),

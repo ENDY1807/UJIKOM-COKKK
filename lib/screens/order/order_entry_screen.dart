@@ -15,7 +15,6 @@ import '../../widgets/qris_payment_dialog.dart';
 import '../../widgets/menu_detail_dialog.dart';
 import '../profile/manage_addresses_screen.dart';
 import 'gofood_tracking_dialog.dart';
-import 'qr_scanner_dialog.dart';
 import '../../widgets/app_loading_animation.dart';
 import '../../widgets/biometric_auth_dialog.dart';
 import '../../services/audio_notification_service.dart';
@@ -296,7 +295,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     if (!menu.isTersedia) return;
     if (_serviceType == OrderServiceType.dineIn &&
         (_selectedTableNo == null || _selectedTableNo!.isEmpty)) {
-      _showScanRequiredDialog();
+      _showSelectTableDialog(pendingMenuToAdd: menu);
       return;
     }
     setState(() {
@@ -312,62 +311,176 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     });
   }
 
-  void _showScanRequiredDialog() {
-    showDialog(
+  void _showSelectTableDialog({MenuModel? pendingMenuToAdd}) {
+    final customTableCtrl = TextEditingController(
+      text: (_selectedTableNo != null && !_selectedTableNo!.startsWith('Meja ')) ? _selectedTableNo : '',
+    );
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.surfaceCard,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C)),
-            const SizedBox(width: 8),
-            Text(
-              context.t('Scan QR Meja Diperlukan', 'Table QR Scan Required'),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return Container(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 16,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
             ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.t(
-                'Untuk pesanan Makan di Tempat, Anda wajib memindai QR Code yang berada di atas meja makan Anda terlebih dahulu.',
-                'For Dine-In orders, you must scan the QR code located on your dining table first.',
+            decoration: BoxDecoration(
+              color: context.surfaceCard,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: context.borderSubtle),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: context.borderSubtle,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEA580C).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.table_restaurant_rounded, color: Color(0xFFEA580C), size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.t('Pilih Nomor Meja', 'Select Table Number'),
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              context.t('Tentukan meja pelanggan untuk pesanan Makan di Tempat', 'Specify table for customer Dine-In order'),
+                              style: TextStyle(fontSize: 12, color: context.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    context.t('Daftar Meja (01 - 20):', 'Table List (01 - 20):'),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.textSecondary),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: List.generate(20, (index) {
+                      final tableNum = (index + 1).toString().padLeft(2, '0');
+                      final tableName = 'Meja $tableNum';
+                      final isSelected = _selectedTableNo == tableName;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedTableNo = tableName;
+                            _serviceType = OrderServiceType.dineIn;
+                          });
+                          Navigator.of(ctx).pop();
+                          if (pendingMenuToAdd != null) {
+                            _addToCart(pendingMenuToAdd);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          width: 58,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFFEA580C)
+                                : (context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected ? const Color(0xFFEA580C) : context.borderSubtle,
+                              width: isSelected ? 2 : 1,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              tableNum,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected
+                                    ? Colors.white
+                                    : (context.isDarkMode ? Colors.white : const Color(0xFF0F172A)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    context.t('Atau Input Nomor / Area Khusus:', 'Or Custom Table / Area:'),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.textSecondary),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: customTableCtrl,
+                          decoration: InputDecoration(
+                            hintText: context.t('Contoh: VIP 1, Outdoor 3', 'e.g. VIP 1, Outdoor 3'),
+                            hintStyle: TextStyle(fontSize: 13, color: context.textSecondary),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEA580C),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () {
+                          final text = customTableCtrl.text.trim();
+                          if (text.isNotEmpty) {
+                            setState(() {
+                              _selectedTableNo = text;
+                              _serviceType = OrderServiceType.dineIn;
+                            });
+                            Navigator.of(ctx).pop();
+                            if (pendingMenuToAdd != null) {
+                              _addToCart(pendingMenuToAdd);
+                            }
+                          }
+                        },
+                        child: Text(context.t('Terapkan', 'Apply'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
             ),
-            const SizedBox(height: 10),
-            Text(
-              context.t(
-                'Arahkan kamera ke QR Meja untuk membuka akses pemilihan hidangan.',
-                'Point your camera at the Table QR to unlock menu selection.',
-              ),
-              style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(context.t('Batal', 'Cancel'), style: const TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEA580C),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _scanTableQr();
-            },
-            icon: const Icon(Icons.qr_code_scanner, size: 16),
-            label: Text(context.t('Pindai QR Meja Sekarang', 'Scan Table QR Now')),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -501,25 +614,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     );
   }
 
-  // ── Scan QR Code Meja ──
-  Future<void> _scanTableQr() async {
-    final result = await QrScannerDialog.show(context);
-    if (result != null && result.isNotEmpty) {
-      setState(() {
-        _serviceType = OrderServiceType.dineIn;
-        _selectedTableNo = result;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: const Color(0xFFEA580C),
-            content: Text(context.t('QR Meja Terbaca: $result. Silakan pilih hidangan favorit.', 'Table QR Scanned: $result. Please select your favorite dishes.')),
-          ),
-        );
-      }
-    }
-  }
-
   // ── Konfirmasi dan Submit Pesanan ──
   Future<void> _confirmAndSubmitOrder({String? paymentMethodId}) async {
     if (_cart.isEmpty) {
@@ -533,11 +627,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         (_selectedTableNo == null || _selectedTableNo!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.t('Silakan scan QR Meja Anda terlebih dahulu untuk pesanan Makan di Tempat.', 'Please scan your Table QR first for Dine-In orders.')),
+          content: Text(context.t('Silakan tentukan nomor meja terlebih dahulu untuk pesanan Makan di Tempat.', 'Please select table number first for Dine-In orders.')),
           backgroundColor: const Color(0xFFDC2626),
         ),
       );
-      _scanTableQr();
+      _showSelectTableDialog();
       return;
     }
 
@@ -1583,7 +1677,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                       if (_serviceType == OrderServiceType.takeAway) {
                                         _openOsmMapPicker();
                                       } else {
-                                        _scanTableQr();
+                                        _showSelectTableDialog();
                                       }
                                     },
                                     child: Text(context.t('Ganti', 'Change'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
@@ -2272,29 +2366,33 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         backgroundColor: context.surfaceBg,
         body: Column(
           children: [
-            // ── 1. Tab Selector Tipe Layanan (Disembunyikan jika Makan di Tempat via scan QR) ──
-            if (_serviceType != OrderServiceType.dineIn)
-              Container(
-                color: context.surfaceBg,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: context.fillSubtle,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [OrderServiceType.takeAway, OrderServiceType.selfPickUp].map((type) {
-                      final isSelected = _serviceType == type;
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _serviceType = type),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFFEA580C) : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+            // ── 1. Tab Selector Tipe Layanan ──
+            Container(
+              color: context.surfaceBg,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: context.fillSubtle,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [OrderServiceType.dineIn, OrderServiceType.takeAway, OrderServiceType.selfPickUp].map((type) {
+                    final isSelected = _serviceType == type;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() => _serviceType = type);
+                          if (type == OrderServiceType.dineIn && (_selectedTableNo == null || _selectedTableNo!.isEmpty)) {
+                            _showSelectTableDialog();
+                          }
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFFEA580C) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -2392,7 +2490,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         color: const Color(0xFF16A34A).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF16A34A), size: 20),
+                      child: const Icon(Icons.table_restaurant_rounded, color: Color(0xFF16A34A), size: 20),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -2404,7 +2502,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
                           ),
                           Text(
-                            context.t('Terkunci otomatis via scan QR Meja', 'Auto-locked via Table QR scan'),
+                            context.t('Makan di Tempat (Dine-In)', 'Dine-In Table'),
                             style: const TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w600),
                           ),
                         ],
@@ -2416,25 +2514,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         foregroundColor: const Color(0xFFEA580C),
                         side: const BorderSide(color: Color(0xFFEA580C)),
                       ),
-                      onPressed: _scanTableQr,
-                      icon: const Icon(Icons.qr_code_scanner, size: 14),
-                      label: Text(context.t('Scan Ulang', 'Rescan'), style: const TextStyle(fontSize: 11)),
-                    ),
-                    const SizedBox(width: 6),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        foregroundColor: context.textSecondary,
-                        side: BorderSide(color: context.borderSubtle),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _selectedTableNo = null;
-                          _serviceType = OrderServiceType.takeAway;
-                        });
-                      },
-                      icon: const Icon(Icons.arrow_back_rounded, size: 14),
-                      label: Text(context.t('Ke Take Away', 'To Take Away'), style: const TextStyle(fontSize: 11)),
+                      onPressed: () => _showSelectTableDialog(),
+                      icon: const Icon(Icons.edit_calendar_rounded, size: 14),
+                      label: Text(context.t('Ganti Meja', 'Change Table'), style: const TextStyle(fontSize: 11)),
                     ),
                   ],
                 )
@@ -2443,7 +2525,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   children: [
                     Expanded(
                       child: InkWell(
-                        onTap: _scanTableQr,
+                        onTap: () => _showSelectTableDialog(),
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -2455,33 +2537,16 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C), size: 18),
+                              const Icon(Icons.table_restaurant_rounded, color: Color(0xFFEA580C), size: 18),
                               const SizedBox(width: 8),
                               Text(
-                                context.t('Pindai QR di Meja Anda', 'Scan Table QR Code'),
+                                context.t('Pilih Nomor Meja', 'Select Table Number'),
                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                               ),
                             ],
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        foregroundColor: context.textSecondary,
-                        side: BorderSide(color: context.borderSubtle),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _selectedTableNo = null;
-                          _serviceType = OrderServiceType.takeAway;
-                        });
-                      },
-                      icon: const Icon(Icons.arrow_back_rounded, size: 14),
-                      label: Text(context.t('Take Away', 'Take Away'), style: const TextStyle(fontSize: 11)),
                     ),
                   ],
                 ),

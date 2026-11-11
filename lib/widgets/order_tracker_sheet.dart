@@ -863,7 +863,7 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                       TransactionModel(
                                         idTransaksi: widget.order.idOrder,
                                         idUser: widget.order.idUser,
-                                        namaKasir: 'Kasir Rasantara',
+                                        namaKasir: 'Kasir KasirNih',
                                         order: widget.order,
                                         tanggal: widget.order.tanggal,
                                         totalBayar: widget.order.grandTotalSetelahDiskon,

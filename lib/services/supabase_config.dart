@@ -16,7 +16,7 @@ class SupabaseConfig {
   static const String googleClientId =
       '124635820971-cn5609qedpjbrlq8f181kk6vcojp8jjk.apps.googleusercontent.com';
 
-  // Android Client ID (Rasantara Mobile - package com.example.kasir_restoran)
+  // Android Client ID (KasirNih Mobile - package com.example.kasir_restoran)
   static const String googleAndroidClientId =
       '124635820971-lr7jvkgi3hur5pukh3nasrlo4j6b9ktk.apps.googleusercontent.com';
   static const String googleClientSecret = String.fromEnvironment(

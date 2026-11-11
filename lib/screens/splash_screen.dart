@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
-import '../widgets/app_loading_animation.dart';
 
 class SplashScreen extends StatefulWidget {
   final DatabaseService db;
@@ -19,26 +18,29 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _animController;
-  late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+      duration: const Duration(milliseconds: 700),
     );
 
-    // Panggil onFinish setelah animasi splash selesai (2.2 detik)
-    Future.delayed(const Duration(milliseconds: 2200), () {
+    _fadeAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.92, end: 1.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+    );
+
+    _animController.forward();
+
+    // Transisi cepat dan responsif (1.2 detik cukup untuk inisialisasi)
+    Future.delayed(const Duration(milliseconds: 1200), () {
       if (!mounted) return;
       widget.onFinish();
     });
@@ -52,127 +54,107 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
-      body: Stack(
-        children: [
-          // Background subtle warm glow circles
-          Positioned(
-            top: -100,
-            right: -80,
-            child: Container(
-              width: 320,
-              height: 320,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFEA580C).withValues(alpha: 0.05),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -120,
-            left: -80,
-            child: Container(
-              width: 360,
-              height: 360,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFEA580C).withValues(alpha: 0.04),
-              ),
-            ),
-          ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-          // Central Animated Branding
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedBuilder(
-                  animation: _animController,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: Opacity(
-                        opacity: _fadeAnimation.value,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: Container(
-                    width: 110,
-                    height: 110,
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFFAFAF9),
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Spacer(),
+
+                  // Logo Baru KasirNih (Transparan)
+                  Container(
+                    width: 140,
+                    height: 140,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFEA580C), Color(0xFFC2410C)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFEA580C).withValues(alpha: 0.35),
-                          blurRadius: 24,
+                          color: const Color(0xFFEA580C).withValues(alpha: 0.18),
+                          blurRadius: 28,
                           offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.restaurant_menu_rounded,
-                        color: Colors.white,
-                        size: 54,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Image.asset(
+                        'assets/images/kasirnih_logo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: const Color(0xFFEA580C),
+                            child: const Center(
+                              child: Icon(Icons.storefront_rounded, size: 64, color: Colors.white),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                const Text(
-                  'RASANTARA',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 4.0,
-                    color: Color(0xFF1E293B),
+                  // Nama Brand
+                  Text(
+                    'KasirNih',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Cita Rasa Kuliner Nusantara',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.0,
-                    color: Color(0xFFEA580C),
-                  ),
-                ),
-                const SizedBox(height: 36),
+                  const SizedBox(height: 6),
 
-                // Animasi Loading Interaktif Gojek & Rasantara Style
-                const AppLoadingAnimation(
-                  size: 42,
-                  primaryColor: Color(0xFFEA580C),
-                  secondaryColor: Color(0xFFF97316),
-                ),
-              ],
+                  // Tagline
+                  Text(
+                    'Point of Sale & Manajemen Restoran Modern',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+
+                  // Minimalist Clean Progress Indicator (Anti-Slop)
+                  SizedBox(
+                    width: 36,
+                    height: 3,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: const LinearProgressIndicator(
+                        backgroundColor: Color(0xFFE2E8F0),
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEA580C)),
+                      ),
+                    ),
+                  ),
+
+                  const Spacer(),
+
+                  // Footer Version
+                  Text(
+                    'KasirNih v3.0 • Cepat & Presisi',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.3,
+                      color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
           ),
-
-          // Bottom Footer
-          const Positioned(
-            bottom: 24,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: [
-                Text(
-                  'Digital Restaurant Ecosystem • v2.4.0',
-                  style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8), letterSpacing: 0.5),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -255,15 +255,15 @@ class PaymentGatewayService {
       },
       'customer_details': {
         'first_name': customerName,
-        'email': email ?? 'pelanggan@rasantara.com',
+        'email': email ?? 'pelanggan@kasirnih.com',
         'phone': phone ?? '081234567890',
       },
       'item_details': [
         {
-          'id': 'FOOD-RSN',
+          'id': 'FOOD-KSN',
           'price': amount,
           'quantity': 1,
-          'name': 'Menu Kuliner Rasantara',
+          'name': 'Menu Kuliner KasirNih',
         }
       ],
     };
@@ -534,7 +534,7 @@ class PaymentGatewayService {
       'externalStoreId': PaymentGatewayConfig.danaExternalStoreId,
       'additionalInfo': {
         'order': {
-          'orderTitle': orderTitle ?? 'Rasantara Restoran Order',
+          'orderTitle': orderTitle ?? 'KasirNih Restoran Order',
           'scenario': 'API',
         },
         'mcc': PaymentGatewayConfig.danaMcc,

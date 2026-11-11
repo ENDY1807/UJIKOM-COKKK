@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Komponen animasi loading interaktif terinspirasi aplikasi Gojek & Rasantara
+/// Komponen animasi loading interaktif terinspirasi aplikasi KasirNih
 /// Menampilkan cincin rotasi aksen ganda dengan denyut (pulse) halus ikon kuliner
 class AppLoadingAnimation extends StatefulWidget {
   final double size;
@@ -14,7 +14,7 @@ class AppLoadingAnimation extends StatefulWidget {
     super.key,
     this.size = 56.0,
     this.message,
-    this.primaryColor = const Color(0xFFEA580C), // Rasantara Orange
+    this.primaryColor = const Color(0xFFEA580C), // KasirNih Orange
     this.secondaryColor = const Color(0xFFF97316), // Warm Orange Accent
     this.icon = Icons.restaurant_menu_rounded,
   });

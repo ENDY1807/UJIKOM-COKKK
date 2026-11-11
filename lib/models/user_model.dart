@@ -47,6 +47,7 @@ class UserModel {
   final bool isTwoFactorEnabled;
   final String? twoFactorType;
   final bool isConfigured;
+  final bool isSubscribed;
 
   UserModel({
     required this.idUser,
@@ -63,7 +64,10 @@ class UserModel {
     this.isTwoFactorEnabled = false,
     this.twoFactorType,
     this.isConfigured = true,
+    this.isSubscribed = false,
   });
+
+  bool get canSelfOrder => role != UserRole.pelanggan || isSubscribed;
 
   bool get isGoogleLinked =>
       authProvider == AuthProvider.google || authProvider == AuthProvider.both;
@@ -93,6 +97,7 @@ class UserModel {
     bool? isTwoFactorEnabled,
     String? twoFactorType,
     bool? isConfigured,
+    bool? isSubscribed,
   }) {
     return UserModel(
       idUser: idUser ?? this.idUser,
@@ -109,6 +114,7 @@ class UserModel {
       isTwoFactorEnabled: isTwoFactorEnabled ?? this.isTwoFactorEnabled,
       twoFactorType: twoFactorType ?? this.twoFactorType,
       isConfigured: isConfigured ?? this.isConfigured,
+      isSubscribed: isSubscribed ?? this.isSubscribed,
     );
   }
 
@@ -135,6 +141,12 @@ class UserModel {
         map['is_configured'] == 'true' ||
         (map['phone_number'] != null && map['phone_number'].toString().isNotEmpty);
 
+    final bool subscribed = map['is_subscribed'] == true ||
+        map['is_subscribed'] == 1 ||
+        map['is_subscribed'] == 'true' ||
+        map['is_vip'] == true ||
+        map['berlangganan'] == true;
+
     return UserModel(
       idUser: map['id_user'] is int
           ? map['id_user'] as int
@@ -152,6 +164,7 @@ class UserModel {
       isTwoFactorEnabled: is2fa,
       twoFactorType: map['two_factor_type']?.toString(),
       isConfigured: cfg,
+      isSubscribed: subscribed,
     );
   }
 
@@ -172,6 +185,7 @@ class UserModel {
       'is_two_factor_enabled': isTwoFactorEnabled,
       if (twoFactorType != null) 'two_factor_type': twoFactorType,
       'is_configured': isConfigured,
+      'is_subscribed': isSubscribed,
     };
   }
 }
