@@ -42,6 +42,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _regPasswordController = TextEditingController();
   final _regConfirmPasswordController = TextEditingController();
   bool _regObscure = true;
+  bool _regIsSubscribed = true;
 
   bool _isRegisterMode = false;
   bool _isGoogleLoading = false;
@@ -285,6 +286,7 @@ class _LoginScreenState extends State<LoginScreen>
         password: password,
         namaUser: name,
         email: email,
+        isSubscribed: _regIsSubscribed,
       );
       _loginUsernameController.text = email;
       _loginPasswordController.text = password;
@@ -892,13 +894,40 @@ class _LoginScreenState extends State<LoginScreen>
           onToggle: () => setState(() => _loginObscure = !_loginObscure),
           onSubmit: (_) => _handleLogin(),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
+
+        // Catatan Table Service
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF7ED),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFFFEDD5)),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, size: 15, color: Color(0xFFEA580C)),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Sistem Layanan Meja: Waiter mencatat pesanan di meja. Pemesanan mandiri melalui aplikasi untuk Pelanggan Berlangganan (VIP).',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF9A3412), height: 1.3),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
 
         _primaryButton('Masuk Sekarang', Icons.login, _handleLogin),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
+
+        _roleShortcutSection(),
+        const SizedBox(height: 16),
 
         _orDivider(),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
 
         _googleSignInButton(),
       ],
@@ -920,10 +949,10 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 6),
         Text(
-          'Buat akun pelanggan untuk memesan menu',
+          'Daftar sebagai Pelanggan Berlangganan (VIP) untuk memesan menu',
           style: TextStyle(fontSize: 14, color: Colors.grey[500]),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
         if (_errorMessage != null && _isRegisterMode)
           _feedbackBanner(_errorMessage!, false),
@@ -959,16 +988,127 @@ class _LoginScreenState extends State<LoginScreen>
           obscure: _regObscure,
           onToggle: () => setState(() => _regObscure = !_regObscure),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
+
+        // Opsi Berlangganan VIP
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: context.surfaceCard,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: context.borderSubtle),
+          ),
+          child: InkWell(
+            onTap: () => setState(() => _regIsSubscribed = !_regIsSubscribed),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: _regIsSubscribed,
+                  activeColor: const Color(0xFFEA580C),
+                  onChanged: (val) => setState(() => _regIsSubscribed = val ?? true),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pelanggan Berlangganan (VIP)',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Dapat login dan memesan mandiri langsung dari aplikasi di meja',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
 
         _primaryButton('Buat Akun Sekarang', Icons.person_add, _handleRegister),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
 
         _orDivider(),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
 
         _googleSignInButton(isRegister: true),
       ],
+    );
+  }
+
+  Widget _roleShortcutSection() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.surfaceCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.badge_outlined, size: 14, color: Color(0xFFEA580C)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Akun Pengujian Cepat (UKK Paket 1):',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: context.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _roleChip('Admin', 'admin', '123'),
+              _roleChip('Waiter', 'waiter', '123'),
+              _roleChip('Kasir', 'kasir', '123'),
+              _roleChip('Owner', 'owner', '123'),
+              _roleChip('Pelanggan VIP', 'pelanggan', '123'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _roleChip(String label, String username, String pass) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _loginUsernameController.text = username;
+          _loginPasswordController.text = pass;
+        });
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEA580C).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFEA580C).withValues(alpha: 0.3)),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFFEA580C),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1423,6 +1563,8 @@ class _LoginScreenState extends State<LoginScreen>
                                       Icons.login,
                                       _handleLogin,
                                     ),
+                                    const SizedBox(height: 12),
+                                    _roleShortcutSection(),
                                     const SizedBox(height: 16),
                                     _orDivider(),
                                     const SizedBox(height: 16),

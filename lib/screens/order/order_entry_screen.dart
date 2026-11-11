@@ -1,17 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import '../../models/menu_model.dart';
 import '../../models/order_model.dart';
 import '../../models/payment_method_model.dart';
 import '../../services/database_service.dart';
-import '../../widgets/osm_map_widget.dart';
 import '../../widgets/va_payment_dialog.dart';
 import '../../widgets/snap_payment_dialog.dart';
 import '../../widgets/qris_payment_dialog.dart';
 import '../../widgets/menu_detail_dialog.dart';
-import 'gofood_tracking_dialog.dart';
 import '../../widgets/app_loading_animation.dart';
 import '../../widgets/biometric_auth_dialog.dart';
 import '../../services/audio_notification_service.dart';
@@ -76,11 +73,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   // Dine-In Specifics
   String? _selectedTableNo;
 
-  // Delivery Specifics (GoFood OpenStreetMap)
-  int _deliveryFee = 8000;
-  double _deliveryDistanceKm = 2.4;
-  String _deliveryEstimatedTime = '20 - 30 Menit';
-  Position? _currentPosition;
+  // Delivery / Take Away Specifics
+  final int _deliveryFee = 0;
+  final double _deliveryDistanceKm = 0.0;
+  final String _deliveryEstimatedTime = '15 Menit';
 
   // Filter & Search
   MenuCategory _selectedCategory = MenuCategory.semua;
@@ -500,28 +496,32 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     });
   }
 
-  // ── Dialog Pemilih Peta OSM ──
+  // ── Dialog Catatan Pengantaran / Take Away ──
   void _openOsmMapPicker() {
-    showModalBottomSheet(
+    final noteCtrl = TextEditingController(text: _deliveryAddressController.text);
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => OsmMapWidget(
-        initialLat: _currentPosition?.latitude ?? -6.2088,
-        initialLng: _currentPosition?.longitude ?? 106.8456,
-        onLocationSelected: (result) {
-          setState(() {
-            _deliveryAddressController.text = result.formattedAddress;
-            _deliveryFee = result.deliveryFee;
-            _deliveryDistanceKm = result.distanceKm;
-            _deliveryEstimatedTime = result.estimatedTime;
-          });
-          widget.db.saveTakeAwayAddress(
-            result.formattedAddress,
-            lat: result.latitude,
-            lng: result.longitude,
-          );
-        },
+      builder: (ctx) => AlertDialog(
+        title: Text(context.t('Catatan Layanan', 'Service Notes')),
+        content: TextField(
+          controller: noteCtrl,
+          decoration: InputDecoration(
+            labelText: context.t('Catatan / Alamat Pemesan', 'Notes / Customer Address'),
+            hintText: context.t('Contoh: Bungkus terpisah / Meja VIP', 'Example: Separate box / VIP Table'),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.t('Batal', 'Cancel'))),
+          FilledButton(
+            onPressed: () {
+              setState(() {
+                _deliveryAddressController.text = noteCtrl.text.trim();
+              });
+              Navigator.pop(ctx);
+            },
+            child: Text(context.t('Simpan', 'Save')),
+          ),
+        ],
       ),
     );
   }
@@ -714,8 +714,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     }
 
     final savedAddress = _deliveryAddressController.text.trim();
-    final savedDeliveryFee = _deliveryFee;
-    final savedEstTime = _deliveryEstimatedTime;
     final isDeliveryOrder = _serviceType == OrderServiceType.takeAway;
     final grandTotalFinal = _grandTotal;
 
@@ -926,27 +924,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           ],
         ),
         actions: [
-          if (isDeliveryOrder)
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFEA580C),
-                side: const BorderSide(color: Color(0xFFEA580C)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              icon: const Icon(Icons.delivery_dining, size: 18),
-              label: Text(context.t('Lacak Pesanan (GoFood)', 'Track Order (GoFood)'), style: const TextStyle(fontWeight: FontWeight.bold)),
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                GoFoodTrackingDialog.show(
-                  context,
-                  order: order,
-                  destinationAddress: savedAddress.isNotEmpty ? savedAddress : context.t('Alamat Pemesan', 'Customer Address'),
-                  deliveryFee: savedDeliveryFee,
-                  estimatedTime: savedEstTime,
-                );
-              },
-            ),
           FilledButton.icon(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFEA580C),

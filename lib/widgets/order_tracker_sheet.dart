@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/order_model.dart';
 import '../models/transaction_model.dart';
-import '../screens/order/gofood_tracking_dialog.dart';
 import '../services/database_service.dart';
 import '../services/order_simulation_service.dart';
 import '../theme/app_theme.dart';
@@ -814,36 +813,26 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
 
                         const SizedBox(height: 16),
 
-                        // ── Tombol Lacak Driver (Live GPS Map) ──
+                        // ── Status Table Service / Take Away ──
                         Container(
                           margin: const EdgeInsets.only(bottom: 14),
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF16A34A),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 13),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              elevation: 1,
-                            ),
-                            onPressed: () {
-                              String dest = widget.order.keterangan.isNotEmpty
-                                  ? widget.order.keterangan
-                                  : 'Jl. Sudirman No. 45, Jakarta';
-                              if (dest.contains('Alamat Antar:')) {
-                                dest = dest.split('Alamat Antar:').last.split('\n').first.trim();
-                              }
-                              GoFoodTrackingDialog.show(
-                                context,
-                                order: widget.order,
-                                destinationAddress: dest,
-                              );
-                            },
-                            icon: const Icon(Icons.two_wheeler_rounded, size: 20),
-                            label: const Text(
-                              'Lacak Lokasi Driver (Live Map & GPS)',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                            ),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.table_restaurant_rounded, color: Color(0xFF2563EB), size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Pesanan ${widget.order.noMeja} sedang diproses untuk layanan meja restoran.',
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF1E40AF), fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
 

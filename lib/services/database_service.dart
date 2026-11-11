@@ -676,6 +676,7 @@ class DatabaseService extends ChangeNotifier {
     required String password,
     required String namaUser,
     String? email,
+    bool isSubscribed = true,
   }) async {
     // Cek apakah username sudah ada
     final cleanUsername = username.trim();
@@ -694,6 +695,7 @@ class DatabaseService extends ChangeNotifier {
       namaUser: namaUser.trim(),
       role: UserRole.pelanggan,
       googleEmail: email?.trim(),
+      isSubscribed: isSubscribed,
     );
 
     // Simpan ke Supabase jika terhubung atau sinkronisasi langsung ke cloud
