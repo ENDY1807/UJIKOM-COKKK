@@ -198,41 +198,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            Text(
-                              'Rasantara',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: context.textPrimary,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEA580C),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'POS',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                          ],
+                        Text(
+                          'Rasantara',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: context.textPrimary,
+                            letterSpacing: -0.3,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Table Service & Kasir',
+                          'Autentik Cita Rasa Nusantara',
                           style: TextStyle(
                             fontSize: 12,
                             color: context.textSecondary,

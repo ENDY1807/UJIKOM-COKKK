@@ -496,7 +496,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Rasantara POS',
+                                    'Rasantara',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
@@ -505,7 +505,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                                   ),
                                   SizedBox(height: 2),
                                   Text(
-                                    'Sistem Manajemen Kasir & Pemesanan',
+                                    'Autentik Cita Rasa Nusantara',
                                     style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
                                   ),
                                 ],
