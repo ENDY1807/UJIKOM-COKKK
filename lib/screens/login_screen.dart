@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
@@ -36,6 +37,7 @@ class _LoginScreenState extends State<LoginScreen>
   bool _loginObscure = true;
 
   bool _isGoogleLoading = false;
+  bool _isSubmitting = false;
   String? _errorMessage;
   String? _successMessage;
   StreamSubscription<GoogleSignInAuthenticationEvent>? _gsiSub;
@@ -48,11 +50,11 @@ class _LoginScreenState extends State<LoginScreen>
     super.initState();
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 400),
     );
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
-      curve: Curves.easeOut,
+      curve: Curves.easeOutCubic,
     );
     _fadeController.forward();
 
@@ -133,7 +135,8 @@ class _LoginScreenState extends State<LoginScreen>
           if (mounted) {
             setState(() {
               _isGoogleLoading = false;
-              _successMessage = 'Berhasil masuk sebagai ${name ?? email} (${user.role.label})';
+              _successMessage =
+                  'Berhasil masuk sebagai ${name ?? email} (${user.role.label})';
             });
             _completeUserLogin(user);
           }
@@ -193,25 +196,46 @@ class _LoginScreenState extends State<LoginScreen>
       _errorMessage = null;
       _successMessage = null;
     });
+
     final usernameOrEmail = _loginUsernameController.text.trim();
     final password = _loginPasswordController.text;
+
     if (usernameOrEmail.isEmpty || password.isEmpty) {
       setState(() => _errorMessage = 'Username/Email dan password wajib diisi');
       return;
     }
-    final success = await widget.db.loginAsync(usernameOrEmail, password);
-    if (success) {
-      final user = widget.db.currentUser;
-      if (user != null) {
-        _completeUserLogin(user);
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final success = await widget.db.loginAsync(usernameOrEmail, password);
+      if (!mounted) return;
+
+      if (success) {
+        final user = widget.db.currentUser;
+        if (user != null) {
+          _completeUserLogin(user);
+        } else {
+          widget.onLoginSuccess();
+        }
       } else {
-        widget.onLoginSuccess();
+        setState(() {
+          _errorMessage = 'Username/Email atau password tidak sesuai';
+        });
       }
-    } else {
-      setState(() {
-        _errorMessage = 'Username/Email atau password salah';
-      });
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
+  }
+
+  void _fillDemoCredentials(String username, String password) {
+    setState(() {
+      _loginUsernameController.text = username;
+      _loginPasswordController.text = password;
+      _errorMessage = null;
+    });
   }
 
   static bool _googleSignInInitialized = false;
@@ -278,7 +302,8 @@ class _LoginScreenState extends State<LoginScreen>
       if (kIsWeb) {
         final origin = Uri.base.origin;
         final nonce = DateTime.now().millisecondsSinceEpoch.toString();
-        final googleUrl = Uri.https('accounts.google.com', '/o/oauth2/v2/auth', {
+        final googleUrl =
+            Uri.https('accounts.google.com', '/o/oauth2/v2/auth', {
           'client_id': SupabaseConfig.googleClientId,
           'redirect_uri': origin,
           'response_type': 'token id_token',
@@ -347,7 +372,9 @@ class _LoginScreenState extends State<LoginScreen>
 
   void _completeUserLogin(UserModel user) {
     if (user.authProvider == AuthProvider.google &&
-        (!user.isConfigured || user.phoneNumber.isEmpty || user.username == 'pelanggan')) {
+        (!user.isConfigured ||
+            user.phoneNumber.isEmpty ||
+            user.username == 'pelanggan')) {
       GoogleOnboardingDialog.show(
         context,
         db: widget.db,
@@ -368,7 +395,8 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _showTwoFactorDialog(UserModel user) async {
-    final rawPhone = user.phoneNumber.isNotEmpty ? user.phoneNumber : '081234567890';
+    final rawPhone =
+        user.phoneNumber.isNotEmpty ? user.phoneNumber : '081234567890';
 
     await PhoneOtpService.instance.sendOtp(
       rawPhone: rawPhone,
@@ -380,7 +408,8 @@ class _LoginScreenState extends State<LoginScreen>
       context,
       phoneNumber: rawPhone,
       title: 'Verifikasi Dua Langkah',
-      subtitle: 'Masukkan 6 digit kode yang dikirim ke ${PhoneOtpService.formatDisplayPhone(rawPhone)}',
+      subtitle:
+          'Masukkan 6 digit kode yang dikirim ke ${PhoneOtpService.formatDisplayPhone(rawPhone)}',
       onVerified: () {
         widget.onLoginSuccess();
       },
@@ -389,6 +418,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -402,13 +433,14 @@ class _LoginScreenState extends State<LoginScreen>
         );
       },
       child: Scaffold(
-        backgroundColor: context.surfaceBg,
+        backgroundColor:
+            isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
         body: FadeTransition(
           opacity: _fadeAnimation,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth >= 900;
-              return isDesktop ? _buildDesktop() : _buildMobile();
+              final isDesktop = constraints.maxWidth >= 880;
+              return isDesktop ? _buildDesktopLayout() : _buildMobileLayout();
             },
           ),
         ),
@@ -416,24 +448,25 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  // ─── DESKTOP ──────────────────────────────────────────────────────────────
-  Widget _buildDesktop() {
-    const w = 900.0;
-    const h = 540.0;
-    const half = w / 2;
+  // ─── DESKTOP LAYOUT (SPLIT SCREEN) ──────────────────────────────────────────
+  Widget _buildDesktopLayout() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Center(
       child: Container(
-        width: w,
-        height: h,
-        margin: const EdgeInsets.all(24),
+        width: 960,
+        height: 600,
+        margin: const EdgeInsets.all(28),
         decoration: BoxDecoration(
           color: context.surfaceCard,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: context.borderSubtle),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.10),
+              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
               blurRadius: 40,
               offset: const Offset(0, 16),
             ),
@@ -442,76 +475,140 @@ class _LoginScreenState extends State<LoginScreen>
         clipBehavior: Clip.antiAlias,
         child: Row(
           children: [
-            // Left branding panel
-            Container(
-              width: half,
-              height: h,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFFF7300),
-                    Color(0xFFEA580C),
-                    Color(0xFFCC4A0B),
+            // Left Hero & Branding Section
+            Expanded(
+              flex: 5,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF0F172A)
+                      : const Color(0xFF1E293B),
+                ),
+                padding: const EdgeInsets.all(44),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Brand Badge
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.orangePrimary
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => const Icon(
+                                Icons.restaurant_rounded,
+                                color: AppTheme.orangePrimary,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Rasantara',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                            Text(
+                              'POS & Restaurant Suite',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.65),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(),
+
+                    // Tagline & Value Highlights
+                    const Text(
+                      'Kelola Pesanan &\nOperasional Restoran\nLebih Cepat.',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        height: 1.25,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Dirancang khusus untuk efisiensi meja kasir, dapur, pelayan, dan laporan terintegrasi.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.75),
+                        height: 1.5,
+                      ),
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // Feature Pills
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _featurePill('⚡ Transaksi Kilat'),
+                        _featurePill('📊 Laporan Otomatis'),
+                        _featurePill('📱 Integrasi Meja'),
+                      ],
+                    ),
+
+                    const Spacer(),
+
+                    // Version Tag
+                    Text(
+                      'v3.0 Production Ready • UJIKOM certified',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.45),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              padding: const EdgeInsets.all(44),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: Colors.white,
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (c, e, s) => const Icon(
-                          Icons.storefront,
-                          color: Color(0xFFEA580C),
-                          size: 32,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Rasantara',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Sistem Kasir & Pemesanan Restoran',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                  ),
-                ],
-              ),
             ),
 
-            // Right form panel
+            // Right Form Panel
             Expanded(
+              flex: 6,
               child: Container(
                 color: context.surfaceCard,
-                padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 36),
+                padding: const EdgeInsets.symmetric(horizontal: 44, vertical: 32),
                 alignment: Alignment.center,
                 child: SingleChildScrollView(
-                  child: _buildLoginForm(),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    child: _buildLoginForm(isDesktop: true),
+                  ),
                 ),
               ),
             ),
@@ -521,43 +618,70 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  // ─── MOBILE ───────────────────────────────────────────────────────────────
-  Widget _buildMobile() {
+  Widget _featurePill(String title) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  // ─── MOBILE LAYOUT ─────────────────────────────────────────────────────────
+  Widget _buildMobileLayout() {
     return SafeArea(
       child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Top Brand Icon
                 Container(
-                  width: 72,
-                  height: 72,
+                  width: 68,
+                  height: 68,
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
+                    color: context.surfaceCard,
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: context.borderSubtle),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFEA580C).withValues(alpha: 0.18),
-                        blurRadius: 16,
+                        color: AppTheme.orangePrimary.withValues(alpha: 0.15),
+                        blurRadius: 20,
                         offset: const Offset(0, 6),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(10),
                     child: Image.asset(
                       'assets/images/logo.png',
                       fit: BoxFit.contain,
-                      errorBuilder: (c, e, s) => Container(
-                        color: const Color(0xFFEA580C),
-                        child: const Icon(Icons.storefront, color: Colors.white, size: 36),
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.restaurant_rounded,
+                        color: AppTheme.orangePrimary,
+                        size: 32,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
+
                 Text(
                   'Rasantara',
                   style: TextStyle(
@@ -567,23 +691,32 @@ class _LoginScreenState extends State<LoginScreen>
                     color: context.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 24),
+                Text(
+                  'Sistem Kasir & Pemesanan Restoran',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: context.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 22),
 
+                // Card Container
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: context.surfaceCard,
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: context.borderSubtle),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 30,
-                        offset: const Offset(0, 12),
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
-                  child: _buildLoginForm(),
+                  child: _buildLoginForm(isDesktop: false),
                 ),
               ],
             ),
@@ -594,7 +727,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   // ─── LOGIN FORM ────────────────────────────────────────────────────────────
-  Widget _buildLoginForm() {
+  Widget _buildLoginForm({required bool isDesktop}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -602,12 +735,21 @@ class _LoginScreenState extends State<LoginScreen>
         Text(
           'Masuk',
           style: TextStyle(
-            fontSize: 26,
+            fontSize: 24,
             fontWeight: FontWeight.w900,
+            letterSpacing: -0.4,
             color: context.textPrimary,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 4),
+        Text(
+          'Akses akun kasir, staf, atau pelanggan',
+          style: TextStyle(
+            fontSize: 12,
+            color: context.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 18),
 
         if (_successMessage != null) _feedbackBanner(_successMessage!, true),
         if (_errorMessage != null) _feedbackBanner(_errorMessage!, false),
@@ -615,49 +757,62 @@ class _LoginScreenState extends State<LoginScreen>
         _inputField(
           controller: _loginUsernameController,
           label: 'Username/Email',
-          hintText: 'Masukkan username atau email',
-          icon: Icons.person_outline,
+          hintText: 'Contoh: admin atau nama@email.com',
+          icon: Icons.person_outline_rounded,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         _inputField(
           controller: _loginPasswordController,
           label: 'Password',
-          icon: Icons.lock_outline,
+          hintText: 'Masukkan kata sandi',
+          icon: Icons.lock_outline_rounded,
           isPassword: true,
           obscure: _loginObscure,
           onToggle: () => setState(() => _loginObscure = !_loginObscure),
           onSubmit: (_) => _handleLogin(),
         ),
-        const SizedBox(height: 20),
 
-        _primaryButton('Masuk', Icons.login, _handleLogin),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
+
+        // Primary Login Button
+        _primaryButton('Masuk', Icons.arrow_forward_rounded, _handleLogin),
+
+        const SizedBox(height: 14),
 
         _orDivider(),
-        const SizedBox(height: 16),
 
+        const SizedBox(height: 14),
+
+        // Google Sign-In Button
         _googleSignInButton(),
+
+        const SizedBox(height: 20),
+
+        // Quick Role Shortcuts (Demo Fillers)
+        _buildDemoRoleChips(),
       ],
     );
   }
 
   Widget _feedbackBanner(String message, bool isSuccess) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
         color: isSuccess ? AppTheme.statusGreenBg : AppTheme.statusRedBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isSuccess
-              ? AppTheme.statusGreen.withValues(alpha: 0.3)
-              : AppTheme.statusRed.withValues(alpha: 0.3),
+              ? AppTheme.statusGreen.withValues(alpha: 0.25)
+              : AppTheme.statusRed.withValues(alpha: 0.25),
         ),
       ),
       child: Row(
         children: [
           Icon(
-            isSuccess ? Icons.check_circle_outline : Icons.error_outline,
+            isSuccess
+                ? Icons.check_circle_outline_rounded
+                : Icons.error_outline_rounded,
             size: 18,
             color: isSuccess ? AppTheme.statusGreen : AppTheme.statusRed,
           ),
@@ -666,7 +821,7 @@ class _LoginScreenState extends State<LoginScreen>
             child: Text(
               message,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: isSuccess ? AppTheme.statusGreen : AppTheme.statusRed,
               ),
@@ -688,47 +843,67 @@ class _LoginScreenState extends State<LoginScreen>
     TextInputType? keyboardType,
     String? hintText,
   }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      obscureText: obscure,
-      onSubmitted: onSubmit,
-      style: TextStyle(
-        fontSize: 14,
-        color: context.textPrimary,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hintText ?? 'Masukkan $label',
-        labelStyle: TextStyle(color: context.textSecondary, fontSize: 14),
-        prefixIcon: Icon(icon, size: 20, color: AppTheme.orangePrimary),
-        suffixIcon: isPassword
-            ? IconButton(
-                icon: Icon(
-                  obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  size: 20,
-                  color: context.textSecondary,
-                ),
-                onPressed: onToggle,
-              )
-            : null,
-        filled: true,
-        fillColor: context.fillSubtle,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: context.borderSubtle),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: context.textPrimary,
+          ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: context.borderSubtle),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscure,
+          onSubmitted: onSubmit,
+          style: TextStyle(
+            fontSize: 13.5,
+            color: context.textPrimary,
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: TextStyle(
+              fontSize: 12.5,
+              color: context.textSecondary.withValues(alpha: 0.7),
+            ),
+            prefixIcon: Icon(icon, size: 18, color: AppTheme.orangePrimary),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      obscure
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 18,
+                      color: context.textSecondary,
+                    ),
+                    onPressed: onToggle,
+                  )
+                : null,
+            filled: true,
+            fillColor: context.fillSubtle,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: context.borderSubtle),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: context.borderSubtle),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide:
+                  const BorderSide(color: AppTheme.orangePrimary, width: 1.6),
+            ),
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.orangePrimary, width: 1.8),
-        ),
-      ),
+      ],
     );
   }
 
@@ -736,36 +911,49 @@ class _LoginScreenState extends State<LoginScreen>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(14),
+        onTap: _isSubmitting ? null : onPressed,
+        borderRadius: BorderRadius.circular(12),
         child: Ink(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFFF7300), Color(0xFFEA580C)],
+              colors: [Color(0xFFF97316), Color(0xFFEA580C)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: const [
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x14000000),
-                blurRadius: 8,
-                offset: Offset(0, 3),
+                color: AppTheme.orangePrimary.withValues(alpha: 0.28),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(vertical: 15),
+          padding: const EdgeInsets.symmetric(vertical: 13),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
+              if (_isSubmitting) ...[
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ] else ...[
+                Icon(icon, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+              ],
               Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
+                  letterSpacing: 0.2,
                 ),
               ),
             ],
@@ -780,11 +968,11 @@ class _LoginScreenState extends State<LoginScreen>
       children: [
         Expanded(child: Divider(color: context.borderSubtle, thickness: 1)),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             'atau',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: context.textSecondary,
               fontWeight: FontWeight.w500,
             ),
@@ -800,58 +988,138 @@ class _LoginScreenState extends State<LoginScreen>
       color: Colors.transparent,
       child: InkWell(
         onTap: _isGoogleLoading ? null : _handleGoogleLogin,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: Ink(
           decoration: BoxDecoration(
             color: context.surfaceCard,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: context.borderSubtle, width: 1.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.borderSubtle, width: 1.1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(vertical: 13),
+          padding: const EdgeInsets.symmetric(vertical: 11),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (_isGoogleLoading) ...[
                 const SizedBox(
-                  width: 18,
-                  height: 18,
+                  width: 16,
+                  height: 16,
                   child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
+                    strokeWidth: 2,
                     color: AppTheme.orangePrimary,
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Text(
+                const SizedBox(width: 10),
+                Text(
                   'Menghubungkan ke Google...',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF444444),
+                    color: context.textPrimary,
                   ),
                 ),
               ] else ...[
                 SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: 18,
+                  height: 18,
                   child: CustomPaint(painter: _GoogleLogoPainter()),
                 ),
-                const SizedBox(width: 12),
-                const Text(
+                const SizedBox(width: 10),
+                Text(
                   'Masuk dengan Google',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF444444),
+                    color: context.textPrimary,
                   ),
                 ),
               ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDemoRoleChips() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.touch_app_outlined,
+                size: 13, color: context.textSecondary),
+            const SizedBox(width: 4),
+            Text(
+              'Akses Cepat Pengujian (1-Klik):',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: context.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _demoRoleChip('Admin', 'admin', 'admin123', const Color(0xFFEF4444)),
+            _demoRoleChip('Kasir', 'kasir', 'kasir123', const Color(0xFF10B981)),
+            _demoRoleChip('Waiter', 'waiter', 'waiter123', const Color(0xFF3B82F6)),
+            _demoRoleChip('Owner', 'owner', 'owner123', const Color(0xFF8B5CF6)),
+            _demoRoleChip(
+                'Pelanggan', 'pelanggan', 'pelanggan123', const Color(0xFFF59E0B)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _demoRoleChip(
+      String label, String username, String password, Color accentColor) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _fillDemoCredentials(username, password),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: accentColor.withValues(alpha: 0.25),
+              width: 0.9,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: accentColor,
+                ),
+              ),
             ],
           ),
         ),

@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Komponen animasi loading interaktif terinspirasi aplikasi KasirNih
-/// Menampilkan cincin rotasi aksen ganda dengan denyut (pulse) halus ikon kuliner
+/// Komponen animasi loading interaktif Rasantara
+/// Menampilkan double-arc spinner artisanal dengan ikon kuliner berdenyut halus
 class AppLoadingAnimation extends StatefulWidget {
   final double size;
   final String? message;
@@ -14,17 +14,22 @@ class AppLoadingAnimation extends StatefulWidget {
     super.key,
     this.size = 56.0,
     this.message,
-    this.primaryColor = const Color(0xFFEA580C), // KasirNih Orange
-    this.secondaryColor = const Color(0xFFF97316), // Warm Orange Accent
-    this.icon = Icons.restaurant_menu_rounded,
+    this.primaryColor = const Color(0xFFEA580C), // Rasantara Orange
+    this.secondaryColor = const Color(0xFFF97316), // Warm Amber
+    this.icon = Icons.restaurant_rounded,
   });
 
-  /// Dialog loading modal dengan animasi Gojek-style
+  /// Dialog loading modal dengan tema terpadu (Light & Dark mode aware)
   static void show(BuildContext context, {String message = 'Memproses...'}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black45,
+      barrierColor: Colors.black54,
       builder: (_) => PopScope(
         canPop: false,
         child: Dialog(
@@ -32,31 +37,32 @@ class AppLoadingAnimation extends StatefulWidget {
           elevation: 0,
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 280),
+              constraints: const BoxConstraints(maxWidth: 260),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: const [
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: borderColor, width: 1),
+                  boxShadow: [
                     BoxShadow(
-                      color: Color(0x1F000000),
-                      blurRadius: 20,
-                      offset: Offset(0, 8),
+                      color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.12),
+                      blurRadius: 28,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const AppLoadingAnimation(size: 60),
+                    const AppLoadingAnimation(size: 58),
                     const SizedBox(height: 16),
                     Text(
                       message,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
+                        color: textColor,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -80,7 +86,8 @@ class AppLoadingAnimation extends StatefulWidget {
   State<AppLoadingAnimation> createState() => _AppLoadingAnimationState();
 }
 
-class _AppLoadingAnimationState extends State<AppLoadingAnimation> with SingleTickerProviderStateMixin {
+class _AppLoadingAnimationState extends State<AppLoadingAnimation>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _pulseAnimation;
 
@@ -89,12 +96,20 @@ class _AppLoadingAnimationState extends State<AppLoadingAnimation> with SingleTi
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1300),
     )..repeat();
 
     _pulseAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 0.85, end: 1.15).chain(CurveTween(curve: Curves.easeInOut)), weight: 50),
-      TweenSequenceItem(tween: Tween<double>(begin: 1.15, end: 0.85).chain(CurveTween(curve: Curves.easeInOut)), weight: 50),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.88, end: 1.12)
+            .chain(CurveTween(curve: Curves.easeInOutCubic)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.12, end: 0.88)
+            .chain(CurveTween(curve: Curves.easeInOutCubic)),
+        weight: 50,
+      ),
     ]).animate(_controller);
   }
 
@@ -106,6 +121,9 @@ class _AppLoadingAnimationState extends State<AppLoadingAnimation> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final innerBg = isDark ? const Color(0xFF334155) : const Color(0xFFFFF7ED);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -119,35 +137,38 @@ class _AppLoadingAnimationState extends State<AppLoadingAnimation> with SingleTi
               return Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Cincin rotasi luar dengan aksen gradient Gojek Green & Rasantara Orange
+                  // Double Orbital Arc Spinner
                   Transform.rotate(
                     angle: _controller.value * 2 * math.pi,
                     child: CustomPaint(
                       size: Size(widget.size, widget.size),
-                      painter: _GojekRingPainter(
+                      painter: _ArtisanalSpinnerPainter(
                         primaryColor: widget.primaryColor,
                         secondaryColor: widget.secondaryColor,
+                        trackColor: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
                       ),
                     ),
                   ),
 
-                  // Ikon tengah yang berdenyut (Pulse & Bounce)
+                  // Center Culinary Icon dengan Soft Pulse
                   Transform.scale(
                     scale: _pulseAnimation.value,
                     child: Container(
                       width: widget.size * 0.52,
                       height: widget.size * 0.52,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7ED),
+                        color: innerBg,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: widget.primaryColor.withAlpha(80),
-                          width: 1.5,
+                          color: widget.primaryColor.withValues(alpha: 0.3),
+                          width: 1.2,
                         ),
                       ),
                       child: Icon(
                         widget.icon,
-                        size: widget.size * 0.30,
+                        size: widget.size * 0.28,
                         color: widget.primaryColor,
                       ),
                     ),
@@ -161,10 +182,10 @@ class _AppLoadingAnimationState extends State<AppLoadingAnimation> with SingleTi
           const SizedBox(height: 12),
           Text(
             widget.message!,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF475569),
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
             ),
             textAlign: TextAlign.center,
           ),
@@ -174,13 +195,15 @@ class _AppLoadingAnimationState extends State<AppLoadingAnimation> with SingleTi
   }
 }
 
-class _GojekRingPainter extends CustomPainter {
+class _ArtisanalSpinnerPainter extends CustomPainter {
   final Color primaryColor;
   final Color secondaryColor;
+  final Color trackColor;
 
-  _GojekRingPainter({
+  _ArtisanalSpinnerPainter({
     required this.primaryColor,
     required this.secondaryColor,
+    required this.trackColor,
   });
 
   @override
@@ -195,29 +218,31 @@ class _GojekRingPainter extends CustomPainter {
 
     // Track latar belakang lembut
     final bgPaint = Paint()
-      ..color = const Color(0xFFE2E8F0)
+      ..color = trackColor.withValues(alpha: 0.45)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth * 0.6;
+      ..strokeWidth = strokeWidth * 0.55;
     canvas.drawOval(rect, bgPaint);
 
-    // Busur utama 1 (Gojek Green)
+    // Busur utama (Primary Color - Rasantara Orange)
     final mainPaint = Paint()
       ..color = primaryColor
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = strokeWidth;
-    canvas.drawArc(rect, 0, 1.8 * math.pi * 0.65, false, mainPaint);
+    canvas.drawArc(rect, 0, 1.7 * math.pi * 0.65, false, mainPaint);
 
-    // Busur kedua (Rasantara Orange accent)
+    // Busur aksen kedua (Secondary Color - Warm Amber)
     final secPaint = Paint()
       ..color = secondaryColor
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = strokeWidth * 0.85;
-    canvas.drawArc(rect, math.pi, math.pi * 0.35, false, secPaint);
+      ..strokeWidth = strokeWidth * 0.75;
+    canvas.drawArc(rect, math.pi, math.pi * 0.40, false, secPaint);
   }
 
   @override
-  bool shouldRepaint(covariant _GojekRingPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ArtisanalSpinnerPainter oldDelegate) =>
+      oldDelegate.primaryColor != primaryColor ||
+      oldDelegate.secondaryColor != secondaryColor ||
+      oldDelegate.trackColor != trackColor;
 }
-
