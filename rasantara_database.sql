@@ -40,7 +40,7 @@ DROP TYPE IF EXISTS metode_bayar_type CASCADE;
 -- ENUM Types
 CREATE TYPE auth_provider_type AS ENUM ('local', 'google', 'both');
 CREATE TYPE status_meja_type AS ENUM ('Kosong', 'Terisi', 'Reservasi');
-CREATE TYPE kategori_masakan_type AS ENUM ('Makanan', 'Minuman', 'Paket');
+CREATE TYPE kategori_masakan_type AS ENUM ('Makanan', 'Minuman', 'Paket', 'Addon');
 CREATE TYPE status_masakan_type AS ENUM ('Tersedia', 'Habis');
 CREATE TYPE status_order_type AS ENUM ('Menunggu', 'Diproses', 'Selesai', 'Dibatalkan');
 CREATE TYPE status_detail_type AS ENUM ('Menunggu', 'Dimasak', 'Disajikan');
@@ -78,18 +78,21 @@ CREATE TABLE tb_user (
     google_uid VARCHAR(128) UNIQUE DEFAULT NULL,
     google_email VARCHAR(150) UNIQUE DEFAULT NULL,
     google_photo VARCHAR(500) DEFAULT NULL,
+    is_configured BOOLEAN NOT NULL DEFAULT FALSE,
+    is_subscribed BOOLEAN NOT NULL DEFAULT FALSE,
     is_two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO tb_user (id_user, username, password, nama_user, id_level, phone_number, auth_provider) VALUES
-(1, 'admin', 'admin123', 'Administrator', 1, '081234567890', 'local'),
-(2, 'waiter', 'waiter123', 'Waiter', 2, '081234567891', 'local'),
-(3, 'kasir', 'kasir123', 'Kasir', 3, '081234567892', 'local'),
-(4, 'owner', 'owner123', 'Owner', 4, '081234567893', 'local'),
-(5, 'pelanggan', 'pelanggan123', 'Pelanggan', 5, '081234567894', 'local');
+INSERT INTO tb_user (id_user, username, password, nama_user, id_level, phone_number, auth_provider, is_subscribed) VALUES
+(1, 'admin', '123', 'Administrator', 1, '081234567890', 'local', FALSE),
+(2, 'waiter', '123', 'Waiter', 2, '081234567891', 'local', FALSE),
+(3, 'kasir', '123', 'Kasir', 3, '081234567892', 'local', FALSE),
+(4, 'owner', '123', 'Owner', 4, '081234567893', 'local', FALSE),
+(5, 'pelanggan', '123', 'Pelanggan VIP', 5, '081234567894', 'local', TRUE),
+(6, 'pelanggan_reguler', '123', 'Pelanggan Reguler', 5, '081234567895', 'local', FALSE);
 
 SELECT setval(pg_get_serial_sequence('tb_user', 'id_user'), COALESCE(MAX(id_user), 1)) FROM tb_user;
 
@@ -603,6 +606,7 @@ ALTER TABLE tb_user_payment_methods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_payment_mutasi ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_log_aktivitas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_user_address ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tb_kupon ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all tb_level" ON tb_level;
 CREATE POLICY "Allow all tb_level" ON tb_level FOR ALL USING (true) WITH CHECK (true);
@@ -636,6 +640,9 @@ CREATE POLICY "Allow all tb_log_aktivitas" ON tb_log_aktivitas FOR ALL USING (tr
 
 DROP POLICY IF EXISTS "Allow all tb_user_address" ON tb_user_address;
 CREATE POLICY "Allow all tb_user_address" ON tb_user_address FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all tb_kupon" ON tb_kupon;
+CREATE POLICY "Allow all tb_kupon" ON tb_kupon FOR ALL USING (true) WITH CHECK (true);
 
 -- Grant privileges ke anon, authenticated, dan service_role
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;

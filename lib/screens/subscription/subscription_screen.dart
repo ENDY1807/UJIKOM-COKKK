@@ -385,7 +385,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    hintText: 'Contoh: Budi Santoso',
+                    hintText: 'Masukan Nama Lengkap',
                     prefixIcon: const Icon(Icons.person_outline, size: 20),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -406,7 +406,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    hintText: 'Contoh: budi@gmail.com',
+                    hintText: 'Masukan Email',
                     prefixIcon: const Icon(Icons.email_outlined, size: 20),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -430,7 +430,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   decoration: InputDecoration(
-                    hintText: 'Contoh: 081234567890',
+                    hintText: 'Masukan Nomor Telepon',
                     prefixIcon: const Icon(Icons.phone_outlined, size: 20),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -441,7 +441,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                     }
                     final digits = val.replaceAll(RegExp(r'[^0-9]'), '');
                     if (digits.length < 8) {
-                      return 'Nomor telepon minimal 8 digit angka';
+                      return 'Nomor telepon minimal 10 digit angka';
                     }
                     return null;
                   },
