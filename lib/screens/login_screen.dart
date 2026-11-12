@@ -810,13 +810,13 @@ class _LoginScreenState extends State<LoginScreen>
         if (_successMessage != null) _feedbackBanner(_successMessage!, true),
         if (_errorMessage != null) _feedbackBanner(_errorMessage!, false),
 
-        _inputField(
+        _AnimatedInputField(
           controller: _loginUsernameController,
           label: 'Username/Email',
           icon: Icons.person_outline_rounded,
         ),
         const SizedBox(height: 16),
-        _inputField(
+        _AnimatedInputField(
           controller: _loginPasswordController,
           label: 'Password',
           icon: Icons.lock_outline_rounded,
@@ -877,72 +877,6 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _inputField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool isPassword = false,
-    bool obscure = false,
-    VoidCallback? onToggle,
-    ValueChanged<String>? onSubmit,
-    TextInputType? keyboardType,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      obscureText: obscure,
-      onSubmitted: onSubmit,
-      style: TextStyle(
-        fontSize: 14,
-        color: context.textPrimary,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          fontSize: 13.5,
-          color: context.textSecondary,
-          fontWeight: FontWeight.w500,
-        ),
-        floatingLabelStyle: const TextStyle(
-          fontSize: 13,
-          color: AppTheme.orangePrimary,
-          fontWeight: FontWeight.w700,
-        ),
-        prefixIcon: Icon(icon, size: 20, color: AppTheme.orangePrimary),
-        suffixIcon: isPassword
-            ? IconButton(
-                icon: Icon(
-                  obscure
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  size: 20,
-                  color: context.textSecondary,
-                ),
-                onPressed: onToggle,
-              )
-            : null,
-        filled: true,
-        fillColor: context.fillSubtle,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: context.borderSubtle),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: context.borderSubtle),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: AppTheme.orangePrimary, width: 1.8),
-        ),
       ),
     );
   }
@@ -1148,4 +1082,202 @@ class _GoogleLogoPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Custom Input Field dengan Animasi Naik yang Halus & Presisi (Floating Label Animation)
+class _AnimatedInputField extends StatefulWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final bool isPassword;
+  final bool obscure;
+  final VoidCallback? onToggle;
+  final ValueChanged<String>? onSubmit;
+
+  const _AnimatedInputField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.isPassword = false,
+    this.obscure = false,
+    this.onToggle,
+    this.onSubmit,
+  });
+
+  @override
+  State<_AnimatedInputField> createState() => _AnimatedInputFieldState();
+}
+
+class _AnimatedInputFieldState extends State<_AnimatedInputField>
+    with SingleTickerProviderStateMixin {
+  late final FocusNode _focusNode;
+  late final AnimationController _animController;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _anim = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    if (widget.controller.text.isNotEmpty) {
+      _animController.value = 1.0;
+    }
+
+    _focusNode.addListener(_handleFocusChange);
+    widget.controller.addListener(_handleTextChange);
+  }
+
+  void _handleFocusChange() {
+    if (_focusNode.hasFocus || widget.controller.text.isNotEmpty) {
+      _animController.forward();
+    } else {
+      _animController.reverse();
+    }
+    setState(() {});
+  }
+
+  void _handleTextChange() {
+    if (_focusNode.hasFocus || widget.controller.text.isNotEmpty) {
+      if (_animController.value != 1.0) _animController.forward();
+    } else {
+      if (_animController.value != 0.0) _animController.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_handleFocusChange);
+    widget.controller.removeListener(_handleTextChange);
+    _focusNode.dispose();
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasFocus = _focusNode.hasFocus;
+
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, child) {
+        // progress: 0.0 (tengah/placeholder) -> 1.0 (naik ke atas)
+        final progress = _anim.value;
+
+        // Label style interpolations
+        final labelColor = Color.lerp(
+          context.textSecondary,
+          AppTheme.orangePrimary,
+          hasFocus ? 1.0 : 0.0,
+        )!;
+
+        final labelSize = 13.5 - (1.5 * progress); // 13.5 -> 12.0
+        final labelWeight = progress > 0.5 ? FontWeight.w700 : FontWeight.w500;
+
+        return GestureDetector(
+          onTap: () => _focusNode.requestFocus(),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            height: 58,
+            decoration: BoxDecoration(
+              color: context.fillSubtle,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: hasFocus ? AppTheme.orangePrimary : context.borderSubtle,
+                width: hasFocus ? 1.8 : 1.0,
+              ),
+            ),
+            child: Stack(
+              children: [
+                // Icon prefix
+                Positioned(
+                  left: 14,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Icon(
+                      widget.icon,
+                      size: 20,
+                      color: hasFocus ? AppTheme.orangePrimary : context.textSecondary,
+                    ),
+                  ),
+                ),
+
+                // Animated Floating Label (Teks yang meluncur naik ke atas)
+                Positioned(
+                  left: 46,
+                  top: 19 - (12 * progress), // 19px (tengah) -> 7px (atas)
+                  child: IgnorePointer(
+                    child: Text(
+                      widget.label,
+                      style: TextStyle(
+                        fontSize: labelSize,
+                        fontWeight: labelWeight,
+                        color: labelColor,
+                        letterSpacing: progress > 0.5 ? 0.2 : 0.0,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Actual Input Field (Muncul bersih di bawah label yang terangkat)
+                Positioned(
+                  left: 46,
+                  right: widget.isPassword ? 48 : 14,
+                  bottom: 4,
+                  top: 16,
+                  child: TextField(
+                    controller: widget.controller,
+                    focusNode: _focusNode,
+                    obscureText: widget.obscure,
+                    onSubmitted: widget.onSubmit,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(vertical: 6),
+                    ),
+                  ),
+                ),
+
+                // Suffix toggle password jika password field
+                if (widget.isPassword)
+                  Positioned(
+                    right: 4,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: IconButton(
+                        icon: Icon(
+                          widget.obscure
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          size: 20,
+                          color: context.textSecondary,
+                        ),
+                        onPressed: widget.onToggle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
