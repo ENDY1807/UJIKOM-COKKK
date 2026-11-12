@@ -725,6 +725,91 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
     final crossAxisCount = isWide ? 3 : 2;
 
+    // Jika kategori yang dipilih adalah "Semua" dan tidak sedang mencari teks spesifik,
+    // kelompokkan menu ke dalam section: Paket Spesial, Makanan, Minuman, Camilan & Add-On
+    if (_selectedCategory == MenuCategory.semua && _searchQuery.isEmpty) {
+      final sections = [
+        (category: MenuCategory.paket, title: 'Paket Spesial', icon: Icons.stars_rounded),
+        (category: MenuCategory.makanan, title: 'Makanan', icon: Icons.restaurant_rounded),
+        (category: MenuCategory.minuman, title: 'Minuman', icon: Icons.local_cafe_rounded),
+        (category: MenuCategory.addon, title: 'Camilan & Add-On', icon: Icons.cookie_outlined),
+      ];
+
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: sections.map((sec) {
+          final catItems = items.where((m) => m.kategori == sec.category).toList();
+          if (catItems.isEmpty) return const SizedBox.shrink();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Bagian Kategori
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.orangePrimary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(sec.icon, size: 18, color: AppTheme.orangePrimary),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      sec.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: context.textPrimary,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: context.fillSubtle,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: context.borderSubtle),
+                      ),
+                      child: Text(
+                        '${catItems.length}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: context.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Grid Item Menu per Bagian Kategori
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  childAspectRatio: isWide ? 0.95 : 0.85,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: catItems.length,
+                itemBuilder: (context, index) {
+                  return _buildMenuItemCard(catItems[index]);
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          );
+        }).toList(),
+      );
+    }
+
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -735,152 +820,155 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
-        final menu = items[index];
-        final inCart = _cart[menu.idMasakan];
-        final isAvailable = menu.isTersedia;
+        return _buildMenuItemCard(items[index]);
+      },
+    );
+  }
 
-        return Card(
-          elevation: 0,
-          color: context.surfaceCard,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: (inCart != null && inCart.jumlah > 0)
-                  ? AppTheme.orangePrimary
-                  : context.borderSubtle,
-              width: (inCart != null && inCart.jumlah > 0) ? 1.5 : 1,
+  Widget _buildMenuItemCard(MenuModel menu) {
+    final inCart = _cart[menu.idMasakan];
+    final isAvailable = menu.isTersedia;
+
+    return Card(
+      elevation: 0,
+      color: context.surfaceCard,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: (inCart != null && inCart.jumlah > 0)
+              ? AppTheme.orangePrimary
+              : context.borderSubtle,
+          width: (inCart != null && inCart.jumlah > 0) ? 1.5 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Gambar Menu
+          Expanded(
+            flex: 5,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (menu.gambarUrl.isNotEmpty)
+                    Image.network(
+                      menu.gambarUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => Container(
+                        color: const Color(0xFFFFF7ED),
+                        child: const Center(
+                          child: Icon(Icons.lunch_dining_rounded, size: 36, color: Color(0xFFEA580C)),
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      color: const Color(0xFFFFF7ED),
+                      child: const Center(
+                        child: Icon(Icons.restaurant_menu, size: 36, color: Color(0xFFEA580C)),
+                      ),
+                    ),
+                  if (!isAvailable)
+                    Container(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'HABIS',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Gambar Menu
-              Expanded(
-                flex: 5,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (menu.gambarUrl.isNotEmpty)
-                        Image.network(
-                          menu.gambarUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => Container(
-                            color: const Color(0xFFFFF7ED),
-                            child: const Center(
-                              child: Icon(Icons.lunch_dining_rounded, size: 36, color: Color(0xFFEA580C)),
-                            ),
-                          ),
-                        )
-                      else
-                        Container(
-                          color: const Color(0xFFFFF7ED),
-                          child: const Center(
-                            child: Icon(Icons.restaurant_menu, size: 36, color: Color(0xFFEA580C)),
-                          ),
-                        ),
-                      if (!isAvailable)
-                        Container(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'HABIS',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              // Info & Aksi
-              Expanded(
-                flex: 5,
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
+          // Info & Aksi
+          Expanded(
+            flex: 5,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            menu.namaMasakan,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: context.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _currencyFmt.format(menu.harga),
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.orangePrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Stepper / Tambah
-                      if (inCart != null && inCart.jumlah > 0)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.note_alt_outlined, size: 18),
-                              tooltip: 'Catatan Menu',
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                              color: inCart.catatan.isNotEmpty ? AppTheme.orangePrimary : AppTheme.textMuted,
-                              onPressed: () => _editItemNote(inCart),
-                            ),
-                            Row(
-                              children: [
-                                _stepperButton(Icons.remove, () => _removeFromCart(menu)),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text(
-                                    '${inCart.jumlah}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                      color: context.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                _stepperButton(Icons.add, () => _addToCart(menu)),
-                              ],
-                            ),
-                          ],
-                        )
-                      else
-                        SizedBox(
-                          width: double.infinity,
-                          height: 32,
-                          child: ElevatedButton(
-                            onPressed: isAvailable ? () => _addToCart(menu) : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.orangePrimary,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            child: const Text('Tambah', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                          ),
+                      Text(
+                        menu.namaMasakan,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: context.textPrimary,
                         ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _currencyFmt.format(menu.harga),
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.orangePrimary,
+                        ),
+                      ),
                     ],
                   ),
-                ),
+                  // Stepper / Tambah
+                  if (inCart != null && inCart.jumlah > 0)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.note_alt_outlined, size: 18),
+                          tooltip: 'Catatan Menu',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          color: inCart.catatan.isNotEmpty ? AppTheme.orangePrimary : AppTheme.textMuted,
+                          onPressed: () => _editItemNote(inCart),
+                        ),
+                        Row(
+                          children: [
+                            _stepperButton(Icons.remove, () => _removeFromCart(menu)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              child: Text(
+                                '${inCart.jumlah}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                            ),
+                            _stepperButton(Icons.add, () => _addToCart(menu)),
+                          ],
+                        ),
+                      ],
+                    )
+                  else
+                    SizedBox(
+                      width: double.infinity,
+                      height: 32,
+                      child: ElevatedButton(
+                        onPressed: isAvailable ? () => _addToCart(menu) : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.orangePrimary,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Tambah', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                ],
               ),
-            ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 

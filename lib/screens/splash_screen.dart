@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
@@ -21,7 +20,6 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _entranceController;
-  late AnimationController _orbitController;
   late AnimationController _glowController;
 
   late Animation<double> _fadeAnimation;
@@ -41,11 +39,6 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
-
-    _orbitController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3200),
-    )..repeat();
 
     _glowController = AnimationController(
       vsync: this,
@@ -90,7 +83,6 @@ class _SplashScreenState extends State<SplashScreen>
   void dispose() {
     _statusTimer?.cancel();
     _entranceController.dispose();
-    _orbitController.dispose();
     _glowController.dispose();
     super.dispose();
   }
@@ -139,76 +131,38 @@ class _SplashScreenState extends State<SplashScreen>
 
                       ScaleTransition(
                         scale: _scaleAnimation,
-                        child: AnimatedBuilder(
-                          animation: Listenable.merge([_orbitController, _glowController]),
-                          builder: (context, child) {
-                            final glow = _glowController.value;
-                            return Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: 170,
-                                  height: 170,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      colors: [
-                                        AppTheme.orangePrimary.withValues(
-                                          alpha: 0.18 + (glow * 0.16),
-                                        ),
-                                        Colors.transparent,
-                                      ],
-                                      stops: const [0.4, 1.0],
-                                    ),
-                                  ),
+                        child: Container(
+                          width: 108,
+                          height: 108,
+                          decoration: BoxDecoration(
+                            color: isDark ? AppTheme.darkSurface : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(
+                                  alpha: isDark ? 0.3 : 0.06,
                                 ),
-
-                                CustomPaint(
-                                  size: const Size(160, 160),
-                                  painter: _CulinaryOrbitPainter(
-                                    rotation: _orbitController.value * 2 * math.pi,
-                                    pulse: glow,
-                                    primaryColor: AppTheme.orangePrimary,
-                                    secondaryColor: const Color(0xFFF59E0B),
-                                  ),
-                                ),
-
-                                Container(
-                                  width: 108,
-                                  height: 108,
-                                  decoration: BoxDecoration(
-                                    color: isDark ? AppTheme.darkSurface : Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
-                                      width: 1,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: isDark ? 0.3 : 0.06,
-                                        ),
-                                        blurRadius: 14,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  padding: const EdgeInsets.all(12),
-                                  child: Image.asset(
-                                    'assets/images/Rasantara Cloche App Icon.png',
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (context, error, stackTrace) => const Center(
-                                      child: Icon(
-                                        Icons.restaurant_rounded,
-                                        size: 46,
-                                        color: AppTheme.orangePrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: Image.asset(
+                            'assets/images/Rasantara Cloche App Icon.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => const Center(
+                              child: Icon(
+                                Icons.restaurant_rounded,
+                                size: 46,
+                                color: AppTheme.orangePrimary,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
 
@@ -278,59 +232,4 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
   }
-}
-
-class _CulinaryOrbitPainter extends CustomPainter {
-  final double rotation;
-  final double pulse;
-  final Color primaryColor;
-  final Color secondaryColor;
-
-  _CulinaryOrbitPainter({
-    required this.rotation,
-    required this.pulse,
-    required this.primaryColor,
-    required this.secondaryColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * 0.44;
-
-    final trackPaint = Paint()
-      ..color = primaryColor.withValues(alpha: 0.12)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6;
-    canvas.drawCircle(center, radius, trackPaint);
-
-    final arcPaint1 = Paint()
-      ..shader = SweepGradient(
-        colors: [
-          primaryColor.withValues(alpha: 0.0),
-          primaryColor,
-        ],
-        transform: GradientRotation(rotation),
-      ).createShader(Rect.fromCircle(center: center, radius: radius))
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 2.4;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      rotation,
-      math.pi * 0.8,
-      false,
-      arcPaint1,
-    );
-
-    final orbitX = center.dx + radius * math.cos(rotation);
-    final orbitY = center.dy + radius * math.sin(rotation);
-    final dotPaint = Paint()
-      ..color = secondaryColor
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(orbitX, orbitY), 3.5 + (pulse * 1.5), dotPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CulinaryOrbitPainter oldDelegate) => true;
 }
