@@ -128,8 +128,6 @@ class _SplashScreenState extends State<SplashScreen>
             stops: [0.0, 0.6, 1.0],
           );
 
-    final cardBg = isDark ? const Color(0xFF1A2234) : Colors.white;
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(gradient: bgGradient),
@@ -183,46 +181,35 @@ class _SplashScreenState extends State<SplashScreen>
                                 ),
 
                                 Container(
-                                  width: 110,
-                                  height: 110,
-                                  padding: const EdgeInsets.all(16),
+                                  width: 116,
+                                  height: 116,
                                   decoration: BoxDecoration(
-                                    color: cardBg,
                                     borderRadius: BorderRadius.circular(28),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? const Color(0xFF334155)
-                                          : const Color(0xFFE2E8F0),
-                                      width: 1.4,
-                                    ),
                                     boxShadow: [
                                       BoxShadow(
                                         color: AppTheme.orangePrimary.withValues(
-                                          alpha: 0.22 + (glow * 0.12),
+                                          alpha: 0.28 + (glow * 0.15),
                                         ),
-                                        blurRadius: 32,
-                                        offset: const Offset(0, 12),
+                                        blurRadius: 36,
+                                        offset: const Offset(0, 14),
                                       ),
                                       BoxShadow(
                                         color: Colors.black.withValues(
-                                          alpha: isDark ? 0.45 : 0.08,
+                                          alpha: isDark ? 0.45 : 0.10,
                                         ),
                                         blurRadius: 20,
                                         offset: const Offset(0, 8),
                                       ),
                                     ],
                                   ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(18),
-                                    child: Image.asset(
-                                      'assets/images/logo.png',
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (context, error, stackTrace) => const Center(
-                                        child: Icon(
-                                          Icons.restaurant_rounded,
-                                          size: 46,
-                                          color: AppTheme.orangePrimary,
-                                        ),
+                                  child: Image.asset(
+                                    'assets/images/Rasantara Cloche App Icon.png',
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (context, error, stackTrace) => const Center(
+                                      child: Icon(
+                                        Icons.restaurant_rounded,
+                                        size: 46,
+                                        color: AppTheme.orangePrimary,
                                       ),
                                     ),
                                   ),

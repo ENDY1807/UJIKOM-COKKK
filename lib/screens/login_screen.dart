@@ -528,30 +528,25 @@ class _LoginScreenState extends State<LoginScreen>
                         Container(
                           width: 48,
                           height: 48,
-                          padding: const EdgeInsets.all(9),
                           decoration: BoxDecoration(
-                            color: Colors.white,
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
                                 color: AppTheme.orangePrimary
                                     .withValues(alpha: 0.35),
-                                blurRadius: 16,
+                                blurRadius: 14,
                                 offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(
-                                Icons.restaurant_rounded,
-                                color: AppTheme.orangePrimary,
-                                size: 28,
-                              ),
+                          child: Image.asset(
+                            'assets/images/Rasantara Cloche App Icon.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                              Icons.restaurant_rounded,
+                              color: AppTheme.orangePrimary,
+                              size: 28,
                             ),
                           ),
                         ),
@@ -725,43 +720,32 @@ class _LoginScreenState extends State<LoginScreen>
               children: [
                 // Glowing Logo Card
                 Container(
-                  width: 74,
-                  height: 74,
-                  padding: const EdgeInsets.all(12),
+                  width: 76,
+                  height: 76,
                   decoration: BoxDecoration(
-                    color: context.surfaceCard,
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF334155)
-                          : const Color(0xFFE2E8F0),
-                      width: 1.2,
-                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.orangePrimary.withValues(alpha: 0.22),
+                        color: AppTheme.orangePrimary.withValues(alpha: 0.28),
                         blurRadius: 24,
                         offset: const Offset(0, 8),
                       ),
                       BoxShadow(
                         color: Colors.black.withValues(
-                          alpha: isDark ? 0.3 : 0.05,
+                          alpha: isDark ? 0.35 : 0.08,
                         ),
                         blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.restaurant_rounded,
-                        color: AppTheme.orangePrimary,
-                        size: 34,
-                      ),
+                  child: Image.asset(
+                    'assets/images/Rasantara Cloche App Icon.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.restaurant_rounded,
+                      color: AppTheme.orangePrimary,
+                      size: 34,
                     ),
                   ),
                 ),

@@ -342,15 +342,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(5),
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEA580C).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFEA580C).withValues(alpha: 0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFEA580C).withValues(alpha: 0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.asset('assets/images/logo.png', width: 26, height: 26, fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.storefront, color: Color(0xFFEA580C), size: 16)),
+                  child: Image.asset(
+                    'assets/images/Rasantara Cloche App Icon.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (c, e, s) => const Icon(Icons.restaurant_rounded, color: Color(0xFFEA580C), size: 18),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -661,14 +668,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEA580C),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.asset('assets/images/logo.png', fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.storefront, color: Colors.white, size: 28)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFEA580C).withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Image.asset(
+                    'assets/images/Rasantara Cloche App Icon.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (c, e, s) => const Icon(Icons.restaurant_rounded, color: Color(0xFFEA580C), size: 26),
                   ),
                 ),
                 const SizedBox(width: 14),
