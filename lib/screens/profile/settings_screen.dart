@@ -615,10 +615,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ),
           const SizedBox(height: 16),
 
-          // ── 2. BAHASA & DAERAH ──
+          // ── 2. BAHASA ──
           _buildSettingsCard(
             icon: Icons.language_rounded,
-            title: context.t('Bahasa & Daerah', 'Language & Region'),
+            title: context.t('Bahasa', 'Language'),
             subtitle: context.t('Pilihan bahasa antarmuka aplikasi', 'Choose app interface language'),
             children: [
               Text(
