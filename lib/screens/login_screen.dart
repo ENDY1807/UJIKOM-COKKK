@@ -220,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen>
         }
       } else {
         setState(() {
-          _errorMessage = 'Username/Email atau password tidak sesuai';
+          _errorMessage = 'Username/Email atau password salah';
         });
       }
     } finally {
@@ -228,14 +228,6 @@ class _LoginScreenState extends State<LoginScreen>
         setState(() => _isSubmitting = false);
       }
     }
-  }
-
-  void _fillDemoCredentials(String username, String password) {
-    setState(() {
-      _loginUsernameController.text = username;
-      _loginPasswordController.text = password;
-      _errorMessage = null;
-    });
   }
 
   static bool _googleSignInInitialized = false;
@@ -292,7 +284,8 @@ class _LoginScreenState extends State<LoginScreen>
         if (mounted) {
           setState(() {
             _isGoogleLoading = false;
-            _successMessage = 'Berhasil masuk sebagai $name (${user.role.label})';
+            _successMessage =
+                'Berhasil masuk sebagai $name (${user.role.label})';
           });
           _completeUserLogin(user);
         }
@@ -420,6 +413,28 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final bgGradient = isDark
+        ? const RadialGradient(
+            center: Alignment(0, -0.3),
+            radius: 1.3,
+            colors: [
+              Color(0xFF1B2234),
+              Color(0xFF0F172A),
+              Color(0xFF080D1A),
+            ],
+            stops: [0.0, 0.6, 1.0],
+          )
+        : const RadialGradient(
+            center: Alignment(0, -0.3),
+            radius: 1.3,
+            colors: [
+              Color(0xFFFFF7ED),
+              Color(0xFFF8FAFC),
+              Color(0xFFF1F5F9),
+            ],
+            stops: [0.0, 0.55, 1.0],
+          );
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -433,76 +448,95 @@ class _LoginScreenState extends State<LoginScreen>
         );
       },
       child: Scaffold(
-        backgroundColor:
-            isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
-        body: FadeTransition(
-          opacity: _fadeAnimation,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth >= 880;
-              return isDesktop ? _buildDesktopLayout() : _buildMobileLayout();
-            },
+        body: Container(
+          decoration: BoxDecoration(gradient: bgGradient),
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth >= 900;
+                return isDesktop ? _buildDesktopLayout() : _buildMobileLayout();
+              },
+            ),
           ),
         ),
       ),
     );
   }
 
-  // ─── DESKTOP LAYOUT (SPLIT SCREEN) ──────────────────────────────────────────
+  // ─── DESKTOP (ELEGANT SPLIT-SCREEN) ────────────────────────────────────────
   Widget _buildDesktopLayout() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Center(
       child: Container(
-        width: 960,
-        height: 600,
-        margin: const EdgeInsets.all(28),
+        constraints: const BoxConstraints(maxWidth: 960, maxHeight: 580),
+        margin: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: context.surfaceCard,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(30),
           border: Border.all(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-            width: 1.2,
+            color: isDark
+                ? const Color(0xFF334155).withValues(alpha: 0.7)
+                : const Color(0xFFE2E8F0),
+            width: 1.4,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
-              blurRadius: 40,
-              offset: const Offset(0, 16),
+              color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.09),
+              blurRadius: 48,
+              offset: const Offset(0, 20),
+            ),
+            BoxShadow(
+              color: AppTheme.orangePrimary.withValues(alpha: 0.10),
+              blurRadius: 32,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Row(
           children: [
-            // Left Hero & Branding Section
+            // Left Feature & Visual Showcase
             Expanded(
               flex: 5,
               child: Container(
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF0F172A)
-                      : const Color(0xFF1E293B),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            const Color(0xFF1E1712),
+                            const Color(0xFF0F172A),
+                            const Color(0xFF0D1322),
+                          ]
+                        : [
+                            const Color(0xFF1E293B),
+                            const Color(0xFF0F172A),
+                            const Color(0xFF111827),
+                          ],
+                  ),
                 ),
-                padding: const EdgeInsets.all(44),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Brand Badge
+                    // Brand Identity Row
                     Row(
                       children: [
                         Container(
                           width: 48,
                           height: 48,
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(9),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
                                 color: AppTheme.orangePrimary
-                                    .withValues(alpha: 0.3),
-                                blurRadius: 14,
+                                    .withValues(alpha: 0.35),
+                                blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
                             ],
@@ -512,7 +546,8 @@ class _LoginScreenState extends State<LoginScreen>
                             child: Image.asset(
                               'assets/images/logo.png',
                               fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => const Icon(
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(
                                 Icons.restaurant_rounded,
                                 color: AppTheme.orangePrimary,
                                 size: 28,
@@ -520,77 +555,96 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Rasantara',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: -0.4,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Rasantara',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: -0.5,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'POS & Restaurant Suite',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white.withValues(alpha: 0.65),
+                              Text(
+                                'Point of Sale & Kitchen Suite',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
 
                     const Spacer(),
 
-                    // Tagline & Value Highlights
+                    // Big Compelling Headline
                     const Text(
-                      'Kelola Pesanan &\nOperasional Restoran\nLebih Cepat.',
+                      'Pengalaman Kasir &\nManajemen Meja yang\nCepat dan Presisi.',
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 25,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         height: 1.25,
-                        letterSpacing: -0.5,
+                        letterSpacing: -0.6,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Text(
-                      'Dirancang khusus untuk efisiensi meja kasir, dapur, pelayan, dan laporan terintegrasi.',
+                      'Akses terpadu untuk kasir, pelayan, koki dapur, hingga pemilik restoran secara real-time.',
                       style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.75),
-                        height: 1.5,
+                        fontSize: 12.5,
+                        color: Colors.white.withValues(alpha: 0.72),
+                        height: 1.45,
                       ),
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 22),
 
-                    // Feature Pills
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                    // Metric Showcase Cards
+                    Row(
                       children: [
-                        _featurePill('⚡ Transaksi Kilat'),
-                        _featurePill('📊 Laporan Otomatis'),
-                        _featurePill('📱 Integrasi Meja'),
+                        _metricBadge(
+                            '⚡ 0.2s', 'Respons Kasir', const Color(0xFFF97316)),
+                        const SizedBox(width: 10),
+                        _metricBadge('📊 Real-Time', 'Laporan Penjualan',
+                            const Color(0xFF10B981)),
                       ],
                     ),
 
                     const Spacer(),
 
-                    // Version Tag
-                    Text(
-                      'v3.0 Production Ready • UJIKOM certified',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.45),
-                      ),
+                    // Security & Certification Footer
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.verified_user_outlined,
+                          size: 14,
+                          color: Colors.white.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Sistem Keamanan Terenkripsi & Cloud Sync',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -602,12 +656,13 @@ class _LoginScreenState extends State<LoginScreen>
               flex: 6,
               child: Container(
                 color: context.surfaceCard,
-                padding: const EdgeInsets.symmetric(horizontal: 44, vertical: 32),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 46, vertical: 36),
                 alignment: Alignment.center,
                 child: SingleChildScrollView(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 400),
-                    child: _buildLoginForm(isDesktop: true),
+                    constraints: const BoxConstraints(maxWidth: 390),
+                    child: _buildLoginForm(),
                   ),
                 ),
               ),
@@ -618,22 +673,38 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _featurePill(String title) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
+  Widget _metricBadge(String value, String label, Color accent) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.12),
+          ),
         ),
-      ),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                color: accent,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -641,82 +712,102 @@ class _LoginScreenState extends State<LoginScreen>
 
   // ─── MOBILE LAYOUT ─────────────────────────────────────────────────────────
   Widget _buildMobileLayout() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SafeArea(
       child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 410),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Top Brand Icon
+                // Glowing Logo Card
                 Container(
-                  width: 68,
-                  height: 68,
+                  width: 74,
+                  height: 74,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: context.surfaceCard,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: context.borderSubtle),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
+                      width: 1.2,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.orangePrimary.withValues(alpha: 0.15),
-                        blurRadius: 20,
-                        offset: const Offset(0, 6),
+                        color: AppTheme.orangePrimary.withValues(alpha: 0.22),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.3 : 0.05,
+                        ),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     child: Image.asset(
                       'assets/images/logo.png',
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) => const Icon(
                         Icons.restaurant_rounded,
                         color: AppTheme.orangePrimary,
-                        size: 32,
+                        size: 34,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
                 Text(
                   'Rasantara',
                   style: TextStyle(
-                    fontSize: 26,
+                    fontSize: 27,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.6,
                     color: context.textPrimary,
                   ),
                 ),
                 Text(
-                  'Sistem Kasir & Pemesanan Restoran',
+                  'Sistem Kasir & Operasional Restoran',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w500,
                     color: context.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
 
-                // Card Container
+                // Floating Elevated Login Card
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(26),
                   decoration: BoxDecoration(
                     color: context.surfaceCard,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: context.borderSubtle),
+                    borderRadius: BorderRadius.circular(26),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF334155).withValues(alpha: 0.6)
+                          : const Color(0xFFE2E8F0),
+                      width: 1.2,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
+                        color:
+                            Colors.black.withValues(alpha: isDark ? 0.4 : 0.07),
+                        blurRadius: 30,
+                        offset: const Offset(0, 12),
                       ),
                     ],
                   ),
-                  child: _buildLoginForm(isDesktop: false),
+                  child: _buildLoginForm(),
                 ),
               ],
             ),
@@ -727,7 +818,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   // ─── LOGIN FORM ────────────────────────────────────────────────────────────
-  Widget _buildLoginForm({required bool isDesktop}) {
+  Widget _buildLoginForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -735,21 +826,21 @@ class _LoginScreenState extends State<LoginScreen>
         Text(
           'Masuk',
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 25,
             fontWeight: FontWeight.w900,
-            letterSpacing: -0.4,
+            letterSpacing: -0.5,
             color: context.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          'Akses akun kasir, staf, atau pelanggan',
+          'Gunakan kredensial akun untuk melanjutkan',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 12.5,
             color: context.textSecondary,
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
 
         if (_successMessage != null) _feedbackBanner(_successMessage!, true),
         if (_errorMessage != null) _feedbackBanner(_errorMessage!, false),
@@ -757,14 +848,14 @@ class _LoginScreenState extends State<LoginScreen>
         _inputField(
           controller: _loginUsernameController,
           label: 'Username/Email',
-          hintText: 'Contoh: admin atau nama@email.com',
+          hintText: 'Masukkan username atau email Anda',
           icon: Icons.person_outline_rounded,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         _inputField(
           controller: _loginPasswordController,
           label: 'Password',
-          hintText: 'Masukkan kata sandi',
+          hintText: 'Masukkan kata sandi akun',
           icon: Icons.lock_outline_rounded,
           isPassword: true,
           obscure: _loginObscure,
@@ -772,24 +863,19 @@ class _LoginScreenState extends State<LoginScreen>
           onSubmit: (_) => _handleLogin(),
         ),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: 22),
 
-        // Primary Login Button
+        // Primary Login Button (Warm Gradient & Raised Depth)
         _primaryButton('Masuk', Icons.arrow_forward_rounded, _handleLogin),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
         _orDivider(),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
         // Google Sign-In Button
         _googleSignInButton(),
-
-        const SizedBox(height: 20),
-
-        // Quick Role Shortcuts (Demo Fillers)
-        _buildDemoRoleChips(),
       ],
     );
   }
@@ -800,11 +886,11 @@ class _LoginScreenState extends State<LoginScreen>
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
         color: isSuccess ? AppTheme.statusGreenBg : AppTheme.statusRedBg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isSuccess
-              ? AppTheme.statusGreen.withValues(alpha: 0.25)
-              : AppTheme.statusRed.withValues(alpha: 0.25),
+              ? AppTheme.statusGreen.withValues(alpha: 0.3)
+              : AppTheme.statusRed.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -816,12 +902,12 @@ class _LoginScreenState extends State<LoginScreen>
             size: 18,
             color: isSuccess ? AppTheme.statusGreen : AppTheme.statusRed,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.5,
                 fontWeight: FontWeight.w600,
                 color: isSuccess ? AppTheme.statusGreen : AppTheme.statusRed,
               ),
@@ -849,8 +935,8 @@ class _LoginScreenState extends State<LoginScreen>
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
             color: context.textPrimary,
           ),
         ),
@@ -871,14 +957,14 @@ class _LoginScreenState extends State<LoginScreen>
               fontSize: 12.5,
               color: context.textSecondary.withValues(alpha: 0.7),
             ),
-            prefixIcon: Icon(icon, size: 18, color: AppTheme.orangePrimary),
+            prefixIcon: Icon(icon, size: 19, color: AppTheme.orangePrimary),
             suffixIcon: isPassword
                 ? IconButton(
                     icon: Icon(
                       obscure
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
-                      size: 18,
+                      size: 19,
                       color: context.textSecondary,
                     ),
                     onPressed: onToggle,
@@ -887,19 +973,19 @@ class _LoginScreenState extends State<LoginScreen>
             filled: true,
             fillColor: context.fillSubtle,
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: context.borderSubtle),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: context.borderSubtle),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               borderSide:
-                  const BorderSide(color: AppTheme.orangePrimary, width: 1.6),
+                  const BorderSide(color: AppTheme.orangePrimary, width: 1.8),
             ),
           ),
         ),
@@ -912,7 +998,7 @@ class _LoginScreenState extends State<LoginScreen>
       color: Colors.transparent,
       child: InkWell(
         onTap: _isSubmitting ? null : onPressed,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: Ink(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -920,40 +1006,40 @@ class _LoginScreenState extends State<LoginScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.orangePrimary.withValues(alpha: 0.28),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+                color: AppTheme.orangePrimary.withValues(alpha: 0.35),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(vertical: 13),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (_isSubmitting) ...[
                 const SizedBox(
-                  width: 16,
-                  height: 16,
+                  width: 17,
+                  height: 17,
                   child: CircularProgressIndicator(
-                    strokeWidth: 2,
+                    strokeWidth: 2.2,
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
               ] else ...[
-                Icon(icon, color: Colors.white, size: 18),
+                Icon(icon, color: Colors.white, size: 19),
                 const SizedBox(width: 8),
               ],
               Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.5,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
-                  letterSpacing: 0.2,
+                  letterSpacing: 0.3,
                 ),
               ),
             ],
@@ -968,11 +1054,11 @@ class _LoginScreenState extends State<LoginScreen>
       children: [
         Expanded(child: Divider(color: context.borderSubtle, thickness: 1)),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text(
             'atau',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 11.5,
               color: context.textSecondary,
               fontWeight: FontWeight.w500,
             ),
@@ -988,28 +1074,28 @@ class _LoginScreenState extends State<LoginScreen>
       color: Colors.transparent,
       child: InkWell(
         onTap: _isGoogleLoading ? null : _handleGoogleLogin,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: Ink(
           decoration: BoxDecoration(
             color: context.surfaceCard,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.borderSubtle, width: 1.1),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: context.borderSubtle, width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 6,
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(vertical: 11),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (_isGoogleLoading) ...[
                 const SizedBox(
-                  width: 16,
-                  height: 16,
+                  width: 17,
+                  height: 17,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: AppTheme.orangePrimary,
@@ -1019,107 +1105,27 @@ class _LoginScreenState extends State<LoginScreen>
                 Text(
                   'Menghubungkan ke Google...',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w600,
                     color: context.textPrimary,
                   ),
                 ),
               ] else ...[
                 SizedBox(
-                  width: 18,
-                  height: 18,
+                  width: 19,
+                  height: 19,
                   child: CustomPaint(painter: _GoogleLogoPainter()),
                 ),
                 const SizedBox(width: 10),
                 Text(
                   'Masuk dengan Google',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w600,
                     color: context.textPrimary,
                   ),
                 ),
               ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDemoRoleChips() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.touch_app_outlined,
-                size: 13, color: context.textSecondary),
-            const SizedBox(width: 4),
-            Text(
-              'Akses Cepat Pengujian (1-Klik):',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: context.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
-            _demoRoleChip('Admin', 'admin', 'admin123', const Color(0xFFEF4444)),
-            _demoRoleChip('Kasir', 'kasir', 'kasir123', const Color(0xFF10B981)),
-            _demoRoleChip('Waiter', 'waiter', 'waiter123', const Color(0xFF3B82F6)),
-            _demoRoleChip('Owner', 'owner', 'owner123', const Color(0xFF8B5CF6)),
-            _demoRoleChip(
-                'Pelanggan', 'pelanggan', 'pelanggan123', const Color(0xFFF59E0B)),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _demoRoleChip(
-      String label, String username, String password, Color accentColor) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _fillDemoCredentials(username, password),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: accentColor.withValues(alpha: 0.25),
-              width: 0.9,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: accentColor,
-                ),
-              ),
             ],
           ),
         ),
