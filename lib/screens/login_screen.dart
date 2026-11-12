@@ -414,25 +414,21 @@ class _LoginScreenState extends State<LoginScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bgGradient = isDark
-        ? const RadialGradient(
-            center: Alignment(0, -0.3),
-            radius: 1.3,
+        ? const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF1B2234),
               Color(0xFF0F172A),
-              Color(0xFF080D1A),
+              Color(0xFF0B1120),
             ],
-            stops: [0.0, 0.6, 1.0],
           )
-        : const RadialGradient(
-            center: Alignment(0, -0.3),
-            radius: 1.3,
+        : const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFFF7ED),
-              Color(0xFFF8FAFC),
-              Color(0xFFF1F5F9),
+              Color(0xFFFAFAF9),
+              Color(0xFFF5F5F4),
             ],
-            stops: [0.0, 0.55, 1.0],
           );
 
     return PopScope(
@@ -474,23 +470,18 @@ class _LoginScreenState extends State<LoginScreen>
         margin: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: context.surfaceCard,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDark
-                ? const Color(0xFF334155).withValues(alpha: 0.7)
+                ? const Color(0xFF334155)
                 : const Color(0xFFE2E8F0),
-            width: 1.4,
+            width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.09),
-              blurRadius: 48,
-              offset: const Offset(0, 20),
-            ),
-            BoxShadow(
-              color: AppTheme.orangePrimary.withValues(alpha: 0.10),
-              blurRadius: 32,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -526,19 +517,13 @@ class _LoginScreenState extends State<LoginScreen>
                     Row(
                       children: [
                         Container(
-                          width: 48,
-                          height: 48,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.orangePrimary
-                                    .withValues(alpha: 0.35),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
                           ),
+                          padding: const EdgeInsets.all(4),
                           child: Image.asset(
                             'assets/images/Rasantara Cloche App Icon.png',
                             fit: BoxFit.contain,
@@ -546,7 +531,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 const Icon(
                               Icons.restaurant_rounded,
                               color: AppTheme.orangePrimary,
-                              size: 28,
+                              size: 24,
                             ),
                           ),
                         ),
@@ -606,13 +591,13 @@ class _LoginScreenState extends State<LoginScreen>
 
                     const SizedBox(height: 22),
 
-                    // Metric Showcase Cards
+                    // Operational Focus Badges
                     Row(
                       children: [
                         _metricBadge(
-                            '⚡ 0.2s', 'Respons Kasir', const Color(0xFFF97316)),
+                            'Table Service', 'Manajemen Meja & Reservasi', AppTheme.orangePrimary),
                         const SizedBox(width: 10),
-                        _metricBadge('📊 Real-Time', 'Laporan Penjualan',
+                        _metricBadge('Multi-Role', 'Kasir, Dapur & Laporan',
                             const Color(0xFF10B981)),
                       ],
                     ),
@@ -719,27 +704,28 @@ class _LoginScreenState extends State<LoginScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Glowing Logo Card
+                // Clean App Brand Icon
                 Container(
-                  width: 76,
-                  height: 76,
+                  width: 72,
+                  height: 72,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      width: 1,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.orangePrimary.withValues(alpha: 0.28),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                      BoxShadow(
                         color: Colors.black.withValues(
-                          alpha: isDark ? 0.35 : 0.08,
+                          alpha: isDark ? 0.2 : 0.04,
                         ),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
+                  padding: const EdgeInsets.all(8),
                   child: Image.asset(
                     'assets/images/Rasantara Cloche App Icon.png',
                     fit: BoxFit.contain,
@@ -773,24 +759,24 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 const SizedBox(height: 24),
 
-                // Floating Elevated Login Card
+                // Login Card
                 Container(
-                  padding: const EdgeInsets.all(26),
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: context.surfaceCard,
-                    borderRadius: BorderRadius.circular(26),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isDark
-                          ? const Color(0xFF334155).withValues(alpha: 0.6)
+                          ? const Color(0xFF334155)
                           : const Color(0xFFE2E8F0),
-                      width: 1.2,
+                      width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
                         color:
-                            Colors.black.withValues(alpha: isDark ? 0.4 : 0.07),
-                        blurRadius: 30,
-                        offset: const Offset(0, 12),
+                            Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
@@ -827,14 +813,14 @@ class _LoginScreenState extends State<LoginScreen>
         _inputField(
           controller: _loginUsernameController,
           label: 'Username/Email',
-          hintText: 'Masukkan username atau email Anda',
+          hintText: 'contoh: nama@email.com atau username',
           icon: Icons.person_outline_rounded,
         ),
         const SizedBox(height: 14),
         _inputField(
           controller: _loginPasswordController,
           label: 'Password',
-          hintText: 'Masukkan kata sandi akun',
+          hintText: '••••••••',
           icon: Icons.lock_outline_rounded,
           isPassword: true,
           obscure: _loginObscure,
@@ -980,19 +966,8 @@ class _LoginScreenState extends State<LoginScreen>
         borderRadius: BorderRadius.circular(14),
         child: Ink(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFF97316), Color(0xFFEA580C)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.orangePrimary.withValues(alpha: 0.35),
-                blurRadius: 14,
-                offset: const Offset(0, 5),
-              ),
-            ],
+            color: AppTheme.orangePrimary,
+            borderRadius: BorderRadius.circular(10),
           ),
           padding: const EdgeInsets.symmetric(vertical: 14),
           child: Row(
