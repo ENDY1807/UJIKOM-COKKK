@@ -91,6 +91,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
         widget.db.updateUser(
           existingUser.idUser,
           existingUser.namaUser,
+          existingUser.password,
           existingUser.role,
           email: email.isNotEmpty ? email : existingUser.googleEmail,
           phoneNumber: phone.isNotEmpty ? phone : existingUser.phoneNumber,
@@ -641,7 +642,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (context, index) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final member = filtered[index];
                     return Container(

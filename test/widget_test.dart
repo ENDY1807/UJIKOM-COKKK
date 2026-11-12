@@ -141,8 +141,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 
-    // Generate Laporan
-    await tester.tap(find.text('Generate Laporan'));
+    // Laporan
+    await tester.tap(find.text('Laporan'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 

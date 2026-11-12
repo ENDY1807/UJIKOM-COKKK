@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../services/phone_otp_service.dart';
 import '../../widgets/app_loading_animation.dart';

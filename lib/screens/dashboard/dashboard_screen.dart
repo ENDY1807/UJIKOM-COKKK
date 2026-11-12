@@ -274,10 +274,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      formattedDate,
-                      style: TextStyle(fontSize: 11, color: context.textSecondary),
+                    Expanded(
+                      child: Text(
+                        formattedDate,
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       timeFormat.format(_currentTime),
                       style: TextStyle(
@@ -608,7 +612,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(14),
@@ -633,17 +637,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'MEJA',
-                  style: TextStyle(
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.bold,
-                    color: isOccupied ? const Color(0xFFEA580C) : context.textSecondary,
-                    letterSpacing: 0.8,
+                Flexible(
+                  child: Text(
+                    'MEJA',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: isOccupied ? const Color(0xFFEA580C) : context.textSecondary,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 2),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
                     color: isOccupied
                         ? const Color(0xFFEA580C).withValues(alpha: 0.15)
@@ -653,10 +662,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Text(
                     isOccupied ? 'TERISI' : 'KOSONG',
                     style: TextStyle(
-                      fontSize: 8,
+                      fontSize: 7.5,
                       fontWeight: FontWeight.w800,
                       color: isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
-                      letterSpacing: 0.3,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),
@@ -719,20 +728,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.soup_kitchen_rounded, size: 18, color: Color(0xFF2563EB)),
-                const SizedBox(width: 8),
-                Text(
-                  'Pesanan Berjalan',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: context.textPrimary,
+            Expanded(
+              child: Row(
+                children: [
+                  const Icon(Icons.soup_kitchen_rounded, size: 18, color: Color(0xFF2563EB)),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'Pesanan Berjalan',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: context.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
