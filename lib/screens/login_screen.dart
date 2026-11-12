@@ -565,11 +565,12 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                               Text(
-                                'Point of Sale & Kitchen Suite',
+                                'Autentik Cita Rasa Nusantara',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white.withValues(alpha: 0.7),
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  letterSpacing: 0.3,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -760,12 +761,14 @@ class _LoginScreenState extends State<LoginScreen>
                     color: context.textPrimary,
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
-                  'Sistem Kasir & Operasional Restoran',
+                  'Autentik Cita Rasa Nusantara',
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
                     color: context.textSecondary,
+                    letterSpacing: 0.2,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -814,14 +817,6 @@ class _LoginScreenState extends State<LoginScreen>
             fontWeight: FontWeight.w900,
             letterSpacing: -0.5,
             color: context.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Gunakan kredensial akun untuk melanjutkan',
-          style: TextStyle(
-            fontSize: 12.5,
-            color: context.textSecondary,
           ),
         ),
         const SizedBox(height: 20),
