@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:csv/csv.dart';
 import '../models/transaction_model.dart';
+import '../models/menu_model.dart';
 import 'file_downloader.dart';
 
 class ExportReportService {
@@ -343,5 +344,167 @@ class ExportReportService {
       onLayout: (PdfPageFormat format) async => bytes,
       name: filename,
     );
+  }
+
+  static Future<void> exportMenuPriceListPdf({
+    required List<MenuModel> menus,
+    String restaurantName = 'Rasantara Restaurant & Lounge',
+    String address = 'Jl. Rasantara No. 18, Bandung • Telp: (022) 8765-4321',
+  }) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        restaurantName.toUpperCase(),
+                        style: pw.TextStyle(
+                          fontSize: 18,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColor.fromHex('#EA580C'),
+                        ),
+                      ),
+                      pw.SizedBox(height: 2),
+                      pw.Text(
+                        address,
+                        style: const pw.TextStyle(
+                          fontSize: 9.5,
+                          color: PdfColors.grey700,
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        'DAFTAR MENU & PRICE LIST RESMI PELANGGAN',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text(
+                        'Dicetak: ${_dateFmt.format(DateTime.now())}',
+                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                      ),
+                      pw.Text(
+                        'Total Menu: ${menus.length} Item',
+                        style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                      ),
+                      pw.Text(
+                        'Status: Berlaku Terkini',
+                        style: pw.TextStyle(
+                          fontSize: 10,
+                          color: PdfColor.fromHex('#10B981'),
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 16),
+            pw.TableHelper.fromTextArray(
+              headers: [
+                'No',
+                'Nama Menu',
+                'Kategori',
+                'Deskripsi',
+                'Status',
+                'Harga Satuan',
+              ],
+              data: List.generate(menus.length, (i) {
+                final m = menus[i];
+                return [
+                  (i + 1).toString(),
+                  m.namaMasakan,
+                  m.kategori.label,
+                  m.deskripsi.isNotEmpty ? m.deskripsi : '-',
+                  m.isTersedia ? 'Tersedia' : 'Habis',
+                  _currencyFmt.format(m.harga),
+                ];
+              }),
+              border: pw.TableBorder.all(
+                color: PdfColors.grey300,
+                width: 0.5,
+              ),
+              headerStyle: pw.TextStyle(
+                fontSize: 9.5,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.white,
+              ),
+              headerDecoration: pw.BoxDecoration(
+                color: PdfColor.fromHex('#EA580C'),
+              ),
+              cellStyle: const pw.TextStyle(fontSize: 9),
+              cellAlignment: pw.Alignment.centerLeft,
+              cellAlignments: {
+                0: pw.Alignment.center,
+                4: pw.Alignment.center,
+                5: pw.Alignment.centerRight,
+              },
+              headerAlignments: {
+                0: pw.Alignment.center,
+                4: pw.Alignment.center,
+                5: pw.Alignment.centerRight,
+              },
+              cellPadding: const pw.EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 5,
+              ),
+            ),
+            pw.SizedBox(height: 16),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  '* Harga sudah termasuk pajak & layanan restoran.',
+                  style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600),
+                ),
+                pw.Text(
+                  'Rasantara Point of Sale System',
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColor.fromHex('#EA580C'),
+                  ),
+                ),
+              ],
+            ),
+          ];
+        },
+      ),
+    );
+
+    final filename = 'Price_List_Menu_Rasantara_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf';
+    final bytes = await pdf.save();
+
+    if (kIsWeb) {
+      downloadFileWeb(
+        bytes: bytes,
+        filename: filename,
+        mimeType: 'application/pdf',
+      );
+    } else {
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => bytes,
+        name: filename,
+      );
+    }
   }
 }

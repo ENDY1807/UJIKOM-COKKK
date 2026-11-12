@@ -13,6 +13,7 @@ import '../services/supabase_config.dart';
 import '../services/web_oauth_helper.dart';
 import '../services/phone_otp_service.dart';
 import '../widgets/phone_otp_dialog.dart';
+import '../widgets/menu_price_list_dialog.dart';
 import '../theme/app_theme.dart';
 import 'auth/google_onboarding_dialog.dart';
 
@@ -832,14 +833,14 @@ class _LoginScreenState extends State<LoginScreen>
         _inputField(
           controller: _loginUsernameController,
           label: 'Username/Email',
-          hintText: 'Masukkan username atau email Anda',
+          hintText: 'contoh: nama@email.com atau username',
           icon: Icons.person_outline_rounded,
         ),
         const SizedBox(height: 14),
         _inputField(
           controller: _loginPasswordController,
           label: 'Password',
-          hintText: 'Masukkan kata sandi akun',
+          hintText: '••••••••',
           icon: Icons.lock_outline_rounded,
           isPassword: true,
           obscure: _loginObscure,
@@ -860,6 +861,11 @@ class _LoginScreenState extends State<LoginScreen>
 
         // Google Sign-In Button
         _googleSignInButton(),
+
+        const SizedBox(height: 18),
+
+        // Menu & Price List for Customers / Visitors
+        _menuPriceListButton(),
       ],
     );
   }
@@ -1110,6 +1116,80 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
               ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _menuPriceListButton() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => MenuPriceListDialog.show(context, db: widget.db),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF1E293B).withValues(alpha: 0.6)
+                : const Color(0xFFFFF7ED),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppTheme.orangePrimary.withValues(alpha: 0.35),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: AppTheme.orangePrimary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  size: 17,
+                  color: AppTheme.orangePrimary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Buku Menu & Price List Pelanggan',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: context.textPrimary,
+                        letterSpacing: -0.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'Lihat harga & unduh katalog PDF',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: context.textSecondary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 12,
+                color: AppTheme.orangePrimary,
+              ),
             ],
           ),
         ),

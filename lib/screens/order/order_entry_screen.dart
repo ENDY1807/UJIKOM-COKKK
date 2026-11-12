@@ -7,6 +7,7 @@ import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/qris_payment_dialog.dart';
+import '../../widgets/menu_price_list_dialog.dart';
 
 class OrderEntryScreen extends StatefulWidget {
   final DatabaseService db;
@@ -629,35 +630,78 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Column(
         children: [
-          // Search Field
-          Container(
-            height: 40,
-            decoration: BoxDecoration(
-              color: context.surfaceBg,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: context.borderSubtle),
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
-              style: TextStyle(fontSize: 13, color: context.textPrimary),
-              decoration: InputDecoration(
-                hintText: 'Cari menu hidangan nusantara...',
-                hintStyle: const TextStyle(fontSize: 12.5, color: AppTheme.textMuted),
-                prefixIcon: const Icon(Icons.search, size: 18, color: AppTheme.textMuted),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 16, color: AppTheme.textMuted),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          // Search Field & Price List Button
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: context.surfaceBg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: context.borderSubtle),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
+                    style: TextStyle(fontSize: 13, color: context.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Cari menu hidangan nusantara...',
+                      hintStyle: const TextStyle(fontSize: 12.5, color: AppTheme.textMuted),
+                      prefixIcon: const Icon(Icons.search, size: 18, color: AppTheme.textMuted),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 16, color: AppTheme.textMuted),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Lihat Buku Menu & Cetak PDF Price List',
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => MenuPriceListDialog.show(context, db: widget.db),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.orangePrimary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppTheme.orangePrimary.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.menu_book_rounded, size: 16, color: AppTheme.orangePrimary),
+                          SizedBox(width: 6),
+                          Text(
+                            'Price List',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.orangePrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           // Categories horizontal
