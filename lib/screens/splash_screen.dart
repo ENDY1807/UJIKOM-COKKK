@@ -184,10 +184,10 @@ class _SplashScreenState extends State<SplashScreen>
                                   width: 108,
                                   height: 108,
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                    color: isDark ? AppTheme.darkSurface : Colors.white,
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                                      color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
                                       width: 1,
                                     ),
                                     boxShadow: [

@@ -418,8 +418,8 @@ class _LoginScreenState extends State<LoginScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF0F172A),
-              Color(0xFF0B1120),
+              AppTheme.darkBg,
+              Color(0xFF040506),
             ],
           )
         : const LinearGradient(
@@ -473,7 +473,7 @@ class _LoginScreenState extends State<LoginScreen>
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDark
-                ? const Color(0xFF334155)
+                ? AppTheme.darkBorder
                 : const Color(0xFFE2E8F0),
             width: 1,
           ),
@@ -498,9 +498,9 @@ class _LoginScreenState extends State<LoginScreen>
                     end: Alignment.bottomRight,
                     colors: isDark
                         ? [
-                            const Color(0xFF1E1712),
-                            const Color(0xFF0F172A),
-                            const Color(0xFF0D1322),
+                            const Color(0xFF14171D),
+                            const Color(0xFF0C0E12),
+                            const Color(0xFF07080A),
                           ]
                         : [
                             const Color(0xFF1E293B),
@@ -709,10 +709,10 @@ class _LoginScreenState extends State<LoginScreen>
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                    color: isDark ? AppTheme.darkSurface : Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
                       width: 1,
                     ),
                     boxShadow: [
@@ -767,7 +767,7 @@ class _LoginScreenState extends State<LoginScreen>
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isDark
-                          ? const Color(0xFF334155)
+                          ? AppTheme.darkBorder
                           : const Color(0xFFE2E8F0),
                       width: 1,
                     ),

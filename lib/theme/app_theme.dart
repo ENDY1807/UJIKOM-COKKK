@@ -27,6 +27,17 @@ class AppTheme {
   static const Color statusRed = Color(0xFFDC2626);
   static const Color statusRedBg = Color(0xFFFEF2F2);
 
+  // Deep Luxury Obsidian Dark Mode Palette
+  static const Color darkBg = Color(0xFF090A0C); // Ultra-deep rich obsidian black
+  static const Color darkSurface = Color(0xFF121418); // Elevated matte card black
+  static const Color darkBorder = Color(0xFF22262E); // Crisp, subtle futuristic border
+  static const Color darkFill = Color(0xFF181B21); // Elevated input & interactive surface
+  static const Color darkTextPrimary = Color(0xFFF8FAFC); // Pure crisp high-contrast text
+  static const Color darkTextSecondary = Color(0xFF94A3B8); // Muted slate text
+
+  // Luxury Amber-Orange Accent
+  static const Color orangeAccent = Color(0xFFFF6B2B);
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -141,66 +152,66 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: orangePrimary,
         onPrimary: white,
-        primaryContainer: Color(0xFF7C2D12),
+        primaryContainer: Color(0xFF431407),
         onPrimaryContainer: Color(0xFFFFEDD5),
-        surface: Color(0xFF1E293B),
-        onSurface: Colors.white,
+        surface: darkSurface,
+        onSurface: darkTextPrimary,
         error: statusRed,
         onError: white,
       ),
-      scaffoldBackgroundColor: const Color(0xFF0F172A),
+      scaffoldBackgroundColor: darkBg,
       fontFamily: 'Roboto',
       textTheme: const TextTheme(
-        displayLarge: TextStyle(color: Colors.white),
-        displayMedium: TextStyle(color: Colors.white),
-        displaySmall: TextStyle(color: Colors.white),
-        headlineLarge: TextStyle(color: Colors.white),
-        headlineMedium: TextStyle(color: Colors.white),
-        headlineSmall: TextStyle(color: Colors.white),
-        titleLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        titleMedium: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        titleSmall: TextStyle(color: Colors.white),
-        bodyLarge: TextStyle(color: Colors.white),
-        bodyMedium: TextStyle(color: Colors.white),
-        bodySmall: TextStyle(color: Color(0xFFCBD5E1)),
-        labelLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        labelMedium: TextStyle(color: Color(0xFFCBD5E1)),
-        labelSmall: TextStyle(color: Color(0xFFCBD5E1)),
+        displayLarge: TextStyle(color: darkTextPrimary),
+        displayMedium: TextStyle(color: darkTextPrimary),
+        displaySmall: TextStyle(color: darkTextPrimary),
+        headlineLarge: TextStyle(color: darkTextPrimary),
+        headlineMedium: TextStyle(color: darkTextPrimary),
+        headlineSmall: TextStyle(color: darkTextPrimary),
+        titleLarge: TextStyle(color: darkTextPrimary, fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(color: darkTextPrimary, fontWeight: FontWeight.w600),
+        titleSmall: TextStyle(color: darkTextPrimary),
+        bodyLarge: TextStyle(color: darkTextPrimary),
+        bodyMedium: TextStyle(color: darkTextPrimary),
+        bodySmall: TextStyle(color: darkTextSecondary),
+        labelLarge: TextStyle(color: darkTextPrimary, fontWeight: FontWeight.bold),
+        labelMedium: TextStyle(color: darkTextSecondary),
+        labelSmall: TextStyle(color: darkTextSecondary),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF1E293B),
-        foregroundColor: Colors.white,
+        backgroundColor: darkSurface,
+        foregroundColor: darkTextPrimary,
         elevation: 0,
         centerTitle: false,
         scrolledUnderElevation: 1,
         titleTextStyle: TextStyle(
-          color: Colors.white,
+          color: darkTextPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w700,
         ),
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF1E293B),
+        color: darkSurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Color(0xFF334155), width: 1),
+          side: const BorderSide(color: darkBorder, width: 1),
         ),
         margin: EdgeInsets.zero,
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Color(0xFF1E293B),
-        modalBackgroundColor: Color(0xFF1E293B),
+        backgroundColor: darkSurface,
+        modalBackgroundColor: darkSurface,
         surfaceTintColor: Colors.transparent,
       ),
       dialogTheme: const DialogThemeData(
-        backgroundColor: Color(0xFF1E293B),
+        backgroundColor: darkSurface,
         surfaceTintColor: Colors.transparent,
-        titleTextStyle: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-        contentTextStyle: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
+        titleTextStyle: TextStyle(color: darkTextPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+        contentTextStyle: TextStyle(color: darkTextSecondary, fontSize: 13),
       ),
       drawerTheme: const DrawerThemeData(
-        backgroundColor: Color(0xFF1E293B),
+        backgroundColor: darkSurface,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -219,7 +230,7 @@ class AppTheme {
         ),
       ),
       dividerTheme: const DividerThemeData(
-        color: Color(0xFF334155),
+        color: darkBorder,
         thickness: 1,
         space: 1,
       ),
@@ -229,10 +240,10 @@ class AppTheme {
 
 extension ThemeHelper on BuildContext {
   bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
-  Color get surfaceCard => isDarkMode ? const Color(0xFF1E293B) : Colors.white;
-  Color get surfaceBg => isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFFAFAF9);
-  Color get textPrimary => isDarkMode ? Colors.white : const Color(0xFF1E293B);
-  Color get textSecondary => isDarkMode ? const Color(0xFFCBD5E1) : const Color(0xFF64748B);
-  Color get borderSubtle => isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-  Color get fillSubtle => isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
+  Color get surfaceCard => isDarkMode ? AppTheme.darkSurface : Colors.white;
+  Color get surfaceBg => isDarkMode ? AppTheme.darkBg : const Color(0xFFFAFAF9);
+  Color get textPrimary => isDarkMode ? AppTheme.darkTextPrimary : const Color(0xFF1E293B);
+  Color get textSecondary => isDarkMode ? AppTheme.darkTextSecondary : const Color(0xFF64748B);
+  Color get borderSubtle => isDarkMode ? AppTheme.darkBorder : const Color(0xFFE2E8F0);
+  Color get fillSubtle => isDarkMode ? AppTheme.darkFill : const Color(0xFFF1F5F9);
 }
