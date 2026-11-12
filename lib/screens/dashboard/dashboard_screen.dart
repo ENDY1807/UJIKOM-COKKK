@@ -183,7 +183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.asset(
-                        'assets/images/logo.png',
+                        'assets/images/Rasantara Cloche App Icon.png',
                         fit: BoxFit.contain,
                         errorBuilder: (c, e, s) => const Icon(
                           Icons.storefront_rounded,
