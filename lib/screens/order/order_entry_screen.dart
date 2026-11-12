@@ -520,10 +520,13 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     final tbl = tables[index];
                     final isSelected = tbl.nomorMeja == _selectedTableNo;
                     final isOccupied = tbl.status == TableStatus.terisi;
+                    final numStr = tbl.nomorMeja.replaceAll(RegExp(r'[^0-9]'), '');
 
-                    Color bg = isOccupied
-                        ? (context.isDarkMode ? const Color(0xFF431407).withValues(alpha: 0.3) : const Color(0xFFFFF7ED))
-                        : context.surfaceBg;
+                    Color bg = isSelected
+                        ? AppTheme.orangePrimary
+                        : (isOccupied
+                            ? (context.isDarkMode ? const Color(0xFF431407).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
+                            : context.surfaceCard);
                     Color border = isSelected
                         ? AppTheme.orangePrimary
                         : (isOccupied ? const Color(0xFFEA580C) : context.borderSubtle);
@@ -535,41 +538,75 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         });
                         Navigator.pop(ctx);
                       },
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.orangePrimary : bg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: border, width: isSelected ? 2 : 1),
+                          color: bg,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: border,
+                            width: (isSelected || isOccupied) ? 1.6 : 1.0,
+                          ),
                         ),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Icon(
-                              Icons.table_restaurant_rounded,
-                              size: 20,
-                              color: isSelected
-                                  ? Colors.white
-                                  : (isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A)),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'MEJA',
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    color: isSelected
+                                        ? Colors.white.withValues(alpha: 0.8)
+                                        : (isOccupied ? const Color(0xFFEA580C) : context.textSecondary),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? Colors.white.withValues(alpha: 0.25)
+                                        : (isOccupied
+                                            ? const Color(0xFFEA580C).withValues(alpha: 0.15)
+                                            : const Color(0xFF16A34A).withValues(alpha: 0.15)),
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                  child: Text(
+                                    isOccupied ? 'TERISI' : 'KOSONG',
+                                    style: TextStyle(
+                                      fontSize: 7.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : (isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A)),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 4),
                             Text(
-                              tbl.nomorMeja.replaceAll('Meja ', 'M-'),
+                              numStr.isNotEmpty ? numStr : tbl.nomorMeja,
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 20,
                                 fontWeight: FontWeight.w900,
-                                color: isSelected ? Colors.white : context.textPrimary,
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isOccupied ? const Color(0xFFEA580C) : context.textPrimary),
                               ),
                             ),
-                            const SizedBox(height: 2),
                             Text(
-                              isOccupied ? 'Terisi' : '${tbl.kapasitas} Kursi',
+                              '${tbl.kapasitas} Kursi',
                               style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
                                 color: isSelected
-                                    ? Colors.white.withValues(alpha: 0.9)
-                                    : (isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A)),
+                                    ? Colors.white.withValues(alpha: 0.85)
+                                    : context.textSecondary,
                               ),
                             ),
                           ],
