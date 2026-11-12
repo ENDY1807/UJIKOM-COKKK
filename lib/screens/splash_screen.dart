@@ -181,27 +181,26 @@ class _SplashScreenState extends State<SplashScreen>
                                 ),
 
                                 Container(
-                                  width: 116,
-                                  height: 116,
+                                  width: 108,
+                                  height: 108,
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(28),
+                                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                                      width: 1,
+                                    ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppTheme.orangePrimary.withValues(
-                                          alpha: 0.28 + (glow * 0.15),
-                                        ),
-                                        blurRadius: 36,
-                                        offset: const Offset(0, 14),
-                                      ),
-                                      BoxShadow(
                                         color: Colors.black.withValues(
-                                          alpha: isDark ? 0.45 : 0.10,
+                                          alpha: isDark ? 0.3 : 0.06,
                                         ),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 8),
+                                        blurRadius: 14,
+                                        offset: const Offset(0, 4),
                                       ),
                                     ],
                                   ),
+                                  padding: const EdgeInsets.all(12),
                                   child: Image.asset(
                                     'assets/images/Rasantara Cloche App Icon.png',
                                     fit: BoxFit.contain,
@@ -241,17 +240,8 @@ class _SplashScreenState extends State<SplashScreen>
                               vertical: 3.5,
                             ),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFF97316), Color(0xFFEA580C)],
-                              ),
+                              color: AppTheme.orangePrimary,
                               borderRadius: BorderRadius.circular(6),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.orangePrimary.withValues(alpha: 0.35),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
                             ),
                             child: const Text(
                               'POS RESTO',
@@ -301,13 +291,7 @@ class _SplashScreenState extends State<SplashScreen>
                               widthFactor: factor,
                               child: Container(
                                 decoration: const BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Color(0xFFF59E0B),
-                                      Color(0xFFEA580C),
-                                      Color(0xFFC2410C),
-                                    ],
-                                  ),
+                                  color: AppTheme.orangePrimary,
                                 ),
                               ),
                             );
