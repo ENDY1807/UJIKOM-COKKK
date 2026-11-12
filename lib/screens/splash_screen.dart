@@ -69,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 children: [
                   const Spacer(),
 
-                  // Logo Baru KasirNih (Transparan)
+                  // Logo Baru Rasantara (Transparan)
                   Container(
                     width: 140,
                     height: 140,
