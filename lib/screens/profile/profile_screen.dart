@@ -364,17 +364,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             usernameText,
                             style: TextStyle(fontSize: 13, color: context.textSecondary, fontWeight: FontWeight.w500),
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(Icons.phone_outlined, size: 13, color: context.textSecondary),
-                              const SizedBox(width: 4),
-                              Text(
-                                phoneText,
-                                style: TextStyle(fontSize: 12, color: context.textSecondary),
-                              ),
-                            ],
-                          ),
+                          if (role == UserRole.pelanggan) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(Icons.phone_outlined, size: 13, color: context.textSecondary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  phoneText,
+                                  style: TextStyle(fontSize: 12, color: context.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -398,83 +400,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 18),
 
-              // ── 2. Keamanan Akun & Kredensial ──
-              _buildSectionHeader('Keamanan Akun & 2-Factor Auth (2FA)'),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.surfaceCard,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.borderSubtle),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x06000000), blurRadius: 8, offset: Offset(0, 2)),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: is2Fa ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.verified_user_rounded,
-                              size: 20,
-                              color: is2Fa ? const Color(0xFF16A34A) : const Color(0xFF64748B),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Autentikasi Dua Langkah (2FA)',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  is2Fa
-                                      ? 'Aktif via Authenticator App'
-                                      : 'Tambahkan proteksi kode verifikasi untuk keamanan login.',
-                                  style: TextStyle(fontSize: 11, color: context.textSecondary),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch(
-                            value: is2Fa,
-                            activeThumbColor: const Color(0xFFEA580C),
-                            onChanged: (val) {
-                              if (val) {
-                                _openTwoFactorSetupDialog();
-                              } else {
-                                _showDisableTwoFactorDialog();
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1, indent: 64),
-                    InkWell(
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-                      onTap: _showChangePasswordDialog,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              // ── 2. Keamanan Akun & Kredensial (Khusus Pelanggan Langganan) ──
+              if (role == UserRole.pelanggan) ...[
+                _buildSectionHeader('Keamanan Akun & 2-Factor Auth (2FA)'),
+                Container(
+                  decoration: BoxDecoration(
+                    color: context.surfaceCard,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: context.borderSubtle),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x06000000), blurRadius: 8, offset: Offset(0, 2)),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFFF7ED),
+                              decoration: BoxDecoration(
+                                color: is2Fa ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.lock_reset_rounded, size: 20, color: Color(0xFFEA580C)),
+                              child: Icon(
+                                Icons.verified_user_rounded,
+                                size: 20,
+                                color: is2Fa ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                              ),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
@@ -482,26 +436,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Ubah Kata Sandi',
-                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary),
+                                    'Autentikasi Dua Langkah (2FA)',
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Perbarui kata sandi lokal untuk login akun restoran',
+                                    is2Fa
+                                        ? 'Aktif via Authenticator App'
+                                        : 'Tambahkan proteksi kode verifikasi untuk keamanan login.',
                                     style: TextStyle(fontSize: 11, color: context.textSecondary),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.chevron_right, size: 20, color: Color(0xFF94A3B8)),
+                            Switch(
+                              value: is2Fa,
+                              activeThumbColor: const Color(0xFFEA580C),
+                              onChanged: (val) {
+                                if (val) {
+                                  _openTwoFactorSetupDialog();
+                                } else {
+                                  _showDisableTwoFactorDialog();
+                                }
+                              },
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                      const Divider(height: 1, indent: 64),
+                      InkWell(
+                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                        onTap: _showChangePasswordDialog,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFFFF7ED),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.lock_reset_rounded, size: 20, color: Color(0xFFEA580C)),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Ubah Kata Sandi',
+                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Perbarui kata sandi lokal untuk login akun restoran',
+                                      style: TextStyle(fontSize: 11, color: context.textSecondary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right, size: 20, color: Color(0xFF94A3B8)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 18),
+                const SizedBox(height: 18),
+              ],
 
               // ── 4. Preferensi Sistem Aplikasi ──
               _buildSectionHeader('Preferensi & Tampilan Aplikasi'),

@@ -28,6 +28,10 @@ enum UserRole {
   bool get canProcessTransactions =>
       this == UserRole.administrator || this == UserRole.kasir;
   bool get canViewReports => this != UserRole.pelanggan;
+  bool get canManageSubscriptions =>
+      this == UserRole.administrator ||
+      this == UserRole.waiter ||
+      this == UserRole.owner;
 }
 
 enum AuthProvider { local, google, both }

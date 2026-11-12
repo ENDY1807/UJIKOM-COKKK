@@ -14,6 +14,7 @@ import 'cashier/cashier_screen.dart';
 import 'reference/menu_management_screen.dart';
 import 'reports/report_screen.dart';
 import 'users/user_management_screen.dart';
+import 'subscription/subscription_screen.dart';
 import 'profile/profile_screen.dart';
 import 'profile/settings_screen.dart';
 
@@ -142,6 +143,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         label: context.t('Registrasi User', 'Registration'),
         icon: Icons.people_outline,
         screen: UserManagementScreen(db: widget.db),
+      ));
+    }
+
+    // 7. Menu Berlangganan: Admin, Waiter, Owner
+    if (role.canManageSubscriptions) {
+      list.add(NavDestinationItem(
+        label: context.t('Berlangganan', 'Subscriptions'),
+        icon: Icons.card_membership_rounded,
+        screen: SubscriptionScreen(db: widget.db),
       ));
     }
 

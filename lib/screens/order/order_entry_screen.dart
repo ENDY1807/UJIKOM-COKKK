@@ -36,9 +36,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   // Meja Terpilih
   String _selectedTableNo = 'Meja 01';
 
-  // Info Tamu
-  final _customerNameController = TextEditingController();
-  final _orderNotesController = TextEditingController();
+  // Search Controller
   final _searchController = TextEditingController();
 
   // Kategori & Search
@@ -58,11 +56,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   void initState() {
     super.initState();
 
-    final user = widget.db.currentUser;
-    if (user != null && user.role == UserRole.pelanggan) {
-      _customerNameController.text = user.namaUser;
-    }
-
     if (widget.initialTableNo != null && widget.initialTableNo!.isNotEmpty) {
       _selectedTableNo = widget.initialTableNo!;
     } else {
@@ -76,21 +69,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       _searchController.text = widget.initialSearch!;
       _searchQuery = widget.initialSearch!.toLowerCase();
     }
-
-    _customerNameController.addListener(_onFieldChanged);
   }
 
   @override
   void dispose() {
-    _customerNameController.removeListener(_onFieldChanged);
-    _customerNameController.dispose();
-    _orderNotesController.dispose();
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _onFieldChanged() {
-    if (mounted) setState(() {});
   }
 
   // Cek apakah pelanggan yang memesan adalah Pelanggan Langganan (VIP Member)
@@ -98,16 +82,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     final curUser = widget.db.currentUser;
     if (curUser != null && curUser.role == UserRole.pelanggan && curUser.isSubscribed) {
       return true;
-    }
-    final enteredName = _customerNameController.text.trim().toLowerCase();
-    if (enteredName.isNotEmpty) {
-      return widget.db.users.any((u) =>
-        u.isSubscribed && (
-          u.namaUser.toLowerCase() == enteredName ||
-          u.username.toLowerCase() == enteredName ||
-          (u.phoneNumber.isNotEmpty && u.phoneNumber == enteredName)
-        )
-      );
     }
     return false;
   }
@@ -203,12 +177,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       return;
     }
 
-    final custName = _customerNameController.text.trim().isEmpty
-        ? 'Tamu $_selectedTableNo'
-        : _customerNameController.text.trim();
-    final userNotes = _orderNotesController.text.trim();
-
-    final orderNotes = 'Layanan Meja ($_selectedTableNo)${userNotes.isNotEmpty ? ' | Catatan: $userNotes' : ''}';
+    final custName = widget.db.currentUser?.role == UserRole.pelanggan
+        ? widget.db.currentUser!.namaUser
+        : 'Pelanggan $_selectedTableNo';
+    final orderNotes = 'Layanan Meja $_selectedTableNo';
     final effDiskonMember = _diskonMemberAmount;
     final totalAmountToPay = _grandTotal;
 
@@ -225,10 +197,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     final submittedTable = _selectedTableNo;
     setState(() {
       _cart.clear();
-      _orderNotesController.clear();
-      if (widget.db.currentUser?.role != UserRole.pelanggan) {
-        _customerNameController.clear();
-      }
     });
 
     if (payWithQris) {
@@ -278,7 +246,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           child: Column(
             children: [
               _buildTopTableBar(),
-              _buildGuestInfoBar(),
               _buildCategoryAndSearchBar(),
               Expanded(child: _buildMenuGrid(isWide: true)),
             ],
@@ -304,7 +271,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         Column(
           children: [
             _buildTopTableBar(),
-            _buildGuestInfoBar(),
             _buildCategoryAndSearchBar(),
             Expanded(child: _buildMenuGrid(isWide: false)),
             if (_cart.isNotEmpty) const SizedBox(height: 76),
@@ -648,144 +614,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     );
   }
 
-  // ── GUEST INFO BAR ──
-  Widget _buildGuestInfoBar() {
-    return Container(
-      color: context.surfaceCard,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: context.surfaceBg,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: context.borderSubtle),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < 480;
-            if (isNarrow) {
-              return Column(
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.person_outline, size: 18, color: AppTheme.textMuted),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _customerNameController,
-                          style: TextStyle(fontSize: 13, color: context.textPrimary, fontWeight: FontWeight.w500),
-                          decoration: const InputDecoration(
-                            hintText: 'Nama Tamu / Pelanggan...',
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ),
-                      if (_isCurrentCustomerSubscribed)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDCFCE7),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFF86EFAC)),
-                          ),
-                          child: const Text(
-                            'VIP 10% OFF',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
-                          ),
-                        ),
-                    ],
-                  ),
-                  Divider(height: 12, color: context.borderSubtle),
-                  Row(
-                    children: [
-                      const Icon(Icons.edit_note, size: 18, color: AppTheme.textMuted),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _orderNotesController,
-                          style: TextStyle(fontSize: 13, color: context.textPrimary),
-                          decoration: const InputDecoration(
-                            hintText: 'Catatan Meja (opsional)...',
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            }
-
-            return Row(
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.person_outline, size: 18, color: AppTheme.textMuted),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _customerNameController,
-                          style: TextStyle(fontSize: 13, color: context.textPrimary, fontWeight: FontWeight.w500),
-                          decoration: const InputDecoration(
-                            hintText: 'Nama Tamu / Pelanggan...',
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ),
-                      if (_isCurrentCustomerSubscribed)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDCFCE7),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFF86EFAC)),
-                          ),
-                          child: const Text(
-                            'VIP 10% OFF',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Container(width: 1, height: 22, color: context.borderSubtle, margin: const EdgeInsets.symmetric(horizontal: 8)),
-                Expanded(
-                  flex: 5,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.edit_note, size: 18, color: AppTheme.textMuted),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _orderNotesController,
-                          style: TextStyle(fontSize: 13, color: context.textPrimary),
-                          decoration: const InputDecoration(
-                            hintText: 'Catatan Meja (opsional)...',
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
   // ── CATEGORY & SEARCH BAR ──
   Widget _buildCategoryAndSearchBar() {
     final categories = [
@@ -1094,13 +922,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                       'Pesanan $_selectedTableNo',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                     ),
-                    Text(
-                      _customerNameController.text.isNotEmpty
-                          ? 'Tamu: ${_customerNameController.text}'
-                          : 'Layanan Meja Restoran',
+                    const Text(
+                      'Layanan Meja Restoran',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                      style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
                     ),
                   ],
                 ),

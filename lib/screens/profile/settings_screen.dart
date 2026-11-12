@@ -214,6 +214,38 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final user = widget.db.currentUser;
+    final isPelanggan = user?.role == UserRole.pelanggan;
+
+    if (!isPelanggan) {
+      return Scaffold(
+        backgroundColor: context.surfaceBg,
+        appBar: AppBar(
+          backgroundColor: context.surfaceCard,
+          elevation: 0.5,
+          titleSpacing: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: context.textPrimary),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.t('Pengaturan', 'Settings'),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
+              ),
+              Text(
+                context.t('Preferensi Sistem Aplikasi', 'System Preferences'),
+                style: TextStyle(fontSize: 11, color: context.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        body: _buildAppSettingsTab(),
+      );
+    }
+
     return Scaffold(
       backgroundColor: context.surfaceBg,
       appBar: AppBar(
@@ -228,11 +260,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              context.t('Pengaturan', 'Settings'),
+              context.t('Pengaturan Akun', 'Account Settings'),
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
             ),
             Text(
-              context.t('Kelola Akun & Preferensi Aplikasi', 'Manage Account & App Preferences'),
+              context.t('Keamanan Akun & Preferensi', 'Account Security & Preferences'),
               style: TextStyle(fontSize: 11, color: context.textSecondary),
             ),
           ],
@@ -245,7 +277,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           unselectedLabelColor: context.textSecondary,
           labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           tabs: [
-            Tab(icon: const Icon(Icons.person_outline, size: 20), text: context.t('Profil Akun', 'Account Profile')),
+            Tab(icon: const Icon(Icons.shield_outlined, size: 20), text: context.t('Keamanan & Profil', 'Security & Profile')),
             Tab(icon: const Icon(Icons.tune_rounded, size: 20), text: context.t('Sistem Aplikasi', 'System Settings')),
           ],
         ),
