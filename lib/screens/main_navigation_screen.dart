@@ -130,7 +130,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // 5. Generate Laporan: Admin, Waiter, Kasir, Owner
     if (role.canViewReports) {
       list.add(NavDestinationItem(
-        label: context.t('Generate Laporan', 'Reports'),
+        label: context.t('Laporan', 'Reports'),
         icon: Icons.analytics_outlined,
         screen: ReportScreen(db: widget.db),
       ));
@@ -344,7 +344,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.asset('assets/images/kasirnih_logo.png', width: 26, height: 26, fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.storefront, color: Color(0xFFEA580C), size: 16)),
+                    child: Image.asset('assets/images/logo.png', width: 26, height: 26, fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.storefront, color: Color(0xFFEA580C), size: 16)),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -525,82 +525,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  /// Floating pill bar Pantau Pesanan (gaya Gojek) yang melayang di atas navigation bar
+  /// Floating pill bar Pantau Pesanan (dinonaktifkan agar pantau pesanan spesifik per meja yang diklik)
   Widget _buildFloatingOrderTracker(BuildContext context, UserModel? currentUser) {
-    if (currentUser == null) return const SizedBox.shrink();
-
-    // Sembunyikan jika di tab pemesanan agar tidak bertumpuk dengan floating cart bar
-    if (_currentIndex == 1) return const SizedBox.shrink();
-
-    final simService = OrderSimulationService();
-    simService.attachDatabase(widget.db);
-
-    return ListenableBuilder(
-      listenable: simService,
-      builder: (context, _) {
-        final activeOrders = widget.db.orders.where((o) =>
-          o.status != OrderStatus.selesai && o.status != OrderStatus.dibatalkan
-        ).toList();
-
-        final userOrders = activeOrders.where((o) =>
-          o.idUser == currentUser.idUser ||
-          o.namaPelanggan.toString().toLowerCase().trim() == currentUser.namaUser.toLowerCase().trim()
-        ).toList();
-
-        dynamic targetOrder = userOrders.isNotEmpty ? userOrders.first : null;
-        if (targetOrder == null) {
-          final allUserOrders = widget.db.orders.where((o) =>
-            o.idUser == currentUser.idUser ||
-            o.namaPelanggan.toString().toLowerCase().trim() == currentUser.namaUser.toLowerCase().trim()
-          ).toList();
-          if (allUserOrders.isNotEmpty) {
-            targetOrder = allUserOrders.first;
-          }
-        }
-
-        if (targetOrder == null && currentUser.role != UserRole.pelanggan) {
-          targetOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
-        }
-
-        if (targetOrder == null || targetOrder is! OrderModel) {
-          return const SizedBox.shrink();
-        }
-
-        if (simService.isOrderExpired(targetOrder.idOrder)) {
-          return const SizedBox.shrink();
-        }
-
-        final progress = simService.getOrCreateProgress(targetOrder);
-        if (progress.isExpired) {
-          return const SizedBox.shrink();
-        }
-
-        final currentStep = progress.currentStep;
-        final statusText = currentStep >= 4
-            ? 'Selesai'
-            : (currentStep == 3
-                ? 'Diantar'
-                : (currentStep == 2 ? 'Sedang Dimasak' : 'Diterima Resto'));
-
-        final fmt = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-
-        return FloatingOrderTrackerBar(
-          order: targetOrder,
-          fmt: fmt,
-          statusText: statusText,
-          onTap: () {
-            showOrderTrackerModal(
-              context,
-              db: widget.db,
-              order: targetOrder,
-              onNavigateToTab: (idx) {
-                setState(() => _currentIndex = idx);
-              },
-            );
-          },
-        );
-      },
-    );
+    return const SizedBox.shrink();
   }
 
   /// Navbar Mobile Human-Crafted (Anti-Slop Design):
@@ -735,7 +662,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.asset('assets/images/kasirnih_logo.png', fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.storefront, color: Colors.white, size: 28)),
+                    child: Image.asset('assets/images/logo.png', fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.storefront, color: Colors.white, size: 28)),
                   ),
                 ),
                 const SizedBox(width: 14),

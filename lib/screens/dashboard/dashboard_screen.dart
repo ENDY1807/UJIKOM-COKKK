@@ -8,6 +8,7 @@ import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/analytics_charts.dart';
+import '../../widgets/order_tracker_sheet.dart';
 
 enum TableFilterType {
   all('Semua Meja'),
@@ -182,7 +183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Image.asset(
-                      'assets/images/kasirnih_logo.png',
+                      'assets/images/logo.png',
                       fit: BoxFit.contain,
                       errorBuilder: (c, e, s) => const Icon(
                         Icons.table_restaurant_rounded,
@@ -454,43 +455,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        Container(
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: context.fillSubtle,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: context.borderSubtle),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: TableFilterType.values.map((f) {
-              final isSelected = _selectedFilter == f;
-              String countLabel = '';
-              if (f == TableFilterType.all) countLabel = '$totalCount';
-              if (f == TableFilterType.kosong) countLabel = '$emptyCount';
-              if (f == TableFilterType.terisi) countLabel = '$occupiedCount';
+        Flexible(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            reverse: true,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: context.fillSubtle,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: context.borderSubtle),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: TableFilterType.values.map((f) {
+                  final isSelected = _selectedFilter == f;
+                  String countLabel = '';
+                  if (f == TableFilterType.all) countLabel = '$totalCount';
+                  if (f == TableFilterType.kosong) countLabel = '$emptyCount';
+                  if (f == TableFilterType.terisi) countLabel = '$occupiedCount';
 
-              String shortLabel = f == TableFilterType.all ? 'Semua' : (f == TableFilterType.kosong ? 'Kosong' : 'Terisi');
+                  String shortLabel = f == TableFilterType.all ? 'Semua' : (f == TableFilterType.kosong ? 'Kosong' : 'Terisi');
 
-              return GestureDetector(
-                onTap: () => setState(() => _selectedFilter = f),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFEA580C) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$shortLabel ($countLabel)',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                      color: isSelected ? Colors.white : context.textSecondary,
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedFilter = f),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFFEA580C) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$shortLabel ($countLabel)',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          color: isSelected ? Colors.white : context.textSecondary,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            }).toList(),
+                  );
+                }).toList(),
+              ),
+            ),
           ),
         ),
       ],
@@ -584,7 +591,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return InkWell(
       onTap: () {
-        if (isOccupied) {
+        if (order != null) {
+          showOrderTrackerModal(
+            context,
+            db: widget.db,
+            order: order,
+            onNavigateToTab: (idx) => widget.onNavigateToTab(idx, tableNo: table.nomorMeja),
+          );
+        } else if (isOccupied) {
           final tabIndex = role.canProcessTransactions ? (role == UserRole.administrator ? 2 : 1) : 1;
           widget.onNavigateToTab(tabIndex, tableNo: table.nomorMeja);
         } else if (role.canCreateOrder) {
@@ -649,39 +663,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
 
             // Nomor Meja Utama (Besar & Kontras)
-            Text(
-              numStr.isNotEmpty ? numStr : table.nomorMeja,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                color: isOccupied ? const Color(0xFFEA580C) : context.textPrimary,
-                height: 1.1,
-                letterSpacing: -0.5,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                numStr.isNotEmpty ? numStr : table.nomorMeja,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: isOccupied ? const Color(0xFFEA580C) : context.textPrimary,
+                  height: 1.1,
+                  letterSpacing: -0.5,
+                ),
               ),
             ),
 
             // Info Bawah: Tagihan/Tamu atau Kapasitas Kursi
             if (isOccupied && order != null)
-              Text(
-                _currencyFmt.format(order.totalHarga),
-                style: const TextStyle(
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFEA580C),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  _currencyFmt.format(order.totalHarga),
+                  style: const TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFEA580C),
+                  ),
+                  maxLines: 1,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               )
             else
-              Text(
-                '${table.kapasitas} Kursi',
-                style: TextStyle(
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w600,
-                  color: context.textSecondary,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '${table.kapasitas} Kursi',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
+                    color: context.textSecondary,
+                  ),
+                  maxLines: 1,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
           ],
         ),
@@ -767,100 +788,114 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildOrderQueueItem(OrderModel order, UserRole role) {
     final timeStr = DateFormat('HH:mm').format(order.tanggal);
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.surfaceCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.borderSubtle),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEA580C).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              children: [
-                const Icon(Icons.table_restaurant_rounded, size: 16, color: Color(0xFFEA580C)),
-                const SizedBox(height: 2),
-                Text(
-                  order.noMeja,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFEA580C),
+    return InkWell(
+      onTap: () {
+        showOrderTrackerModal(
+          context,
+          db: widget.db,
+          order: order,
+          onNavigateToTab: (idx) => widget.onNavigateToTab(idx, tableNo: order.noMeja),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: context.surfaceCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: context.borderSubtle),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEA580C).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: [
+                  const Icon(Icons.table_restaurant_rounded, size: 16, color: Color(0xFFEA580C)),
+                  const SizedBox(height: 2),
+                  Text(
+                    order.noMeja,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFEA580C),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      order.namaPelanggan.isNotEmpty ? order.namaPelanggan : 'Pelanggan Meja',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: context.textPrimary,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          order.namaPelanggan.isNotEmpty ? order.namaPelanggan : 'Pelanggan Meja',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '· $timeStr',
-                      style: TextStyle(fontSize: 11, color: context.textSecondary),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
+                      const SizedBox(width: 6),
+                      Text(
+                        '· $timeStr',
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    order.items.map((i) => '${i.jumlah}x ${i.menu.namaMasakan}').join(', '),
+                    style: TextStyle(fontSize: 11, color: context.textSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  order.items.map((i) => '${i.jumlah}x ${i.menu.namaMasakan}').join(', '),
-                  style: TextStyle(fontSize: 11, color: context.textSecondary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  _currencyFmt.format(order.totalHarga),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.bold,
+                    color: context.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD97706).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    order.status.label.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFD97706),
+                    ),
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _currencyFmt.format(order.totalHarga),
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.bold,
-                  color: context.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD97706).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  order.status.label.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFD97706),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

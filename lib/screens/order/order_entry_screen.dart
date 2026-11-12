@@ -6,6 +6,7 @@ import '../../models/table_model.dart';
 import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/qris_payment_dialog.dart';
 
 class OrderEntryScreen extends StatefulWidget {
   final DatabaseService db;
@@ -191,7 +192,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     );
   }
 
-  void _submitOrder() {
+  void _submitOrder({bool payWithQris = false}) {
     if (_cart.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -209,8 +210,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
     final orderNotes = 'Layanan Meja ($_selectedTableNo)${userNotes.isNotEmpty ? ' | Catatan: $userNotes' : ''}';
     final effDiskonMember = _diskonMemberAmount;
+    final totalAmountToPay = _grandTotal;
 
-    widget.db.createOrder(
+    final createdOrder = widget.db.createOrder(
       noMeja: _selectedTableNo,
       namaPelanggan: custName,
       keterangan: orderNotes,
@@ -229,15 +231,27 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       }
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Pesanan $submittedTable untuk "$custName" berhasil dikirim ke Kasir & Dapur.'),
-        backgroundColor: const Color(0xFF16A34A),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-
-    widget.onOrderSubmitted?.call();
+    if (payWithQris) {
+      // Menampilkan dialog QRIS dinamis untuk pelanggan scan lewat DANA / GoPay
+      QrisPaymentDialog.show(
+        context,
+        order: createdOrder,
+        totalAmount: totalAmountToPay,
+        db: widget.db,
+        onPaymentSuccess: () {
+          widget.onOrderSubmitted?.call();
+        },
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Pesanan $submittedTable untuk "$custName" berhasil dikirim ke Kasir & Dapur.'),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      widget.onOrderSubmitted?.call();
+    }
   }
 
   @override
@@ -486,19 +500,24 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.table_restaurant_rounded, size: 20, color: AppTheme.orangePrimary),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Pilih Meja Pesanan',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: context.textPrimary,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Icon(Icons.table_restaurant_rounded, size: 20, color: AppTheme.orangePrimary),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'Pilih Meja Pesanan',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: context.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 20),
@@ -589,24 +608,30 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                 ),
                               ],
                             ),
-                            Text(
-                              numStr.isNotEmpty ? numStr : tbl.nomorMeja,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: isSelected
-                                    ? Colors.white
-                                    : (isOccupied ? const Color(0xFFEA580C) : context.textPrimary),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                numStr.isNotEmpty ? numStr : tbl.nomorMeja,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (isOccupied ? const Color(0xFFEA580C) : context.textPrimary),
+                                ),
                               ),
                             ),
-                            Text(
-                              '${tbl.kapasitas} Kursi',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                                color: isSelected
-                                    ? Colors.white.withValues(alpha: 0.85)
-                                    : context.textSecondary,
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '${tbl.kapasitas} Kursi',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                  color: isSelected
+                                      ? Colors.white.withValues(alpha: 0.85)
+                                      : context.textSecondary,
+                                ),
                               ),
                             ),
                           ],
@@ -1048,7 +1073,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   }
 
   // ── CART PANEL (RINCIAN PESANAN MEJA) ──
-  Widget _buildCartPanel() {
+  Widget _buildCartPanel({VoidCallback? onActionBeforeSubmit}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1220,18 +1245,53 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 ],
               ),
               const SizedBox(height: 12),
+              // Tombol Bayar QRIS Dinamis (DANA / GoPay)
               SizedBox(
                 width: double.infinity,
-                height: 46,
+                height: 44,
                 child: ElevatedButton.icon(
-                  onPressed: _cart.isNotEmpty ? _submitOrder : null,
-                  icon: const Icon(Icons.send_rounded, size: 18, color: Colors.white),
+                  onPressed: _cart.isNotEmpty
+                      ? () {
+                          onActionBeforeSubmit?.call();
+                          _submitOrder(payWithQris: true);
+                        }
+                      : null,
+                  icon: const Icon(Icons.qr_code_2_rounded, size: 20, color: Colors.white),
                   label: const FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text('Kirim Pesanan ke Dapur & Kasir', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    child: Text(
+                      'Bayar QRIS Meja (DANA / GoPay)',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.orangePrimary,
+                    backgroundColor: const Color(0xFF16A34A),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Tombol Kirim Pesanan (Bayar Nanti di Kasir)
+              SizedBox(
+                width: double.infinity,
+                height: 42,
+                child: OutlinedButton.icon(
+                  onPressed: _cart.isNotEmpty
+                      ? () {
+                          onActionBeforeSubmit?.call();
+                          _submitOrder(payWithQris: false);
+                        }
+                      : null,
+                  icon: const Icon(Icons.send_rounded, size: 16, color: AppTheme.orangePrimary),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Kirim Pesanan (Bayar di Kasir)',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppTheme.orangePrimary),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
@@ -1261,33 +1321,40 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$_selectedTableNo • $_cartTotalItems item',
-                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w600),
-              ),
-              Text(
-                _currencyFmt.format(_grandTotal),
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
-              ),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$_selectedTableNo • $_cartTotalItems item',
+                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  _currencyFmt.format(_grandTotal),
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 8),
           FilledButton.icon(
             onPressed: () {
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
-                builder: (_) => Container(
+                builder: (modalCtx) => Container(
                   height: MediaQuery.of(context).size.height * 0.82,
                   decoration: BoxDecoration(
                     color: context.surfaceCard,
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                   ),
-                  child: _buildCartPanel(),
+                  child: _buildCartPanel(
+                    onActionBeforeSubmit: () => Navigator.of(modalCtx).pop(),
+                  ),
                 ),
               );
             },

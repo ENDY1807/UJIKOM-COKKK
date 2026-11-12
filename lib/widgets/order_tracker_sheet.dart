@@ -5,6 +5,7 @@ import '../models/transaction_model.dart';
 import '../services/database_service.dart';
 import '../services/order_simulation_service.dart';
 import '../theme/app_theme.dart';
+import 'qris_payment_dialog.dart';
 import 'receipt_dialog.dart';
 
 /// Floating pill bar pesanan aktif (gaya Gojek) yang melayang di bawah layar
@@ -837,6 +838,39 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                         ),
 
                         // ── E. Tombol Aksi Bawah ──
+                        if (matchingTrx == null && widget.order.status != OrderStatus.dibatalkan) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF16A34A),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
+                              ),
+                              onPressed: () {
+                                QrisPaymentDialog.show(
+                                  context,
+                                  order: widget.order,
+                                  totalAmount: widget.order.grandTotalSetelahDiskon,
+                                  db: widget.db,
+                                  onPaymentSuccess: () {
+                                    if (context.mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+                                  },
+                                );
+                              },
+                              icon: const Icon(Icons.qr_code_2_rounded, size: 20),
+                              label: const Text(
+                                'Bayar QRIS Meja (DANA / GoPay)',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
                         Row(
                           children: [
                             Expanded(

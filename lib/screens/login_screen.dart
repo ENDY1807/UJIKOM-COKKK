@@ -472,7 +472,7 @@ class _LoginScreenState extends State<LoginScreen>
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: Image.asset(
-                        'assets/images/kasirnih_logo.png',
+                        'assets/images/logo.png',
                         fit: BoxFit.contain,
                         errorBuilder: (c, e, s) => const Icon(
                           Icons.storefront,
@@ -548,7 +548,7 @@ class _LoginScreenState extends State<LoginScreen>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Image.asset(
-                      'assets/images/kasirnih_logo.png',
+                      'assets/images/logo.png',
                       fit: BoxFit.contain,
                       errorBuilder: (c, e, s) => Container(
                         color: const Color(0xFFEA580C),
