@@ -33,18 +33,6 @@ Dikembangkan untuk memenuhi standar **Uji Kompetensi Keahlian (UKK) Rekayasa Per
 
 ---
 
-## Akun Demo Pengujian
-
-| Role | Username | Password |
-|---|---|---|
-| Administrator | `admin` | `123` |
-| Waiter | `waiter` | `123` |
-| Kasir | `kasir` | `123` |
-| Owner | `owner` | `123` |
-| Pelanggan VIP | `pelanggan` | `123` |
-
----
-
 ## Menjalankan Proyek
 
 Pastikan Flutter SDK (>= 3.3.0) sudah terpasang di sistem:
