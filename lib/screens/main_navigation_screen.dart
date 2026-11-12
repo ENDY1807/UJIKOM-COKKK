@@ -698,7 +698,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Sistem Kasir & Restoran Modern',
+                        'Autentik Cita Rasa Nusantara',
                         style: TextStyle(fontSize: 11, color: context.textSecondary),
                       ),
                       const SizedBox(height: 6),

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/menu_model.dart';
@@ -41,8 +40,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   TableFilterType _selectedFilter = TableFilterType.all;
-  late Timer _clockTimer;
-  DateTime _currentTime = DateTime.now();
 
   final _currencyFmt = NumberFormat.currency(
     locale: 'id_ID',
@@ -55,16 +52,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     // Sinkronkan status meja dengan pesanan berjalan saat dashboard dimuat
     widget.db.syncTableStatusWithOrders();
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() => _currentTime = DateTime.now());
-      }
-    });
   }
 
   @override
   void dispose() {
-    _clockTimer.cancel();
     super.dispose();
   }
 
@@ -104,11 +95,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── 1. Header Ringkasan Operasional Restoran ──
-              _buildHeaderCard(user, role),
-              const SizedBox(height: 16),
-
-              // ── 2. Metric Cards Table Service ──
+              // ── 1. Metric Cards Table Service ──
               _buildTableMetricCards(
                 totalTables: tables.length,
                 emptyCount: emptyCount,
@@ -117,7 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ── 3. Filter Bar Denah Meja ──
+              // ── 2. Filter Bar Denah Meja ──
               _buildTableFilterBar(
                 totalCount: tables.length,
                 emptyCount: emptyCount,
@@ -125,14 +112,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 14),
 
-              // ── 4. Peta Denah Meja Interaktif (Interactive Table Map Grid) ──
+              // ── 3. Peta Denah Meja Interaktif (Interactive Table Map Grid) ──
               _buildInteractiveTableGrid(filteredTables, activeOrders, role),
               const SizedBox(height: 24),
 
-              // ── 5. Antrean Pesanan Meja Berjalan (Kitchen & Table Queue) ──
+              // ── 4. Antrean Pesanan Meja Berjalan (Kitchen & Table Queue) ──
               _buildActiveOrdersQueueSection(activeOrders, role),
 
-              // ── 6. Laporan Grafik untuk Owner / Admin ──
+              // ── 5. Laporan Grafik untuk Owner / Admin ──
               if (role == UserRole.owner || role == UserRole.administrator) ...[
                 const SizedBox(height: 24),
                 AnalyticsChartsWidget(db: widget.db),
@@ -141,139 +128,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // ── Header Card Restoran Table Service ──
-  Widget _buildHeaderCard(UserModel? user, UserRole role) {
-    String formattedDate;
-    try {
-      formattedDate = DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(_currentTime);
-    } catch (_) {
-      try {
-        formattedDate = DateFormat('EEEE, dd MMMM yyyy').format(_currentTime);
-      } catch (_) {
-        formattedDate = '${_currentTime.year}-${_currentTime.month.toString().padLeft(2, '0')}-${_currentTime.day.toString().padLeft(2, '0')}';
-      }
-    }
-    final timeFormat = DateFormat('HH:mm:ss');
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: context.surfaceCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderSubtle),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 600;
-          return Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        'assets/images/Rasantara Cloche App Icon.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (c, e, s) => const Icon(
-                          Icons.storefront_rounded,
-                          color: Color(0xFFEA580C),
-                          size: 28,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Rasantara',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: context.textPrimary,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Autentik Cita Rasa Nusantara',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: context.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!isCompact) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          timeFormat.format(_currentTime),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: context.textPrimary,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          formattedDate,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: context.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-              if (isCompact) ...[
-                const SizedBox(height: 10),
-                Divider(height: 1, color: context.borderSubtle),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        formattedDate,
-                        style: TextStyle(fontSize: 11, color: context.textSecondary),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      timeFormat.format(_currentTime),
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.bold,
-                        color: context.textPrimary,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          );
-        },
       ),
     );
   }
