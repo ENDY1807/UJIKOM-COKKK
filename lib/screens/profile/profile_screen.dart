@@ -357,23 +357,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEA580C).withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: const Color(0xFFEA580C).withValues(alpha: 0.3)),
-                                ),
-                                child: Text(
-                                  role.label.toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFEA580C),
-                                  ),
-                                ),
-                              ),
                             ],
                           ),
                           const SizedBox(height: 3),
@@ -415,66 +398,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 18),
 
-              // ── 2. Informasi Hak Akses & Privilese UKK 2134 ──
-              _buildSectionHeader('Hak Akses & Privilese Peran (UKK Paket 1)'),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: context.surfaceCard,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.borderSubtle),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEA580C).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.badge_outlined, color: Color(0xFFEA580C), size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Peran Aktif: ${role.label}',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.textPrimary),
-                              ),
-                              Text(
-                                'Aplikasi Kasir Restoran Table Service',
-                                style: TextStyle(fontSize: 11.5, color: context.textSecondary),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    const Divider(height: 1),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Matriks Fitur yang Diizinkan:',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildPrivilegeItem('Login & Logout Sistem', true),
-                    _buildPrivilegeItem('Entri Order (Pemesanan Meja Restoran)', role.canCreateOrder),
-                    _buildPrivilegeItem('Entri Transaksi (Kasir & Pembayaran)', role.canProcessTransactions),
-                    _buildPrivilegeItem('Entri Referensi (Kelola Menu & Harga)', role.canManageReferences),
-                    _buildPrivilegeItem('Generate Laporan (Rekap Penjualan)', role.canViewReports),
-                    _buildPrivilegeItem('Registrasi User (Tambah Akun Pengguna)', role.canRegisterUsers),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // ── 3. Keamanan Akun & Kredensial ──
+              // ── 2. Keamanan Akun & Kredensial ──
               _buildSectionHeader('Keamanan Akun & 2-Factor Auth (2FA)'),
               Container(
                 decoration: BoxDecoration(
@@ -667,32 +591,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildPrivilegeItem(String label, bool isAllowed) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            isAllowed ? Icons.check_circle_rounded : Icons.cancel_outlined,
-            size: 16,
-            color: isAllowed ? const Color(0xFF16A34A) : const Color(0xFF94A3B8),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: isAllowed ? context.textPrimary : context.textSecondary,
-                fontWeight: isAllowed ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

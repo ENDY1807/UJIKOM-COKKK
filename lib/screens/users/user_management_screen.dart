@@ -87,7 +87,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     if (isAdmin)
                       DropdownButtonFormField<UserRole>(
                         initialValue: selectedRole,
-                        decoration: const InputDecoration(labelText: 'Role / Hak Akses'),
+                        decoration: const InputDecoration(labelText: 'Peran Akun'),
                         items: UserRole.values.map((r) {
                           return DropdownMenuItem(value: r, child: Text(r.label));
                         }).toList(),
@@ -114,7 +114,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           children: [
                             const Icon(Icons.info_outline, size: 18, color: AppTheme.textMuted),
                             const SizedBox(width: 8),
-                            Text('Hak Akses: ${selectedRole.label}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                            Text(selectedRole.label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -148,7 +148,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                     style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
                                   ),
                                   Text(
-                                    'Mendapat potongan harga belanja 10% & akses pesan mandiri',
+                                    'Mendapat potongan harga belanja 10% & pemesanan mandiri',
                                     style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                                   ),
                                 ],
