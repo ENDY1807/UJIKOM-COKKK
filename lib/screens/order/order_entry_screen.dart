@@ -313,7 +313,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
     return Container(
       color: context.surfaceCard,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -322,14 +322,42 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.table_restaurant_rounded, size: 18, color: AppTheme.orangePrimary),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.table_restaurant_rounded, size: 16, color: AppTheme.orangePrimary),
+                  const SizedBox(width: 6),
                   Text(
-                    'Pilih Meja Tamu:',
+                    'Pilih Meja:',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.bold,
                       color: context.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: _showVisualTablePickerModal,
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.orangeLight,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppTheme.orangeBorder),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.grid_view_rounded, size: 12, color: AppTheme.orangePrimary),
+                          SizedBox(width: 4),
+                          Text(
+                            'Denah Visual',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.orangePrimary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -337,15 +365,15 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppTheme.orangeLight,
+                  color: AppTheme.orangePrimary,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  'Aktif: $_selectedTableNo',
+                  _selectedTableNo,
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.orangePrimary,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -383,7 +411,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: bg,
                         borderRadius: BorderRadius.circular(8),
@@ -395,7 +423,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           Text(
                             tbl.nomorMeja,
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 11.5,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                               color: textCol,
                             ),
@@ -421,6 +449,140 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showVisualTablePickerModal() {
+    final tables = widget.db.tables;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
+          ),
+          decoration: BoxDecoration(
+            color: context.surfaceCard,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: context.borderSubtle,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.table_restaurant_rounded, size: 20, color: AppTheme.orangePrimary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Pilih Meja Pesanan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 1.0,
+                  ),
+                  itemCount: tables.length,
+                  itemBuilder: (context, index) {
+                    final tbl = tables[index];
+                    final isSelected = tbl.nomorMeja == _selectedTableNo;
+                    final isOccupied = tbl.status == TableStatus.terisi;
+
+                    Color bg = isOccupied
+                        ? (context.isDarkMode ? const Color(0xFF431407).withValues(alpha: 0.3) : const Color(0xFFFFF7ED))
+                        : context.surfaceBg;
+                    Color border = isSelected
+                        ? AppTheme.orangePrimary
+                        : (isOccupied ? const Color(0xFFEA580C) : context.borderSubtle);
+
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedTableNo = tbl.nomorMeja;
+                        });
+                        Navigator.pop(ctx);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.orangePrimary : bg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: border, width: isSelected ? 2 : 1),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.table_restaurant_rounded,
+                              size: 20,
+                              color: isSelected
+                                  ? Colors.white
+                                  : (isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A)),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              tbl.nomorMeja.replaceAll('Meja ', 'M-'),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                                color: isSelected ? Colors.white : context.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isOccupied ? 'Terisi' : '${tbl.kapasitas} Kursi',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected
+                                    ? Colors.white.withValues(alpha: 0.9)
+                                    : (isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

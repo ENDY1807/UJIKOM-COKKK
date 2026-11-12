@@ -18,6 +18,16 @@ enum TableFilterType {
   const TableFilterType(this.label);
 }
 
+enum TableDesignMode {
+  floorPlan('Denah Visual', Icons.table_restaurant_rounded),
+  cardModern('Kartu POS', Icons.grid_view_rounded),
+  quickTile('Papan Cepat', Icons.view_comfy_rounded);
+
+  final String label;
+  final IconData icon;
+  const TableDesignMode(this.label, this.icon);
+}
+
 class DashboardScreen extends StatefulWidget {
   final DatabaseService db;
   final void Function(
@@ -40,6 +50,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   TableFilterType _selectedFilter = TableFilterType.all;
+  TableDesignMode _selectedDesignMode = TableDesignMode.floorPlan;
   late Timer _clockTimer;
   DateTime _currentTime = DateTime.now();
 
@@ -211,26 +222,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFEA580C),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: const Text(
-                                'TABLE SERVICE',
+                                'POS',
                                 style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 0.8,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                         const SizedBox(height: 2),
                         Text(
-                          'Sistem Kasir & Layanan Meja Restoran (Paket 1)',
+                          'Table Service & Kasir',
                           style: TextStyle(
                             fontSize: 12,
                             color: context.textSecondary,
@@ -340,13 +351,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 760;
-        final isMedium = constraints.maxWidth >= 480;
 
         final metrics = [
           _buildSingleMetricCard(
-            title: 'Total Meja Restoran',
+            title: 'Total Meja',
             value: '$totalTables',
-            sub: '20 Meja Tersedia',
             icon: Icons.table_restaurant_rounded,
             color: const Color(0xFF0F172A),
             accentColor: const Color(0xFF64748B),
@@ -354,7 +363,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildSingleMetricCard(
             title: 'Meja Kosong',
             value: '$emptyCount',
-            sub: 'Siap Terima Tamu',
             icon: Icons.check_circle_outline_rounded,
             color: const Color(0xFF16A34A),
             accentColor: const Color(0xFF16A34A),
@@ -362,7 +370,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildSingleMetricCard(
             title: 'Meja Terisi',
             value: '$occupiedCount',
-            sub: 'Sedang Makan / Proses',
             icon: Icons.restaurant_rounded,
             color: const Color(0xFFEA580C),
             accentColor: const Color(0xFFEA580C),
@@ -370,7 +377,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildSingleMetricCard(
             title: 'Pesanan Aktif',
             value: '$activeOrdersCount',
-            sub: 'Dapur & Menunggu Kasir',
             icon: Icons.soup_kitchen_rounded,
             color: const Color(0xFF2563EB),
             accentColor: const Color(0xFF2563EB),
@@ -387,26 +393,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ))
                 .toList(),
-          );
-        } else if (isMedium) {
-          return Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(child: metrics[0]),
-                  const SizedBox(width: 8),
-                  Expanded(child: metrics[1]),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(child: metrics[2]),
-                  const SizedBox(width: 8),
-                  Expanded(child: metrics[3]),
-                ],
-              ),
-            ],
           );
         } else {
           return Column(
@@ -436,13 +422,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildSingleMetricCard({
     required String title,
     required String value,
-    required String sub,
     required IconData icon,
     required Color color,
     required Color accentColor,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: context.surfaceCard,
         borderRadius: BorderRadius.circular(14),
@@ -451,12 +436,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
               color: accentColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: accentColor, size: 22),
+            child: Icon(icon, color: accentColor, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -467,31 +452,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     color: context.textSecondary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.w900,
                     color: context.textPrimary,
                   ),
-                ),
-                Text(
-                  sub,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: accentColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -501,83 +476,136 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ── Filter Bar Meja ──
+  // ── Filter Bar & Pilihan Desain Meja ──
   Widget _buildTableFilterBar({
     required int totalCount,
     required int emptyCount,
     required int occupiedCount,
   }) {
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 12,
-      runSpacing: 10,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Denah Meja Restoran (Table Service)',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: context.textPrimary,
-              ),
-            ),
-            Text(
-              'Klik meja kosong untuk memesan atau meja terisi untuk tagihan kasir',
-              style: TextStyle(
-                fontSize: 11.5,
-                color: context.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        Container(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 620;
+
+        final filterPills = Container(
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             color: context.fillSubtle,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: context.borderSubtle),
           ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: TableFilterType.values.map((f) {
-                final isSelected = _selectedFilter == f;
-                String countLabel = '';
-                if (f == TableFilterType.all) countLabel = '$totalCount';
-                if (f == TableFilterType.kosong) countLabel = '$emptyCount';
-                if (f == TableFilterType.terisi) countLabel = '$occupiedCount';
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: TableFilterType.values.map((f) {
+              final isSelected = _selectedFilter == f;
+              String countLabel = '';
+              if (f == TableFilterType.all) countLabel = '$totalCount';
+              if (f == TableFilterType.kosong) countLabel = '$emptyCount';
+              if (f == TableFilterType.terisi) countLabel = '$occupiedCount';
 
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedFilter = f),
+              String shortLabel = f == TableFilterType.all ? 'Semua' : (f == TableFilterType.kosong ? 'Kosong' : 'Terisi');
+
+              return GestureDetector(
+                onTap: () => setState(() => _selectedFilter = f),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFFEA580C) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$shortLabel ($countLabel)',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      color: isSelected ? Colors.white : context.textSecondary,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+
+        final designSwitcher = Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: context.fillSubtle,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: context.borderSubtle),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: TableDesignMode.values.map((mode) {
+              final isSelected = _selectedDesignMode == mode;
+              return Tooltip(
+                message: mode.label,
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedDesignMode = mode),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                     decoration: BoxDecoration(
                       color: isSelected ? const Color(0xFFEA580C) : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      '${f.label} ($countLabel)',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                        color: isSelected ? Colors.white : context.textSecondary,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          mode.icon,
+                          size: 14,
+                          color: isSelected ? Colors.white : context.textSecondary,
+                        ),
+                        if (!isNarrow) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            mode.label,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                              color: isSelected ? Colors.white : context.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                );
-              }).toList(),
-            ),
+                ),
+              );
+            }).toList(),
           ),
-        ),
-      ],
+        );
+
+        return Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 10,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.table_restaurant_rounded, size: 18, color: Color(0xFFEA580C)),
+                const SizedBox(width: 6),
+                Text(
+                  'Denah Meja',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: context.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                filterPills,
+              ],
+            ),
+            designSwitcher,
+          ],
+        );
+      },
     );
   }
 
-  // ── Peta Denah Meja Interaktif ──
+  // ── Peta Denah Meja Interaktif Sesuai Mode Desain ──
   Widget _buildInteractiveTableGrid(
     List<TableModel> tables,
     List<OrderModel> activeOrders,
@@ -589,10 +617,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              const Icon(Icons.table_restaurant_outlined, size: 48, color: Colors.grey),
+              const Icon(Icons.table_restaurant_outlined, size: 40, color: Colors.grey),
               const SizedBox(height: 8),
               Text(
-                'Tidak ada meja yang sesuai filter.',
+                'Tidak ada meja pada filter ini',
                 style: TextStyle(color: context.textSecondary, fontSize: 13),
               ),
             ],
@@ -603,15 +631,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Responsive grid: 2 col on mobile, 3-4 col on tablet, 5 on desktop
-        int crossAxisCount = 2;
-        double childAspectRatio = 1.15;
-        if (constraints.maxWidth >= 1000) {
-          crossAxisCount = 4;
-        } else if (constraints.maxWidth >= 650) {
-          crossAxisCount = 3;
-        } else {
-          childAspectRatio = 0.95;
+        int crossAxisCount;
+        double childAspectRatio;
+
+        switch (_selectedDesignMode) {
+          case TableDesignMode.floorPlan:
+            if (constraints.maxWidth >= 1000) {
+              crossAxisCount = 4;
+              childAspectRatio = 1.05;
+            } else if (constraints.maxWidth >= 650) {
+              crossAxisCount = 3;
+              childAspectRatio = 1.0;
+            } else {
+              crossAxisCount = 2;
+              childAspectRatio = 0.92;
+            }
+            break;
+
+          case TableDesignMode.cardModern:
+            if (constraints.maxWidth >= 1000) {
+              crossAxisCount = 4;
+              childAspectRatio = 1.25;
+            } else if (constraints.maxWidth >= 650) {
+              crossAxisCount = 3;
+              childAspectRatio = 1.15;
+            } else {
+              crossAxisCount = 2;
+              childAspectRatio = 1.05;
+            }
+            break;
+
+          case TableDesignMode.quickTile:
+            if (constraints.maxWidth >= 1000) {
+              crossAxisCount = 6;
+              childAspectRatio = 1.08;
+            } else if (constraints.maxWidth >= 650) {
+              crossAxisCount = 4;
+              childAspectRatio = 1.02;
+            } else {
+              crossAxisCount = 3;
+              childAspectRatio = 0.95;
+            }
+            break;
         }
 
         return GridView.builder(
@@ -619,8 +680,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
             childAspectRatio: childAspectRatio,
           ),
           itemCount: tables.length,
@@ -632,19 +693,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             final isOccupied = table.status == TableStatus.terisi || matchingOrder != null;
 
-            return _buildTableCard(
-              table: table,
-              isOccupied: isOccupied,
-              order: matchingOrder,
-              role: role,
-            );
+            switch (_selectedDesignMode) {
+              case TableDesignMode.floorPlan:
+                return _buildFloorPlanTable(
+                  table: table,
+                  isOccupied: isOccupied,
+                  order: matchingOrder,
+                  role: role,
+                );
+              case TableDesignMode.cardModern:
+                return _buildCardModernTable(
+                  table: table,
+                  isOccupied: isOccupied,
+                  order: matchingOrder,
+                  role: role,
+                );
+              case TableDesignMode.quickTile:
+                return _buildQuickTileTable(
+                  table: table,
+                  isOccupied: isOccupied,
+                  order: matchingOrder,
+                  role: role,
+                );
+            }
           },
         );
       },
     );
   }
 
-  Widget _buildTableCard({
+  // ── DESAIN 1: Denah Restoran Visual dengan Kursi Melingkari Meja ──
+  Widget _buildFloorPlanTable({
     required TableModel table,
     required bool isOccupied,
     required OrderModel? order,
@@ -654,201 +733,443 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ? const Color(0xFFEA580C)
         : (context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
     final bgColor = isOccupied
-        ? (context.isDarkMode ? const Color(0xFF431407).withValues(alpha: 0.3) : const Color(0xFFFFF7ED))
+        ? (context.isDarkMode ? const Color(0xFF431407).withValues(alpha: 0.25) : const Color(0xFFFFF7ED))
         : context.surfaceCard;
+    final chairColor = isOccupied
+        ? const Color(0xFFEA580C)
+        : const Color(0xFF16A34A).withValues(alpha: 0.4);
 
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: borderColor,
-          width: isOccupied ? 1.5 : 1,
+    return InkWell(
+      onTap: () {
+        if (isOccupied) {
+          final tabIndex = role.canProcessTransactions ? (role == UserRole.administrator ? 2 : 1) : 1;
+          widget.onNavigateToTab(tabIndex, tableNo: table.nomorMeja);
+        } else if (role.canCreateOrder) {
+          widget.onNavigateToTab(1, tableNo: table.nomorMeja);
+        }
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: borderColor,
+            width: isOccupied ? 1.5 : 1,
+          ),
+          boxShadow: isOccupied
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFEA580C).withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Kursi Bagian Atas
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 22,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: chairColor,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                if (table.kapasitas > 2) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 22,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: chairColor,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 4),
+
+            // Bagian Tengah: Kursi Kiri + Permukaan Meja Utama + Kursi Kanan
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: chairColor,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isOccupied
+                            ? const Color(0xFFEA580C)
+                            : (context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isOccupied
+                              ? const Color(0xFFC2410C)
+                              : (context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            table.nomorMeja.replaceAll('Meja ', 'M-'),
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w900,
+                              color: isOccupied ? Colors.white : context.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          if (isOccupied && order != null) ...[
+                            Text(
+                              order.namaPelanggan.isNotEmpty ? order.namaPelanggan : 'Tamu',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              _currencyFmt.format(order.totalHarga),
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFFFEDD5),
+                              ),
+                            ),
+                          ] else ...[
+                            Text(
+                              '${table.kapasitas} Kursi',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+
+                  Container(
+                    width: 6,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: chairColor,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+
+            // Kursi Bagian Bawah
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 22,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: chairColor,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                if (table.kapasitas > 2) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 22,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: chairColor,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 6),
+
+            // Status Badge & Aksi Cepat
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isOccupied
+                        ? const Color(0xFFEA580C).withValues(alpha: 0.15)
+                        : const Color(0xFF16A34A).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Text(
+                    isOccupied ? 'TERISI' : 'KOSONG',
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w800,
+                      color: isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
+                    ),
+                  ),
+                ),
+                Text(
+                  isOccupied ? 'Lihat →' : '+ Order',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Header Meja: Nomor & Kapasitas
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Row(
+    );
+  }
+
+  // ── DESAIN 2: Kartu Minimalis Modern POS ──
+  Widget _buildCardModernTable({
+    required TableModel table,
+    required bool isOccupied,
+    required OrderModel? order,
+    required UserRole role,
+  }) {
+    final borderColor = isOccupied
+        ? const Color(0xFFEA580C)
+        : (context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
+    final bgColor = isOccupied
+        ? (context.isDarkMode ? const Color(0xFF431407).withValues(alpha: 0.25) : const Color(0xFFFFF7ED))
+        : context.surfaceCard;
+
+    return InkWell(
+      onTap: () {
+        if (isOccupied) {
+          final tabIndex = role.canProcessTransactions ? (role == UserRole.administrator ? 2 : 1) : 1;
+          widget.onNavigateToTab(tabIndex, tableNo: table.nomorMeja);
+        } else if (role.canCreateOrder) {
+          widget.onNavigateToTab(1, tableNo: table.nomorMeja);
+        }
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: borderColor,
+            width: isOccupied ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
-                        color: isOccupied
-                            ? const Color(0xFFEA580C).withValues(alpha: 0.15)
-                            : const Color(0xFF16A34A).withValues(alpha: 0.15),
+                        color: isOccupied ? const Color(0xFFEA580C) : context.fillSubtle,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Icon(
-                        Icons.table_restaurant_rounded,
-                        size: 14,
-                        color: isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
+                      child: Text(
+                        table.nomorMeja.replaceAll('Meja ', 'M-'),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: isOccupied ? Colors.white : context.textPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        table.nomorMeja,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          color: context.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      table.nomorMeja,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: context.textPrimary,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isOccupied
-                      ? const Color(0xFFEA580C).withValues(alpha: 0.15)
-                      : const Color(0xFF16A34A).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  isOccupied ? 'TERISI' : 'KOSONG',
-                  style: TextStyle(
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w800,
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
                     color: isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
-                    letterSpacing: 0.3,
+                    shape: BoxShape.circle,
                   ),
                 ),
+              ],
+            ),
+            if (isOccupied && order != null) ...[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    order.namaPelanggan.isNotEmpty ? order.namaPelanggan : 'Pelanggan',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: context.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    _currencyFmt.format(order.totalHarga),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFEA580C),
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              Row(
+                children: [
+                  const Icon(Icons.chair_alt_rounded, size: 14, color: AppTheme.textMuted),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${table.kapasitas} Kursi • Siap',
+                    style: TextStyle(fontSize: 11, color: context.textSecondary),
+                  ),
+                ],
               ),
             ],
-          ),
-
-          // Detail Meja / Pesanan
-          if (isOccupied && order != null) ...[
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.person_outline, size: 12, color: Color(0xFF64748B)),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        order.namaPelanggan.isNotEmpty ? order.namaPelanggan : 'Pelanggan',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.bold,
-                          color: context.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${order.items.length} Menu · ${_currencyFmt.format(order.totalHarga)}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFEA580C),
-                  ),
-                ),
-              ],
-            ),
-          ] else ...[
-            Text(
-              '${table.kapasitas} Kursi · Siap Pakai',
-              style: TextStyle(
-                fontSize: 11,
-                color: context.textSecondary,
-              ),
-            ),
-          ],
-
-          // Tombol Aksi Meja Sesuai Role
-          if (isOccupied && order != null) ...[
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if (role.canCreateOrder)
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        foregroundColor: const Color(0xFFEA580C),
-                        side: const BorderSide(color: Color(0xFFEA580C)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: () {
-                        widget.onNavigateToTab(1, tableNo: table.nomorMeja);
-                      },
-                      child: const Text('Menu', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                    ),
+                Text(
+                  isOccupied ? 'Sedang Dilayani' : 'Tersedia',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
+                    fontWeight: FontWeight.w600,
                   ),
-                if (role.canCreateOrder && role.canProcessTransactions)
-                  const SizedBox(width: 6),
-                if (role.canProcessTransactions)
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        backgroundColor: const Color(0xFF16A34A),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: () {
-                        // Buka Entri Transaksi untuk kasir
-                        final tabIndex = role == UserRole.administrator ? 2 : 1;
-                        widget.onNavigateToTab(tabIndex);
-                      },
-                      child: const Text('Bayar', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                    ),
+                ),
+                Text(
+                  isOccupied ? 'Bayar' : '+ Pesan',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
                   ),
+                ),
               ],
             ),
-          ] else ...[
-            // Meja Kosong: Buka Meja & Pesan
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  backgroundColor: const Color(0xFFEA580C),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── DESAIN 3: Papan Nomor Meja Cepat / Speed-Dial ──
+  Widget _buildQuickTileTable({
+    required TableModel table,
+    required bool isOccupied,
+    required OrderModel? order,
+    required UserRole role,
+  }) {
+    final borderColor = isOccupied
+        ? const Color(0xFFEA580C)
+        : (context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
+    final bgColor = isOccupied
+        ? const Color(0xFFEA580C)
+        : context.surfaceCard;
+
+    final numStr = table.nomorMeja.replaceAll(RegExp(r'[^0-9]'), '');
+
+    return InkWell(
+      onTap: () {
+        if (isOccupied) {
+          final tabIndex = role.canProcessTransactions ? (role == UserRole.administrator ? 2 : 1) : 1;
+          widget.onNavigateToTab(tabIndex, tableNo: table.nomorMeja);
+        } else if (role.canCreateOrder) {
+          widget.onNavigateToTab(1, tableNo: table.nomorMeja);
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: borderColor,
+            width: isOccupied ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'M',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: isOccupied ? Colors.white.withValues(alpha: 0.8) : context.textSecondary,
+                letterSpacing: 1,
+              ),
+            ),
+            Text(
+              numStr.isNotEmpty ? numStr : table.nomorMeja,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: isOccupied ? Colors.white : context.textPrimary,
+                height: 1.1,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: isOccupied
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : const Color(0xFF16A34A).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                isOccupied ? 'TERISI' : '${table.kapasitas}K',
+                style: TextStyle(
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.bold,
+                  color: isOccupied ? Colors.white : const Color(0xFF16A34A),
                 ),
-                onPressed: () {
-                  if (role.canCreateOrder) {
-                    widget.onNavigateToTab(1, tableNo: table.nomorMeja);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Meja ${table.nomorMeja} kosong. Silakan buka menu pesanan.'),
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.add_shopping_cart_rounded, size: 14),
-                label: const Text('Buka Meja', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -858,26 +1179,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 12,
-          runSpacing: 8,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
               children: [
+                const Icon(Icons.soup_kitchen_rounded, size: 18, color: Color(0xFF2563EB)),
+                const SizedBox(width: 8),
                 Text(
-                  'Antrean Pesanan Meja Aktif',
+                  'Pesanan Berjalan',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: context.textPrimary,
                   ),
-                ),
-                Text(
-                  'Status pesanan meja yang sedang disiapkan atau menunggu pembayaran',
-                  style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                 ),
               ],
             ),
@@ -888,7 +1203,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                '${activeOrders.length} Pesanan Berjalan',
+                '${activeOrders.length} Antrean',
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
@@ -898,10 +1213,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         if (activeOrders.isEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 24),
+            padding: const EdgeInsets.symmetric(vertical: 20),
             width: double.infinity,
             decoration: BoxDecoration(
               color: context.surfaceCard,
@@ -910,10 +1225,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             child: Column(
               children: [
-                const Icon(Icons.check_circle_outline_rounded, size: 36, color: Color(0xFF16A34A)),
-                const SizedBox(height: 8),
+                const Icon(Icons.check_circle_outline_rounded, size: 32, color: Color(0xFF16A34A)),
+                const SizedBox(height: 6),
                 Text(
-                  'Semua pesanan meja telah selesai dilayani.',
+                  'Semua pesanan meja telah selesai',
                   style: TextStyle(fontSize: 12, color: context.textSecondary, fontWeight: FontWeight.w600),
                 ),
               ],
