@@ -813,14 +813,12 @@ class _LoginScreenState extends State<LoginScreen>
         _inputField(
           controller: _loginUsernameController,
           label: 'Username/Email',
-          hintText: 'contoh: nama@email.com atau username',
           icon: Icons.person_outline_rounded,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         _inputField(
           controller: _loginPasswordController,
           label: 'Password',
-          hintText: '••••••••',
           icon: Icons.lock_outline_rounded,
           isPassword: true,
           obscure: _loginObscure,
@@ -892,69 +890,60 @@ class _LoginScreenState extends State<LoginScreen>
     VoidCallback? onToggle,
     ValueChanged<String>? onSubmit,
     TextInputType? keyboardType,
-    String? hintText,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: context.textPrimary,
-          ),
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscure,
+      onSubmitted: onSubmit,
+      style: TextStyle(
+        fontSize: 14,
+        color: context.textPrimary,
+        fontWeight: FontWeight.w500,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          fontSize: 13.5,
+          color: context.textSecondary,
+          fontWeight: FontWeight.w500,
         ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          obscureText: obscure,
-          onSubmitted: onSubmit,
-          style: TextStyle(
-            fontSize: 13.5,
-            color: context.textPrimary,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: TextStyle(
-              fontSize: 12.5,
-              color: context.textSecondary.withValues(alpha: 0.7),
-            ),
-            prefixIcon: Icon(icon, size: 19, color: AppTheme.orangePrimary),
-            suffixIcon: isPassword
-                ? IconButton(
-                    icon: Icon(
-                      obscure
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      size: 19,
-                      color: context.textSecondary,
-                    ),
-                    onPressed: onToggle,
-                  )
-                : null,
-            filled: true,
-            fillColor: context.fillSubtle,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: context.borderSubtle),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: context.borderSubtle),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: AppTheme.orangePrimary, width: 1.8),
-            ),
-          ),
+        floatingLabelStyle: const TextStyle(
+          fontSize: 13,
+          color: AppTheme.orangePrimary,
+          fontWeight: FontWeight.w700,
         ),
-      ],
+        prefixIcon: Icon(icon, size: 20, color: AppTheme.orangePrimary),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  size: 20,
+                  color: context.textSecondary,
+                ),
+                onPressed: onToggle,
+              )
+            : null,
+        filled: true,
+        fillColor: context.fillSubtle,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: context.borderSubtle),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: context.borderSubtle),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide:
+              const BorderSide(color: AppTheme.orangePrimary, width: 1.8),
+        ),
+      ),
     );
   }
 

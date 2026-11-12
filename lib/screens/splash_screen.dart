@@ -28,16 +28,10 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _scaleAnimation;
   late Animation<Offset> _slideAnimation;
 
-  String _loadingStatus = 'Menyiapkan terminal kasir...';
   int _statusIndex = 0;
   Timer? _statusTimer;
 
-  final List<String> _steps = [
-    'Menyiapkan terminal kasir...',
-    'Memuat katalog menu & denah meja...',
-    'Sinkronisasi sistem transaksi...',
-    'Sistem Rasantara siap digunakan!',
-  ];
+  final int _stepCount = 4;
 
   @override
   void initState() {
@@ -78,10 +72,9 @@ class _SplashScreenState extends State<SplashScreen>
 
     _statusTimer = Timer.periodic(const Duration(milliseconds: 380), (timer) {
       if (!mounted) return;
-      if (_statusIndex < _steps.length - 1) {
+      if (_statusIndex < _stepCount - 1) {
         setState(() {
           _statusIndex++;
-          _loadingStatus = _steps[_statusIndex];
         });
       }
     });
@@ -221,45 +214,20 @@ class _SplashScreenState extends State<SplashScreen>
 
                       const SizedBox(height: 32),
 
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Rasantara',
-                            style: TextStyle(
-                              fontSize: 34,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.8,
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.orangePrimary,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'POS RESTO',
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Rasantara',
+                        style: TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.8,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        ),
                       ),
 
                       const SizedBox(height: 8),
 
                       Text(
-                        'Platform Kasir & Manajemen Meja Cerdas',
+                        'Autentik Cita Rasa Nusantara',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -284,7 +252,7 @@ class _SplashScreenState extends State<SplashScreen>
                         child: AnimatedBuilder(
                           animation: _glowController,
                           builder: (context, child) {
-                            final factor = ((_statusIndex + 1) / _steps.length)
+                            final factor = ((_statusIndex + 1) / _stepCount)
                                 .clamp(0.2, 1.0);
                             return FractionallySizedBox(
                               alignment: Alignment.centerLeft,
@@ -299,93 +267,7 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
 
-                      const SizedBox(height: 14),
-
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 260),
-                        child: Row(
-                          key: ValueKey<String>(_loadingStatus),
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(
-                              width: 10,
-                              height: 10,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 1.8,
-                                color: AppTheme.orangePrimary,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _loadingStatus,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? const Color(0xFFCBD5E1)
-                                    : const Color(0xFF334155),
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
                       const Spacer(flex: 3),
-
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF1A2234)
-                              : Colors.white.withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isDark
-                                ? const Color(0xFF334155)
-                                : const Color(0xFFE2E8F0),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(
-                                alpha: isDark ? 0.2 : 0.04,
-                              ),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 7,
-                              height: 7,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF10B981),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Terminal Siap • Standar UJIKOM Nasional',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? const Color(0xFF94A3B8)
-                                    : const Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 18),
                     ],
                   ),
                 ),
