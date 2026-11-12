@@ -598,7 +598,7 @@ class _LoginScreenState extends State<LoginScreen>
                             'Table Service', 'Manajemen Meja & Reservasi', AppTheme.orangePrimary),
                         const SizedBox(width: 10),
                         _metricBadge('Multi-Role', 'Kasir, Dapur & Laporan',
-                            const Color(0xFF10B981)),
+                            AppTheme.statusGreen),
                       ],
                     ),
 

@@ -586,10 +586,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required UserRole role,
   }) {
     final borderColor = isOccupied
-        ? const Color(0xFFEA580C)
-        : (context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
+        ? AppTheme.orangePrimary
+        : context.borderSubtle;
     final bgColor = isOccupied
-        ? (context.isDarkMode ? const Color(0xFF431407).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
+        ? (context.isDarkMode ? const Color(0xFF20130E) : const Color(0xFFFFF7ED))
         : context.surfaceCard;
 
     final numStr = table.nomorMeja.replaceAll(RegExp(r'[^0-9]'), '');
