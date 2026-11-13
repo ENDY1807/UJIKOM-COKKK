@@ -34,7 +34,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze Dart code
-        run: flutter analyze || true
+        run: flutter analyze 2>&1 | tee analyze.log || true
 
       - name: Make Gradlew executable
         run: chmod +x android/gradlew
@@ -79,8 +79,14 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git checkout -B ci-log
-          echo "=== ANDROID BUILD LOG ===" > ci-error.txt
-          tail -n 250 build.log >> ci-error.txt || true
+          echo "=== DART ANALYZE OUTPUT ===" > ci-error.txt
+          head -n 100 analyze.log >> ci-error.txt || true
+          echo "" >> ci-error.txt
+          echo "=== GREP ERRORS FROM BUILD LOG ===" >> ci-error.txt
+          grep -C 4 -i "error:" build.log | head -n 120 >> ci-error.txt || true
+          echo "" >> ci-error.txt
+          echo "=== GREP FAILURE FROM BUILD LOG ===" >> ci-error.txt
+          grep -C 4 -i "failure" build.log | head -n 120 >> ci-error.txt || true
           git add -f ci-error.txt
           git commit -m "ci: android build failure log" || true
           git push -f origin ci-log || true
