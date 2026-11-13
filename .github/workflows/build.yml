@@ -34,7 +34,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze Dart code
-        run: flutter analyze 2>&1 | tee analyze.log || true
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos 2>&1 | tee analyze.log
 
       - name: Make Gradlew executable
         run: chmod +x android/gradlew
