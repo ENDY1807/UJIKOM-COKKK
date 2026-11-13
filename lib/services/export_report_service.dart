@@ -221,7 +221,7 @@ class ExportReportService {
     }
 
     final filename = 'Laporan_Penjualan_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.csv';
-    final csvString = excel.encode(rows);
+    final csvString = const ListToCsvConverter().convert(rows);
     final bytes = Uint8List.fromList(utf8.encode('\uFEFF$csvString'));
 
     if (kIsWeb) {
