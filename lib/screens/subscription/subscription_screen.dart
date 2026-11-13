@@ -260,8 +260,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
       ),
     );
   }
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
