@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:csv/csv.dart';
 import '../models/transaction_model.dart';
 import 'file_downloader.dart';
 
@@ -231,7 +230,10 @@ class ExportReportService {
     }
 
     final filename = 'Laporan_Penjualan_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.csv';
-    final csvString = ListToCsvConverter().convert(rows);
+    final csvString = rows.map((r) => r.map((c) {
+      final str = c.toString().replaceAll('"', '""');
+      return str.contains(',') || str.contains('"') || str.contains('\n') || str.contains(';') ? '"$str"' : str;
+    }).join(',')).join('\r\n');
     final bytes = Uint8List.fromList(utf8.encode('\uFEFF$csvString'));
 
     if (kIsWeb) {
