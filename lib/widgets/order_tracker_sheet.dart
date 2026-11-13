@@ -5,7 +5,6 @@ import '../models/transaction_model.dart';
 import '../services/database_service.dart';
 import '../services/order_simulation_service.dart';
 import '../theme/app_theme.dart';
-import 'qris_payment_dialog.dart';
 import 'receipt_dialog.dart';
 
 /// Floating pill bar pesanan aktif (gaya Gojek) yang melayang di bawah layar
@@ -685,21 +684,7 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                 ),
                               ],
                             ),
-                            if (currentStep < 4)
-                              TextButton.icon(
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                onPressed: () => simService.advanceStep(widget.order.idOrder),
-                                icon: const Icon(Icons.fast_forward_rounded, size: 14, color: Color(0xFFEA580C)),
-                                label: const Text(
-                                  'Percepat',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
-                                ),
-                              )
-                            else
+                            if (currentStep >= 4)
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -728,7 +713,7 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                     },
                                     child: const Text(
                                       'Tutup Sesi',
-                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
                                     ),
                                   ),
                                 ],
@@ -837,101 +822,45 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                           ),
                         ),
 
-                        // ── E. Tombol Aksi Bawah ──
-                        if (matchingTrx == null && widget.order.status != OrderStatus.dibatalkan) ...[
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF16A34A),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 13),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                elevation: 0,
-                              ),
-                              onPressed: () {
-                                QrisPaymentDialog.show(
-                                  context,
-                                  order: widget.order,
-                                  totalAmount: widget.order.grandTotalSetelahDiskon,
-                                  db: widget.db,
-                                  onPaymentSuccess: () {
-                                    if (context.mounted) {
-                                      Navigator.of(context).pop();
-                                    }
-                                  },
-                                );
-                              },
-                              icon: const Icon(Icons.qr_code_2_rounded, size: 20),
-                              label: const Text(
-                                'Buka QRIS Pembayaran',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                              ),
+                        // ── E. Tombol Aksi Bawah: Hanya Ada Tombol Lihat Struk ──
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFEA580C),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              final trxToShow = matchingTrx ??
+                                  TransactionModel(
+                                    idTransaksi: widget.order.idOrder,
+                                    idUser: widget.order.idUser,
+                                    namaKasir: 'Kasir Rasantara',
+                                    order: widget.order,
+                                    tanggal: widget.order.tanggal,
+                                    totalBayar: widget.order.grandTotalSetelahDiskon,
+                                    jumlahBayar: widget.order.grandTotalSetelahDiskon,
+                                    kembalian: 0,
+                                    metodePembayaran: widget.order.metodePembayaran ?? 'Pembayaran Kasir',
+                                    diskonEvent: widget.order.diskonEvent,
+                                    diskonKupon: widget.order.diskonKupon,
+                                    potonganPoin: widget.order.potonganPoin,
+                                    kodeKupon: widget.order.kodeKupon,
+                                  );
+                              showDialog(
+                                context: context,
+                                builder: (ctx) => ReceiptDialog(transaction: trxToShow),
+                              );
+                            },
+                            icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                            label: const Text(
+                              'Lihat Struk',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                             ),
                           ),
-                          const SizedBox(height: 10),
-                        ],
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFFEA580C),
-                                  side: const BorderSide(color: Color(0xFFEA580C)),
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                                onPressed: () {
-                                  final trxToShow = matchingTrx ??
-                                      TransactionModel(
-                                        idTransaksi: widget.order.idOrder,
-                                        idUser: widget.order.idUser,
-                                        namaKasir: 'Kasir Rasantara',
-                                        order: widget.order,
-                                        tanggal: widget.order.tanggal,
-                                        totalBayar: widget.order.grandTotalSetelahDiskon,
-                                        jumlahBayar: widget.order.grandTotalSetelahDiskon,
-                                        kembalian: 0,
-                                        metodePembayaran: 'Pembayaran Kasir',
-                                        diskonEvent: widget.order.diskonEvent,
-                                        diskonKupon: widget.order.diskonKupon,
-                                        potonganPoin: widget.order.potonganPoin,
-                                        kodeKupon: widget.order.kodeKupon,
-                                      );
-                                  showDialog(
-                                    context: context,
-                                    builder: (ctx) => ReceiptDialog(transaction: trxToShow),
-                                  );
-                                },
-                                icon: const Icon(Icons.receipt_long_rounded, size: 16),
-                                label: const Text(
-                                  'Lihat Struk',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFEA580C),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  elevation: 0,
-                                ),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  widget.onNavigateToTab(1);
-                                },
-                                icon: const Icon(Icons.add_shopping_cart_rounded, size: 16),
-                                label: const Text(
-                                  'Pesan Lagi',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                         const SizedBox(height: 12),
                       ],
