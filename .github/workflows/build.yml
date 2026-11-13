@@ -7,6 +7,9 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     name: Build Android APK
@@ -50,11 +53,15 @@ jobs:
             exit $STATUS
           fi
 
+      - name: Prepare APK file
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk Rasantara-Kasir-Restoran.apk
+
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
           name: Rasantara-Android-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: Rasantara-Kasir-Restoran.apk
 
       - name: Upload Build Log on Failure
         if: failure()
@@ -86,8 +93,49 @@ jobs:
       - name: Build Windows executable
         run: flutter build windows --release
 
+      - name: Package Windows Bundle into ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "Rasantara-Windows.zip" -Force
+
       - name: Upload Windows Bundle
         uses: actions/upload-artifact@v4
         with:
           name: Rasantara-Windows-Release
-          path: build/windows/x64/runner/Release/
+          path: Rasantara-Windows.zip
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [build-android, build-windows]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Rasantara-Android-APK
+          path: release-files/
+
+      - name: Download Windows Release
+        uses: actions/download-artifact@v4
+        with:
+          name: Rasantara-Windows-Release
+          path: release-files/
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Rasantara App Release (Latest)"
+          body: |
+            ### Aplikasi Kasir Restoran Rasantara (Ujikom)
+
+            Silakan unduh aplikasi yang sesuai dengan perangkat Anda:
+            - **Android (HP / Tablet)**: Unduh file **`Rasantara-Kasir-Restoran.apk`** (langsung install di HP, tidak perlu diekstrak).
+            - **Windows (PC / Laptop)**: Unduh file **`Rasantara-Windows.zip`** lalu ekstrak dan jalankan `kasir_restoran.exe`.
+          files: |
+            release-files/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
