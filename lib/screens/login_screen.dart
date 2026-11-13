@@ -490,163 +490,104 @@ class _LoginScreenState extends State<LoginScreen>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Left Feature & Visual Showcase
+                // Left Brand Presentation Panel (Orange & Putih)
                 Expanded(
                   flex: 5,
                   child: Container(
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: isDark
-                            ? [
-                                const Color(0xFF14171D),
-                                const Color(0xFF0C0E12),
-                                const Color(0xFF07080A),
-                              ]
-                            : [
-                                const Color(0xFF1E293B),
-                                const Color(0xFF0F172A),
-                                const Color(0xFF111827),
-                              ],
+                        colors: [
+                          Color(0xFFFF7A00),
+                          AppTheme.orangePrimary,
+                          Color(0xFFEA580C),
+                        ],
                       ),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 44, vertical: 48),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Brand Identity Row
-                        Row(
-                          children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.15),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              padding: const EdgeInsets.all(5),
-                              child: Image.asset(
-                                'assets/images/Rasantara Cloche App Icon.png',
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(
-                                  Icons.restaurant_rounded,
-                                  color: AppTheme.orangePrimary,
-                                  size: 26,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Rasantara',
-                                    style: TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Autentik Cita Rasa Nusantara',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white.withValues(alpha: 0.85),
-                                      letterSpacing: 0.3,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 36),
-
-                        // Big Compelling Headline
-                        const Text(
-                          'Sistem Kasir & Operasional Restoran Terpadu.',
-                          style: TextStyle(
-                            fontSize: 27,
-                            fontWeight: FontWeight.w900,
+                        // Logo Aplikasi Rasantara
+                        Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
                             color: Colors.white,
-                            height: 1.25,
-                            letterSpacing: -0.6,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.12),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: Image.asset(
+                            'assets/images/Rasantara Cloche App Icon.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                              Icons.restaurant_rounded,
+                              color: AppTheme.orangePrimary,
+                              size: 52,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Solusi lengkap manajemen meja, pesanan dapur, kasir cepat, hingga laporan analitik omzet real-time.',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.76),
-                            height: 1.5,
-                          ),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // Feature Highlights
-                        _featureRow(
-                          icon: Icons.flash_on_rounded,
-                          title: 'Transaksi Kasir Cepat',
-                          subtitle: 'Cetak struk resmi dan dukung multi-metode pembayaran',
-                          accent: AppTheme.orangePrimary,
-                        ),
-                        const SizedBox(height: 14),
-                        _featureRow(
-                          icon: Icons.table_restaurant_rounded,
-                          title: 'Layanan Meja & QRIS',
-                          subtitle: 'Pemesanan meja presisi dengan verifikasi instan',
-                          accent: const Color(0xFF38BDF8),
-                        ),
-                        const SizedBox(height: 14),
-                        _featureRow(
-                          icon: Icons.analytics_rounded,
-                          title: 'Laporan Keuangan Dinamis',
-                          subtitle: 'Rekapitulasi omzet perminggu, perbulan, dan pertahun',
-                          accent: AppTheme.statusGreen,
-                        ),
-
-                        const Spacer(),
                         const SizedBox(height: 24),
 
-                        // Security & Certification Footer
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.verified_user_outlined,
-                              size: 14,
-                              color: Colors.white.withValues(alpha: 0.55),
+                        // Nama Restoran / Brand
+                        const Text(
+                          'Rasantara',
+                          style: TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.8,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Slogan
+                        Text(
+                          'Autentik Cita Rasa Nusantara',
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.95),
+                            letterSpacing: 0.4,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 22),
+
+                        // Garis aksen pemisah putih halus
+                        Container(
+                          width: 48,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+
+                        // Deskripsi Singkat Soal Aplikasi Ini
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 340),
+                          child: Text(
+                            'Sistem kasir dan manajemen operasional restoran modern yang cepat, terpadu, dan andal untuk menyajikan pengalaman kuliner nusantara terbaik.',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              height: 1.6,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Sistem Terenkripsi & Sinkronisasi Cloud Supabase',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.white.withValues(alpha: 0.55),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ],
                     ),
@@ -669,98 +610,6 @@ class _LoginScreenState extends State<LoginScreen>
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _featureRow({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color accent,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 18, color: accent),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    color: Colors.white.withValues(alpha: 0.65),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metricBadge(String value, String label, Color accent) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.12),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                color: accent,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w500,
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
         ),
       ),
     );
