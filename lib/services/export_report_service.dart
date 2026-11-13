@@ -445,8 +445,8 @@ class ExportReportService {
                         child: pw.BarcodeWidget(
                           data: customerFeedbackGFormUrl,
                           barcode: pw.Barcode.qrCode(),
-                          width: 54,
-                          height: 54,
+                          width: 100,
+                          height: 100,
                         ),
                       ),
                       pw.SizedBox(height: 8),

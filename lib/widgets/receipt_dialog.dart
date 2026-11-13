@@ -212,7 +212,7 @@ class ReceiptDialog extends StatelessWidget {
                         child: QrImageView(
                           data: qrPayload,
                           version: QrVersions.auto,
-                          size: 64.0,
+                          size: 120.0,
                           eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF1E293B)),
                           dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF1E293B)),
                         ),
