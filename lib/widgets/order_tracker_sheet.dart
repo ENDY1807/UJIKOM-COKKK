@@ -864,7 +864,7 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                               },
                               icon: const Icon(Icons.qr_code_2_rounded, size: 20),
                               label: const Text(
-                                'Bayar QRIS Meja (DANA / GoPay)',
+                                'Buka QRIS Pembayaran',
                                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                               ),
                             ),

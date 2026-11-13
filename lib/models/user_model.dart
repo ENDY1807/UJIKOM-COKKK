@@ -16,10 +16,7 @@ enum UserRole {
     );
   }
 
-  bool get canRegisterUsers =>
-      this == UserRole.administrator ||
-      this == UserRole.waiter ||
-      this == UserRole.kasir;
+  bool get canRegisterUsers => this == UserRole.administrator;
   bool get canManageReferences => this == UserRole.administrator;
   bool get canCreateOrder =>
       this == UserRole.administrator ||

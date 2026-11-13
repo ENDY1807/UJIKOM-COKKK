@@ -92,6 +92,7 @@ class OrderModel {
   final int potonganPoin;
   final int diskonMember;
   final String kodeKupon;
+  String? metodePembayaran;
 
   OrderModel({
     required this.idOrder,
@@ -108,6 +109,7 @@ class OrderModel {
     this.potonganPoin = 0,
     this.diskonMember = 0,
     this.kodeKupon = '',
+    this.metodePembayaran,
   });
 
   int get totalHarga => items.fold(0, (sum, item) => sum + item.subtotal);
@@ -133,6 +135,7 @@ class OrderModel {
     int? potonganPoin,
     int? diskonMember,
     String? kodeKupon,
+    String? metodePembayaran,
   }) {
     return OrderModel(
       idOrder: idOrder ?? this.idOrder,
@@ -149,6 +152,7 @@ class OrderModel {
       potonganPoin: potonganPoin ?? this.potonganPoin,
       diskonMember: diskonMember ?? this.diskonMember,
       kodeKupon: kodeKupon ?? this.kodeKupon,
+      metodePembayaran: metodePembayaran ?? this.metodePembayaran,
     );
   }
 
@@ -199,6 +203,7 @@ class OrderModel {
       potonganPoin: _parseInt(map['potongan_poin']),
       diskonMember: _parseInt(map['diskon_member']),
       kodeKupon: map['kode_kupon']?.toString() ?? '',
+      metodePembayaran: map['metode_pembayaran']?.toString(),
     );
   }
 
@@ -217,6 +222,7 @@ class OrderModel {
       'potongan_poin': potonganPoin,
       'diskon_member': diskonMember,
       'kode_kupon': kodeKupon,
+      if (metodePembayaran != null) 'metode_pembayaran': metodePembayaran,
     };
   }
 }

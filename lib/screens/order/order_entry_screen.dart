@@ -190,6 +190,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       keterangan: orderNotes,
       items: _cart.values.toList(),
       diskonMember: effDiskonMember,
+      metodePembayaran: payWithQris ? 'QRIS' : 'Tunai',
     );
 
     widget.db.updateTableStatus(_selectedTableNo, TableStatus.terisi);
@@ -200,7 +201,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     });
 
     if (payWithQris) {
-      // Menampilkan dialog QRIS dinamis untuk pelanggan scan lewat DANA / GoPay
+      // Menampilkan dialog QRIS untuk pelanggan scan
       QrisPaymentDialog.show(
         context,
         order: createdOrder,
@@ -209,7 +210,30 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         onPaymentSuccess: () {
           widget.onOrderSubmitted?.call();
         },
-      );
+      ).then((_) {
+        // Ketika dialog ditutup, beri notifikasi bahwa QRIS bisa dibuka kembali
+        if (mounted && createdOrder.status != OrderStatus.selesai) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Pesanan $submittedTable tersimpan. QRIS dapat dibuka kembali kapan saja.'),
+              backgroundColor: const Color(0xFFEA580C),
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: 'Buka QRIS',
+                textColor: Colors.white,
+                onPressed: () {
+                  QrisPaymentDialog.show(
+                    context,
+                    order: createdOrder,
+                    totalAmount: totalAmountToPay,
+                    db: widget.db,
+                  );
+                },
+              ),
+            ),
+          );
+        }
+      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -266,6 +290,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
   // ── LAYOUT COMPACT (SMARTPHONE WAITER) ──
   Widget _buildCompactLayout() {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
     return Stack(
       children: [
         Column(
@@ -273,14 +298,14 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             _buildTopTableBar(),
             _buildCategoryAndSearchBar(),
             Expanded(child: _buildMenuGrid(isWide: false)),
-            if (_cart.isNotEmpty) const SizedBox(height: 76),
+            if (_cart.isNotEmpty) SizedBox(height: 76 + bottomInset),
           ],
         ),
         if (_cart.isNotEmpty)
           Positioned(
             left: 16,
             right: 16,
-            bottom: 14,
+            bottom: 14 + bottomInset,
             child: _buildMobileBottomBar(),
           ),
       ],
@@ -1159,7 +1184,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              // Tombol Bayar QRIS Dinamis (DANA / GoPay)
+              // Tombol Bayar QRIS
               SizedBox(
                 width: double.infinity,
                 height: 44,
@@ -1174,7 +1199,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   label: const FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      'Bayar QRIS Meja (DANA / GoPay)',
+                      'Bayar QRIS',
                       style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ),

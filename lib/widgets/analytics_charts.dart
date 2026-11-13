@@ -1,16 +1,33 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../models/user_model.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 
+/// Opsi Filter Waktu untuk Diagram Laporan Penghasilan
+enum RevenuePeriodFilter {
+  perMinggu('Perminggu'),
+  perBulan('Perbulan'),
+  perTahun('Pertahun');
+
+  final String label;
+  const RevenuePeriodFilter(this.label);
+}
+
 /// Komponen Visual Diagram & Grafik Analisis Restoran Rasantara
 /// SELURUH DATA DIHITUNG SECARA DINAMIS DAN MURNI DARI DATABASE SUPABASE / POSTGRESQL.
-/// Tidak ada angka rekayasa atau persentase palsu. Jika database kosong, tampilkan status kosong bersih.
-class AnalyticsChartsWidget extends StatelessWidget {
+class AnalyticsChartsWidget extends StatefulWidget {
   final DatabaseService db;
 
   const AnalyticsChartsWidget({super.key, required this.db});
+
+  @override
+  State<AnalyticsChartsWidget> createState() => _AnalyticsChartsWidgetState();
+}
+
+class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
+  RevenuePeriodFilter _periodFilter = RevenuePeriodFilter.perMinggu;
 
   @override
   Widget build(BuildContext context) {
@@ -20,10 +37,11 @@ class AnalyticsChartsWidget extends StatelessWidget {
       decimalDigits: 0,
     );
 
-    final transactions = db.transactions;
-    final orders = db.orders;
-    final totalOmzet = db.totalOmzet;
+    final transactions = widget.db.transactions;
+    final orders = widget.db.orders;
+    final totalOmzet = widget.db.totalOmzet;
     final totalTrx = transactions.length;
+    final role = widget.db.currentUser?.role ?? UserRole.owner;
 
     // Jika belum ada data transaksi sama sekali di database
     if (transactions.isEmpty && orders.isEmpty) {
@@ -83,32 +101,68 @@ class AnalyticsChartsWidget extends StatelessWidget {
       );
     }
 
-    // ── 1. Hitung Omset 7 Hari Terakhir dari Database ──
+    // ── 1. Hitung Omset Berdasarkan Filter Waktu (Perminggu, Perbulan, Pertahun) ──
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final dailyRevenueList = <_DayRevenue>[];
+    final revenueList = <_PeriodRevenue>[];
+    String periodSubtitle = '';
 
-    for (int i = 6; i >= 0; i--) {
-      final targetDate = today.subtract(Duration(days: i));
-      final nextDate = targetDate.add(const Duration(days: 1));
+    if (_periodFilter == RevenuePeriodFilter.perMinggu) {
+      periodSubtitle = '7 Hari Terakhir';
+      for (int i = 6; i >= 0; i--) {
+        final targetDate = today.subtract(Duration(days: i));
+        final nextDate = targetDate.add(const Duration(days: 1));
 
-      final dayTotal = transactions.where((t) {
-        return t.tanggal.isAfter(targetDate.subtract(const Duration(milliseconds: 1))) &&
-            t.tanggal.isBefore(nextDate);
-      }).fold<int>(0, (sum, t) => sum + t.totalBayar);
+        final total = transactions.where((t) {
+          return !t.tanggal.isBefore(targetDate) && t.tanggal.isBefore(nextDate);
+        }).fold<int>(0, (sum, t) => sum + t.totalBayar);
 
-      final dayName = _getDayName(targetDate.weekday);
-      dailyRevenueList.add(_DayRevenue(
-        date: targetDate,
-        dayLabel: dayName,
-        revenue: dayTotal,
-      ));
+        revenueList.add(_PeriodRevenue(
+          date: targetDate,
+          label: _getDayName(targetDate.weekday),
+          revenue: total,
+        ));
+      }
+    } else if (_periodFilter == RevenuePeriodFilter.perBulan) {
+      periodSubtitle = '4 Minggu Terakhir';
+      for (int w = 3; w >= 0; w--) {
+        final startWeek = today.subtract(Duration(days: (w + 1) * 7 - 1));
+        final endWeek = today.subtract(Duration(days: w * 7)).add(const Duration(days: 1));
+
+        final total = transactions.where((t) {
+          return !t.tanggal.isBefore(startWeek) && t.tanggal.isBefore(endWeek);
+        }).fold<int>(0, (sum, t) => sum + t.totalBayar);
+
+        revenueList.add(_PeriodRevenue(
+          date: startWeek,
+          label: 'Mgg ${4 - w}',
+          revenue: total,
+        ));
+      }
+    } else {
+      periodSubtitle = '12 Bulan Terakhir';
+      for (int m = 11; m >= 0; m--) {
+        final monthDate = DateTime(now.year, now.month - m, 1);
+        final nextMonthDate = DateTime(now.year, now.month - m + 1, 1);
+
+        final total = transactions.where((t) {
+          return !t.tanggal.isBefore(monthDate) && t.tanggal.isBefore(nextMonthDate);
+        }).fold<int>(0, (sum, t) => sum + t.totalBayar);
+
+        revenueList.add(_PeriodRevenue(
+          date: monthDate,
+          label: _getMonthName(monthDate.month),
+          revenue: total,
+        ));
+      }
     }
 
-    final maxDailyRev = dailyRevenueList.fold<int>(
+    final maxRevenue = revenueList.fold<int>(
       0,
       (max, d) => d.revenue > max ? d.revenue : max,
     );
+
+    final filteredTotalRevenue = revenueList.fold<int>(0, (sum, d) => sum + d.revenue);
 
     // ── 2. Hitung Distribusi Metode Pembayaran dari Database ──
     int qrisCount = 0;
@@ -134,31 +188,8 @@ class AnalyticsChartsWidget extends StatelessWidget {
     final ewalletShare = totalTrx > 0 ? (ewalletCount / totalTrx) : 0.0;
     final debitShare = totalTrx > 0 ? (debitCount / totalTrx) : 0.0;
 
-    // ── 3. Hitung Distribusi Tipe Layanan dari Database Orders ──
-    final totalOrderCount = orders.length;
-    int dineInCount = 0;
-    int deliveryCount = 0;
-    int takeAwayCount = 0;
-
-    for (final o in orders) {
-      final meja = o.noMeja.toLowerCase();
-      final ket = o.keterangan.toLowerCase();
-      if (meja.contains('delivery') || ket.contains('delivery') || ket.contains('antar ke') || ket.contains('gofood')) {
-        deliveryCount++;
-      } else if (meja.contains('take away') || ket.contains('take away') || ket.contains('ambil')) {
-        takeAwayCount++;
-      } else {
-        dineInCount++;
-      }
-    }
-
-    final dineInShare = totalOrderCount > 0 ? (dineInCount / totalOrderCount) : 0.0;
-    final deliveryShare = totalOrderCount > 0 ? (deliveryCount / totalOrderCount) : 0.0;
-    final takeAwayShare = totalOrderCount > 0 ? (takeAwayCount / totalOrderCount) : 0.0;
-
-    // ── 4. Hitung Peringkat Menu Terlaris dari Database ──
+    // ── 3. Hitung Peringkat Menu Terlaris dari Database ──
     final menuSalesMap = <String, int>{};
-    // Prioritaskan dari transaksi, jika transaksi kosong ambil dari orders
     if (transactions.isNotEmpty) {
       for (final t in transactions) {
         for (final item in t.order.items) {
@@ -179,343 +210,342 @@ class AnalyticsChartsWidget extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
     final maxSold = topMenus.isNotEmpty ? topMenus.first.value : 0;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Card 1: Diagram Batang Penghasilan / Omset Harian ──
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.surfaceCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: context.borderSubtle),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
+    // ── WIDGETS KARTU ──
+
+    // Card 1: Diagram Batang Penghasilan dengan Tombol Perminggu / Perbulan / Pertahun
+    final revenueCard = Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.surfaceCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.borderSubtle),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmall = constraints.maxWidth < 600;
+
+              final titleSection = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Diagram Penghasilan 7 Hari Terakhir',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: context.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Total Omset: ${currencyFmt.format(totalOmzet)} ($totalTrx Transaksi)',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFFEA580C),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFFFEDD5)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.bar_chart_rounded,
-                          size: 14,
-                          color: Color(0xFFEA580C),
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'Data Database',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFEA580C),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Visual Bar Chart Dinamis dari Database
-              SizedBox(
-                height: 180,
-                child: _buildRealRevenueBarChart(dailyRevenueList, maxDailyRev),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // ── Card 2: Diagram Donat Metode Pembayaran ──
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.surfaceCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: context.borderSubtle),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Diagram Metode Pembayaran',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: context.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Pembagian transaksi dari $totalTrx transaksi selesai di database',
-                style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
-              ),
-              const SizedBox(height: 20),
-
-              Row(
-                children: [
-                  // Donut Chart Custom Painter Dinamis
-                  SizedBox(
-                    width: 130,
-                    height: 130,
-                    child: CustomPaint(
-                      painter: _PaymentDonutPainter(
-                        qrisShare: qrisShare,
-                        cashShare: tunaiShare,
-                        ewalletShare: ewalletShare,
-                        debitShare: debitShare,
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '$totalTrx',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF1E293B),
-                              ),
-                            ),
-                            const Text(
-                              'Transaksi',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-
-                  // Legends dengan Data Nyata
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLegendItem(
-                          'QRIS Dinamis',
-                          '${(qrisShare * 100).toStringAsFixed(0)}% ($qrisCount trx)',
-                          const Color(0xFFEA580C),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildLegendItem(
-                          'Tunai Kasir',
-                          '${(tunaiShare * 100).toStringAsFixed(0)}% ($tunaiCount trx)',
-                          const Color(0xFF16A34A),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildLegendItem(
-                          'E-Wallet (GoPay/DANA)',
-                          '${(ewalletShare * 100).toStringAsFixed(0)}% ($ewalletCount trx)',
-                          const Color(0xFFD97706),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildLegendItem(
-                          'Kartu Debit / EDC',
-                          '${(debitShare * 100).toStringAsFixed(0)}% ($debitCount trx)',
-                          const Color(0xFF64748B),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // ── Card 3: Diagram Proporsi Layanan (Dine In vs GoFood Delivery vs Take Away) ──
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.surfaceCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: context.borderSubtle),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Distribusi Tipe Layanan Pesanan',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: context.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Perbandingan dari total $totalOrderCount pesanan yang masuk ke sistem',
-                style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
-              ),
-              const SizedBox(height: 16),
-
-              _buildServiceBar(
-                'Makan di Tempat (Dine-In)',
-                dineInShare,
-                const Color(0xFFEA580C),
-                '${(dineInShare * 100).toStringAsFixed(0)}% ($dineInCount pesanan)',
-              ),
-              const SizedBox(height: 12),
-              _buildServiceBar(
-                'GoFood Pesan Antar (Delivery OSM)',
-                deliveryShare,
-                const Color(0xFF0284C7),
-                '${(deliveryShare * 100).toStringAsFixed(0)}% ($deliveryCount pesanan)',
-              ),
-              const SizedBox(height: 12),
-              _buildServiceBar(
-                'Ambil Sendiri (Take Away Counter)',
-                takeAwayShare,
-                const Color(0xFF16A34A),
-                '${(takeAwayShare * 100).toStringAsFixed(0)}% ($takeAwayCount pesanan)',
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // ── Card 4: Diagram Menu Terlaris Nusantara dari Database ──
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.surfaceCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: context.borderSubtle),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.military_tech_rounded,
-                    color: Color(0xFFF59E0B),
-                    size: 22,
-                  ),
-                  const SizedBox(width: 8),
                   Text(
-                    'Peringkat Menu Nusantara Terlaris',
+                    'Diagram Penghasilan ($periodSubtitle)',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: context.textPrimary,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Urutan menu masakan yang paling sering dipesan oleh pelanggan',
-                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
-              ),
-              const SizedBox(height: 16),
-
-              if (topMenus.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(
-                    child: Text(
-                      'Belum ada data menu yang terjual di database.',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Total Periode: ${currencyFmt.format(filteredTotalRevenue)} • Keseluruhan: ${currencyFmt.format(totalOmzet)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFFEA580C),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                )
-              else
-                ...topMenus.take(5).toList().asMap().entries.map((entry) {
-                  final rank = entry.key + 1;
-                  final item = entry.value;
-                  final ratio = maxSold > 0 ? (item.value / maxSold) : 0.0;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildTopMenuItem(
-                      rank,
-                      item.key,
-                      '${item.value} Porsi Terjual',
-                      ratio,
+                ],
+              );
+
+              final filterToggles = Container(
+                decoration: BoxDecoration(
+                  color: context.fillSubtle,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: context.borderSubtle),
+                ),
+                padding: const EdgeInsets.all(3),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: RevenuePeriodFilter.values.map((filter) {
+                    final isSelected = _periodFilter == filter;
+                    return InkWell(
+                      onTap: () {
+                        setState(() => _periodFilter = filter);
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.orangePrimary : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: AppTheme.orangePrimary.withValues(alpha: 0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Text(
+                          filter.label,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                            color: isSelected ? Colors.white : context.textSecondary,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              );
+
+              if (isSmall) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    titleSection,
+                    const SizedBox(height: 12),
+                    filterToggles,
+                  ],
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: titleSection),
+                  const SizedBox(width: 8),
+                  filterToggles,
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // Visual Bar Chart Dinamis dari Database
+          SizedBox(
+            height: 180,
+            child: _buildRealRevenueBarChart(revenueList, maxRevenue),
+          ),
+        ],
+      ),
+    );
+
+    // Card 2: Diagram Donat Metode Pembayaran (Hanya Kasir, Owner, Admin)
+    final paymentCard = Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.surfaceCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.borderSubtle),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Diagram Metode Pembayaran',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: context.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Pembagian transaksi dari $totalTrx transaksi selesai di database',
+            style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+          ),
+          const SizedBox(height: 20),
+
+          Row(
+            children: [
+              // Donut Chart Custom Painter Dinamis
+              SizedBox(
+                width: 130,
+                height: 130,
+                child: CustomPaint(
+                  painter: _PaymentDonutPainter(
+                    qrisShare: qrisShare,
+                    cashShare: tunaiShare,
+                    ewalletShare: ewalletShare,
+                    debitShare: debitShare,
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$totalTrx',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Transaksi',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                }),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+
+              // Legends dengan Data Nyata (QRIS, Tunai Kasir, E-Wallet, Kartu Debit)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLegendItem(
+                      'QRIS',
+                      '${(qrisShare * 100).toStringAsFixed(0)}% ($qrisCount trx)',
+                      const Color(0xFFEA580C),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildLegendItem(
+                      'Tunai Kasir',
+                      '${(tunaiShare * 100).toStringAsFixed(0)}% ($tunaiCount trx)',
+                      const Color(0xFF16A34A),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildLegendItem(
+                      'E-Wallet (GoPay/DANA)',
+                      '${(ewalletShare * 100).toStringAsFixed(0)}% ($ewalletCount trx)',
+                      const Color(0xFFD97706),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildLegendItem(
+                      'Kartu Debit / EDC',
+                      '${(debitShare * 100).toStringAsFixed(0)}% ($debitCount trx)',
+                      const Color(0xFF64748B),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-        ),
+        ],
+      ),
+    );
+
+    // Card 3: Menu Best Seller (Menu Terlaris)
+    final bestSellerCard = Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.surfaceCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.borderSubtle),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.military_tech_rounded,
+                color: AppTheme.orangePrimary,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Laporan Menu Best Seller',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: context.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Urutan menu masakan yang paling sering dipesan oleh pelanggan',
+            style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+          ),
+          const SizedBox(height: 16),
+
+          if (topMenus.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Text(
+                  'Belum ada data menu yang terjual di database.',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                ),
+              ),
+            )
+          else
+            ...topMenus.take(5).toList().asMap().entries.map((entry) {
+              final rank = entry.key + 1;
+              final item = entry.value;
+              final ratio = maxSold > 0 ? (item.value / maxSold) : 0.0;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildTopMenuItem(
+                  rank,
+                  item.key,
+                  '${item.value} Porsi Terjual',
+                  ratio,
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+
+    // ── STRUKTUR TAMPILAN BERDASARKAN ROLE PENGGUNA ──
+    // Waiter: Menu Best Seller, Penghasilan (tanpa metode pembayaran & tanpa distribusi layanan)
+    // Kasir / Owner / Admin: Penghasilan (dengan tombol filter waktu), Metode Pembayaran, Menu Best Seller
+    if (role == UserRole.waiter) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          bestSellerCard,
+          const SizedBox(height: 16),
+          revenueCard,
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        revenueCard,
+        const SizedBox(height: 16),
+        paymentCard,
+        const SizedBox(height: 16),
+        bestSellerCard,
       ],
     );
   }
 
-  Widget _buildRealRevenueBarChart(List<_DayRevenue> dailyData, int maxAmount) {
+  Widget _buildRealRevenueBarChart(List<_PeriodRevenue> periodData, int maxAmount) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
-      children: dailyData.map((d) {
+      children: periodData.map((d) {
         final ratio = maxAmount > 0 ? (d.revenue / maxAmount) : 0.0;
         final isMax = maxAmount > 0 && d.revenue == maxAmount;
         final barHeight = math.max(6.0, 110.0 * ratio);
@@ -533,18 +563,21 @@ class AnalyticsChartsWidget extends StatelessWidget {
 
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 3),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text(
-                  displayAmount,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: isMax ? FontWeight.bold : FontWeight.normal,
-                    color: isMax
-                        ? const Color(0xFFEA580C)
-                        : (d.revenue > 0 ? const Color(0xFF334155) : const Color(0xFF94A3B8)),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    displayAmount,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: isMax ? FontWeight.bold : FontWeight.normal,
+                      color: isMax
+                          ? const Color(0xFFEA580C)
+                          : (d.revenue > 0 ? const Color(0xFF334155) : const Color(0xFF94A3B8)),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -574,14 +607,17 @@ class AnalyticsChartsWidget extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  d.dayLabel,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isMax ? FontWeight.bold : FontWeight.w500,
-                    color: isMax
-                        ? const Color(0xFFEA580C)
-                        : const Color(0xFF64748B),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    d.label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isMax ? FontWeight.bold : FontWeight.w500,
+                      color: isMax
+                          ? const Color(0xFFEA580C)
+                          : const Color(0xFF64748B),
+                    ),
                   ),
                 ),
               ],
@@ -617,60 +653,6 @@ class AnalyticsChartsWidget extends StatelessWidget {
             fontSize: 12,
             fontWeight: FontWeight.bold,
             color: Color(0xFF1E293B),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildServiceBar(
-    String label,
-    double ratio,
-    Color barColor,
-    String badgeText,
-  ) {
-    final clampedRatio = ratio.clamp(0.0, 1.0);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF334155),
-              ),
-            ),
-            Text(
-              badgeText,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: barColor,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            height: 10,
-            width: double.infinity,
-            color: const Color(0xFFF1F5F9),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: clampedRatio,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: barColor,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-            ),
           ),
         ),
       ],
@@ -722,10 +704,10 @@ class AnalyticsChartsWidget extends StatelessWidget {
             children: [
               Text(
                 name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1E293B),
+                  color: context.textPrimary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -735,7 +717,7 @@ class AnalyticsChartsWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
                 child: Container(
                   height: 6,
-                  color: const Color(0xFFF1F5F9),
+                  color: context.borderSubtle,
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
                     widthFactor: progress.clamp(0.0, 1.0),
@@ -749,9 +731,9 @@ class AnalyticsChartsWidget extends StatelessWidget {
         const SizedBox(width: 12),
         Text(
           sales,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: Color(0xFF64748B),
+            color: context.textSecondary,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -779,16 +761,47 @@ class AnalyticsChartsWidget extends StatelessWidget {
         return '';
     }
   }
+
+  String _getMonthName(int month) {
+    switch (month) {
+      case 1:
+        return 'Jan';
+      case 2:
+        return 'Feb';
+      case 3:
+        return 'Mar';
+      case 4:
+        return 'Apr';
+      case 5:
+        return 'Mei';
+      case 6:
+        return 'Jun';
+      case 7:
+        return 'Jul';
+      case 8:
+        return 'Agu';
+      case 9:
+        return 'Sep';
+      case 10:
+        return 'Okt';
+      case 11:
+        return 'Nov';
+      case 12:
+        return 'Des';
+      default:
+        return '$month';
+    }
+  }
 }
 
-class _DayRevenue {
+class _PeriodRevenue {
   final DateTime date;
-  final String dayLabel;
+  final String label;
   final int revenue;
 
-  _DayRevenue({
+  _PeriodRevenue({
     required this.date,
-    required this.dayLabel,
+    required this.label,
     required this.revenue,
   });
 }

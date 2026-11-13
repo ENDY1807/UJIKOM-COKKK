@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../services/export_report_service.dart';
 import '../../theme/app_theme.dart';
@@ -164,11 +165,16 @@ class _ReportScreenState extends State<ReportScreen> {
   Widget build(BuildContext context) {
     final transactions = widget.db.transactions;
     final topSelling = widget.db.topSellingMenus;
+    final currentUser = widget.db.currentUser;
+    final role = currentUser?.role ?? UserRole.owner;
+    final canViewSummary = role == UserRole.owner ||
+        role == UserRole.kasir ||
+        role == UserRole.administrator;
 
     return Scaffold(
       backgroundColor: context.surfaceBg,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + MediaQuery.of(context).padding.bottom),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -237,7 +243,7 @@ class _ReportScreenState extends State<ReportScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Laporan Penjualan & Keuangan',
+                            role == UserRole.waiter ? 'Laporan Menu & Penghasilan' : 'Laporan Penjualan & Keuangan',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -245,13 +251,17 @@ class _ReportScreenState extends State<ReportScreen> {
                             ),
                           ),
                           Text(
-                            'Rekapitulasi omzet dan riwayat pembayaran table service',
+                            role == UserRole.waiter
+                                ? 'Menu terlaris dan penghasilan operasional restoran'
+                                : 'Rekapitulasi omzet dan riwayat pembayaran table service',
                             style: TextStyle(fontSize: 12, color: context.textSecondary),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      actionButtons,
+                      if (role != UserRole.waiter) ...[
+                        const SizedBox(height: 10),
+                        actionButtons,
+                      ],
                     ],
                   );
                 }
@@ -264,7 +274,7 @@ class _ReportScreenState extends State<ReportScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Laporan Penjualan & Keuangan',
+                            role == UserRole.waiter ? 'Laporan Menu & Penghasilan' : 'Laporan Penjualan & Keuangan',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -272,22 +282,27 @@ class _ReportScreenState extends State<ReportScreen> {
                             ),
                           ),
                           Text(
-                            'Rekapitulasi omzet dan riwayat pembayaran table service',
+                            role == UserRole.waiter
+                                ? 'Menu terlaris dan penghasilan operasional restoran'
+                                : 'Rekapitulasi omzet dan riwayat pembayaran table service',
                             style: TextStyle(fontSize: 12, color: context.textSecondary),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    actionButtons,
+                    if (role != UserRole.waiter) ...[
+                      const SizedBox(width: 12),
+                      actionButtons,
+                    ],
                   ],
                 );
               },
             ),
             const SizedBox(height: 16),
 
-            // 3 Summary Cards
-            LayoutBuilder(
+            // 3 Summary Cards (Hanya muncul untuk Owner, Kasir, Admin)
+            if (canViewSummary) ...[
+              LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 700;
                 final cards = [
@@ -341,8 +356,8 @@ class _ReportScreenState extends State<ReportScreen> {
                 }
               },
             ),
-
             const SizedBox(height: 20),
+          ],
 
             // Tab Switcher: Diagram & Grafik Analitik vs Daftar Transaksi
             Container(

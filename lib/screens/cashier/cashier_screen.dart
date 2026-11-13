@@ -36,6 +36,11 @@ class _CashierScreenState extends State<CashierScreen> {
   void _selectOrder(OrderModel order) {
     setState(() {
       _selectedOrder = order;
+      if (order.metodePembayaran == 'QRIS') {
+        _selectedPaymentMethod = 'QRIS';
+      } else {
+        _selectedPaymentMethod = 'Tunai';
+      }
       _bayarController.text = '${order.grandTotalSetelahDiskon}';
     });
   }
@@ -289,7 +294,30 @@ class _CashierScreenState extends State<CashierScreen> {
                                   ),
                                 ],
                               ),
-                              StatusBadge.fromStatus(order.status.label),
+                              Row(
+                                children: [
+                                  if (order.metodePembayaran == 'QRIS') ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      margin: const EdgeInsets.only(right: 6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFF7ED),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: const Color(0xFFFFEDD5)),
+                                      ),
+                                      child: const Text(
+                                        'QRIS',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFFEA580C),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  StatusBadge.fromStatus(order.status.label),
+                                ],
+                              ),
                             ],
                           ),
                           const SizedBox(height: 6),
@@ -364,9 +392,11 @@ class _CashierScreenState extends State<CashierScreen> {
 
     final order = _selectedOrder!;
 
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Container(
       color: context.surfaceCard,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -547,26 +577,64 @@ class _CashierScreenState extends State<CashierScreen> {
             const SizedBox(height: 18),
 
             // Metode Pembayaran
-            Text('Pilih Metode Pembayaran:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: ['Tunai', 'QRIS', 'Debit', 'Transfer'].map((method) {
-                final isSelected = _selectedPaymentMethod == method;
-                return ChoiceChip(
-                  label: Text(method),
-                  selected: isSelected,
-                  selectedColor: AppTheme.orangePrimary,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : context.textPrimary,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  ),
-                  onSelected: (_) => setState(() => _selectedPaymentMethod = method),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
+            if (order.metodePembayaran == 'QRIS' && _selectedPaymentMethod == 'QRIS') ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFFEDD5)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.qr_code_2_rounded, color: Color(0xFFEA580C), size: 24),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Metode Pembayaran: QRIS (Meja)',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFC2410C)),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Pesanan meja ini terhubung dengan QRIS. Ketuk tombol di bawah untuk membuka barcode QRIS atau memverifikasi pembayaran.',
+                            style: TextStyle(fontSize: 11.5, color: context.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => _selectedPaymentMethod = 'Tunai'),
+                      child: const Text('Ganti Tunai', style: TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ] else ...[
+              Text('Pilih Metode Pembayaran:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: ['Tunai', 'QRIS', 'Debit', 'Transfer'].map((method) {
+                  final isSelected = _selectedPaymentMethod == method;
+                  return ChoiceChip(
+                    label: Text(method),
+                    selected: isSelected,
+                    selectedColor: AppTheme.orangePrimary,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : context.textPrimary,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    ),
+                    onSelected: (_) => setState(() => _selectedPaymentMethod = method),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // Input Uang Diterima & Tombol Pecahan Cepat (Untuk Tunai)
             if (_selectedPaymentMethod == 'Tunai') ...[
@@ -666,7 +734,7 @@ class _CashierScreenState extends State<CashierScreen> {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     _selectedPaymentMethod == 'QRIS'
-                        ? 'Tampilkan Barcode QRIS & Verifikasi'
+                        ? 'Buka QRIS & Verifikasi Pembayaran'
                         : 'Bayar & Cetak Struk Resmi',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                   ),

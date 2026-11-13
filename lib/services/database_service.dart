@@ -1111,6 +1111,7 @@ class DatabaseService extends ChangeNotifier {
     int potonganPoin = 0,
     int diskonMember = 0,
     String? kodeKupon,
+    String? metodePembayaran,
   }) {
     final newId = (_orders.map((o) => o.idOrder).fold(100, (max, id) => id > max ? id : max)) + 1;
     final order = OrderModel(
@@ -1128,6 +1129,7 @@ class DatabaseService extends ChangeNotifier {
       potonganPoin: potonganPoin,
       diskonMember: diskonMember,
       kodeKupon: kodeKupon ?? '',
+      metodePembayaran: metodePembayaran,
     );
     _orders.insert(0, order);
 

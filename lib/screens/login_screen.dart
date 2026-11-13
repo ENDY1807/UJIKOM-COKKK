@@ -463,193 +463,268 @@ class _LoginScreenState extends State<LoginScreen>
   // ─── DESKTOP (ELEGANT SPLIT-SCREEN) ────────────────────────────────────────
   Widget _buildDesktopLayout() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 960, maxHeight: 580),
-        margin: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: context.surfaceCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark
-                ? AppTheme.darkBorder
-                : const Color(0xFFE2E8F0),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(28, 28, 28, 28 + bottomInset),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1020, minHeight: 620),
+          decoration: BoxDecoration(
+            color: context.surfaceCard,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
+              width: 1,
             ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Row(
-          children: [
-            // Left Feature & Visual Showcase
-            Expanded(
-              flex: 5,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            const Color(0xFF14171D),
-                            const Color(0xFF0C0E12),
-                            const Color(0xFF07080A),
-                          ]
-                        : [
-                            const Color(0xFF1E293B),
-                            const Color(0xFF0F172A),
-                            const Color(0xFF111827),
-                          ],
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Brand Identity Row
-                    Row(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
+                blurRadius: 28,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Left Feature & Visual Showcase
+                Expanded(
+                  flex: 5,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? [
+                                const Color(0xFF14171D),
+                                const Color(0xFF0C0E12),
+                                const Color(0xFF07080A),
+                              ]
+                            : [
+                                const Color(0xFF1E293B),
+                                const Color(0xFF0F172A),
+                                const Color(0xFF111827),
+                              ],
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          padding: const EdgeInsets.all(4),
-                          child: Image.asset(
-                            'assets/images/Rasantara Cloche App Icon.png',
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(
-                              Icons.restaurant_rounded,
-                              color: AppTheme.orangePrimary,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Rasantara',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: -0.5,
+                        // Brand Identity Row
+                        Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(5),
+                              child: Image.asset(
+                                'assets/images/Rasantara Cloche App Icon.png',
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(
+                                  Icons.restaurant_rounded,
+                                  color: AppTheme.orangePrimary,
+                                  size: 26,
                                 ),
                               ),
-                              Text(
-                                'Autentik Cita Rasa Nusantara',
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Rasantara',
+                                    style: TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Autentik Cita Rasa Nusantara',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white.withValues(alpha: 0.85),
+                                      letterSpacing: 0.3,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 36),
+
+                        // Big Compelling Headline
+                        const Text(
+                          'Sistem Kasir & Operasional Restoran Terpadu.',
+                          style: TextStyle(
+                            fontSize: 27,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            height: 1.25,
+                            letterSpacing: -0.6,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Solusi lengkap manajemen meja, pesanan dapur, kasir cepat, hingga laporan analitik omzet real-time.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withValues(alpha: 0.76),
+                            height: 1.5,
+                          ),
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // Feature Highlights
+                        _featureRow(
+                          icon: Icons.flash_on_rounded,
+                          title: 'Transaksi Kasir Cepat',
+                          subtitle: 'Cetak struk resmi dan dukung multi-metode pembayaran',
+                          accent: AppTheme.orangePrimary,
+                        ),
+                        const SizedBox(height: 14),
+                        _featureRow(
+                          icon: Icons.table_restaurant_rounded,
+                          title: 'Layanan Meja & QRIS',
+                          subtitle: 'Pemesanan meja presisi dengan verifikasi instan',
+                          accent: const Color(0xFF38BDF8),
+                        ),
+                        const SizedBox(height: 14),
+                        _featureRow(
+                          icon: Icons.analytics_rounded,
+                          title: 'Laporan Keuangan Dinamis',
+                          subtitle: 'Rekapitulasi omzet perminggu, perbulan, dan pertahun',
+                          accent: AppTheme.statusGreen,
+                        ),
+
+                        const Spacer(),
+                        const SizedBox(height: 24),
+
+                        // Security & Certification Footer
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.verified_user_outlined,
+                              size: 14,
+                              color: Colors.white.withValues(alpha: 0.55),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Sistem Terenkripsi & Sinkronisasi Cloud Supabase',
                                 style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  letterSpacing: 0.3,
+                                  fontSize: 11,
+                                  color: Colors.white.withValues(alpha: 0.55),
+                                  fontWeight: FontWeight.w500,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const Spacer(),
-
-                    // Big Compelling Headline
-                    const Text(
-                      'Pengalaman Kasir &\nManajemen Meja yang\nCepat dan Presisi.',
-                      style: TextStyle(
-                        fontSize: 25,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        height: 1.25,
-                        letterSpacing: -0.6,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Akses terpadu untuk kasir, pelayan, koki dapur, hingga pemilik restoran secara real-time.',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: Colors.white.withValues(alpha: 0.72),
-                        height: 1.45,
-                      ),
-                    ),
-
-                    const SizedBox(height: 22),
-
-                    // Operational Focus Badges
-                    Row(
-                      children: [
-                        _metricBadge(
-                            'Table Service', 'Manajemen Meja & Reservasi', AppTheme.orangePrimary),
-                        const SizedBox(width: 10),
-                        _metricBadge('Multi-Role', 'Kasir, Dapur & Laporan',
-                            AppTheme.statusGreen),
-                      ],
-                    ),
-
-                    const Spacer(),
-
-                    // Security & Certification Footer
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.verified_user_outlined,
-                          size: 14,
-                          color: Colors.white.withValues(alpha: 0.5),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            'Sistem Keamanan Terenkripsi & Cloud Sync',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.5),
-                              fontWeight: FontWeight.w500,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Right Form Panel
-            Expanded(
-              flex: 6,
-              child: Container(
-                color: context.surfaceCard,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 46, vertical: 36),
-                alignment: Alignment.center,
-                child: SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 390),
-                    child: _buildLoginForm(),
                   ),
                 ),
-              ),
+
+                // Right Form Panel
+                Expanded(
+                  flex: 5,
+                  child: Container(
+                    color: context.surfaceCard,
+                    padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                    alignment: Alignment.center,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      child: _buildLoginForm(),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _featureRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color accent,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: accent),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    color: Colors.white.withValues(alpha: 0.65),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -694,11 +769,12 @@ class _LoginScreenState extends State<LoginScreen>
   // ─── MOBILE LAYOUT ─────────────────────────────────────────────────────────
   Widget _buildMobileLayout() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return SafeArea(
       child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+          padding: EdgeInsets.fromLTRB(22, 24, 22, 24 + bottomInset),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 410),
             child: Column(
