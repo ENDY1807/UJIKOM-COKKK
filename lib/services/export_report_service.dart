@@ -16,6 +16,16 @@ class ExportReportService {
   );
   static final DateFormat _dateFmt = DateFormat('dd/MM/yyyy HH:mm:ss');
 
+  // Palet Warna Struk Resmi (Const compile-time)
+  static const PdfColor _cOrange = PdfColor.fromInt(0xFFEA580C);
+  static const PdfColor _cWarmBg = PdfColor.fromInt(0xFFFFF7ED);
+  static const PdfColor _cDark = PdfColor.fromInt(0xFF1E293B);
+  static const PdfColor _cGrey = PdfColor.fromInt(0xFF64748B);
+  static const PdfColor _cMuted = PdfColor.fromInt(0xFF94A3B8);
+  static const PdfColor _cBorder = PdfColor.fromInt(0xFFE2E8F0);
+  static const PdfColor _cGreen = PdfColor.fromInt(0xFF16A34A);
+  static const PdfColor _cDashed = PdfColor.fromInt(0xFFCBD5E1);
+
   /// URL Google Form resmi untuk ulasan dan masukan kepuasan pelanggan Restoran Rasantara
   static String customerFeedbackGFormUrl =
       'https://docs.google.com/forms/d/e/1FAIpQLScw7B5X8_RasantaraResto_UlasanPelanggan/viewform';
@@ -271,7 +281,7 @@ class ExportReportService {
             decoration: pw.BoxDecoration(
               color: PdfColors.white,
               borderRadius: pw.BorderRadius.circular(14),
-              border: pw.Border.all(color: const PdfColor.fromHex('#E2E8F0'), width: 0.8),
+              border: pw.Border.all(color: _cBorder, width: 0.8),
             ),
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.stretch,
@@ -280,7 +290,7 @@ class ExportReportService {
                 pw.Container(
                   padding: const pw.EdgeInsets.fromLTRB(14, 14, 14, 10),
                   decoration: const pw.BoxDecoration(
-                    color: PdfColor.fromHex('#FFF7ED'),
+                    color: _cWarmBg,
                     borderRadius: pw.BorderRadius.vertical(top: pw.Radius.circular(14)),
                   ),
                   child: pw.Column(
@@ -290,7 +300,7 @@ class ExportReportService {
                         width: 28,
                         height: 28,
                         decoration: pw.BoxDecoration(
-                          color: const PdfColor.fromHex('#EA580C'),
+                          color: _cOrange,
                           borderRadius: pw.BorderRadius.circular(7),
                         ),
                         alignment: pw.Alignment.center,
@@ -310,7 +320,7 @@ class ExportReportService {
                           fontSize: 13,
                           fontWeight: pw.FontWeight.bold,
                           letterSpacing: 1.5,
-                          color: const PdfColor.fromHex('#1E293B'),
+                          color: _cDark,
                         ),
                       ),
                       pw.SizedBox(height: 2),
@@ -319,18 +329,18 @@ class ExportReportService {
                         style: pw.TextStyle(
                           fontSize: 8.5,
                           fontWeight: pw.FontWeight.bold,
-                          color: const PdfColor.fromHex('#EA580C'),
+                          color: _cOrange,
                         ),
                       ),
                       pw.SizedBox(height: 3),
                       pw.Text(
                         address,
                         textAlign: pw.TextAlign.center,
-                        style: const pw.TextStyle(fontSize: 7, color: PdfColor.fromHex('#64748B')),
+                        style: const pw.TextStyle(fontSize: 7, color: _cGrey),
                       ),
                       pw.Text(
                         'Telp: (022) 756-4321 • NPWPD: 98.765.432.1-429.000',
-                        style: const pw.TextStyle(fontSize: 6.5, color: PdfColor.fromHex('#94A3B8')),
+                        style: const pw.TextStyle(fontSize: 6.5, color: _cMuted),
                       ),
                     ],
                   ),
@@ -364,7 +374,7 @@ class ExportReportService {
                             children: [
                               pw.Text(
                                 '${item.jumlah}x',
-                                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: const PdfColor.fromHex('#1E293B')),
+                                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: _cDark),
                               ),
                               pw.SizedBox(width: 4),
                               pw.Expanded(
@@ -373,19 +383,19 @@ class ExportReportService {
                                   children: [
                                     pw.Text(
                                       item.menu.namaMasakan,
-                                      style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: const PdfColor.fromHex('#1E293B')),
+                                      style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: _cDark),
                                     ),
                                     if (item.catatan.isNotEmpty)
                                       pw.Text(
                                         'Catatan: ${item.catatan}',
-                                        style: const pw.TextStyle(fontSize: 6, color: PdfColor.fromHex('#64748B')),
+                                        style: const pw.TextStyle(fontSize: 6, color: _cGrey),
                                       ),
                                   ],
                                 ),
                               ),
                               pw.Text(
                                 _currencyFmt.format(item.subtotal),
-                                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: const PdfColor.fromHex('#1E293B')),
+                                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: _cDark),
                               ),
                             ],
                           ),
@@ -397,14 +407,14 @@ class ExportReportService {
                       // ── Subtotal & Diskon ──
                       _buildPdfReceiptRow('Subtotal Hidangan', _currencyFmt.format(subtotal)),
                       if (diskonEvent > 0)
-                        _buildPdfReceiptRow('Diskon Event Promo', '- ${_currencyFmt.format(diskonEvent)}', isBoldValue: true, valColor: const PdfColor.fromHex('#16A34A')),
+                        _buildPdfReceiptRow('Diskon Event Promo', '- ${_currencyFmt.format(diskonEvent)}', isBoldValue: true, valColor: _cGreen),
                       if (diskonMember > 0)
-                        _buildPdfReceiptRow('Diskon Pelanggan Langganan (VIP 10%)', '- ${_currencyFmt.format(diskonMember)}', isBoldValue: true, valColor: const PdfColor.fromHex('#16A34A')),
+                        _buildPdfReceiptRow('Diskon Pelanggan Langganan (VIP 10%)', '- ${_currencyFmt.format(diskonMember)}', isBoldValue: true, valColor: _cGreen),
                       if (diskonKupon > 0)
-                        _buildPdfReceiptRow('Diskon Kupon ${kodeKupon.isNotEmpty ? "($kodeKupon)" : ""}', '- ${_currencyFmt.format(diskonKupon)}', isBoldValue: true, valColor: const PdfColor.fromHex('#16A34A')),
+                        _buildPdfReceiptRow('Diskon Kupon ${kodeKupon.isNotEmpty ? "($kodeKupon)" : ""}', '- ${_currencyFmt.format(diskonKupon)}', isBoldValue: true, valColor: _cGreen),
                       if (potonganPoin > 0)
-                        _buildPdfReceiptRow('Potongan Poin Kuliner', '- ${_currencyFmt.format(potonganPoin)}', isBoldValue: true, valColor: const PdfColor.fromHex('#16A34A')),
-                      _buildPdfReceiptRow('Pajak Restoran PB1 (10%)', 'Sudah Termasuk', valColor: const PdfColor.fromHex('#94A3B8')),
+                        _buildPdfReceiptRow('Potongan Poin Kuliner', '- ${_currencyFmt.format(potonganPoin)}', isBoldValue: true, valColor: _cGreen),
+                      _buildPdfReceiptRow('Pajak Restoran PB1 (10%)', 'Sudah Termasuk', valColor: _cMuted),
 
                       _buildPdfDashedDivider(),
 
@@ -414,11 +424,11 @@ class ExportReportService {
                         children: [
                           pw.Text(
                             'TOTAL TAGIHAN',
-                            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: const PdfColor.fromHex('#1E293B')),
+                            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _cDark),
                           ),
                           pw.Text(
                             _currencyFmt.format(grandTotal),
-                            style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: const PdfColor.fromHex('#EA580C')),
+                            style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: _cOrange),
                           ),
                         ],
                       ),
@@ -473,14 +483,14 @@ class ExportReportService {
         children: [
           pw.Text(
             title,
-            style: const pw.TextStyle(fontSize: 7.5, color: PdfColor.fromHex('#64748B')),
+            style: const pw.TextStyle(fontSize: 7.5, color: _cGrey),
           ),
           pw.Text(
             val,
             style: pw.TextStyle(
               fontSize: 7.5,
               fontWeight: isBoldValue ? pw.FontWeight.bold : pw.FontWeight.normal,
-              color: valColor ?? const PdfColor.fromHex('#1E293B'),
+              color: valColor ?? _cDark,
             ),
           ),
         ],
@@ -496,7 +506,7 @@ class ExportReportService {
           28,
           (index) => pw.Expanded(
             child: pw.Container(
-              color: index % 2 == 0 ? PdfColors.white : const PdfColor.fromHex('#CBD5E1'),
+              color: index % 2 == 0 ? PdfColors.white : _cDashed,
               height: 0.8,
             ),
           ),

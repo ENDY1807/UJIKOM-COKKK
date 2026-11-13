@@ -827,11 +827,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     context: context,
                     builder: (dCtx) => AlertDialog(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      title: const Row(
+                      title: Row(
                         children: [
-                          Icon(Icons.feedback_outlined, color: Color(0xFFEA580C)),
-                          SizedBox(width: 8),
-                          Text('URL Google Form Ulasan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          const Icon(Icons.feedback_outlined, color: Color(0xFFEA580C)),
+                          const SizedBox(width: 8),
+                          const Text('URL Google Form Ulasan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         ],
                       ),
                       content: Column(
