@@ -196,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen>
     final password = _loginPasswordController.text;
 
     if (usernameOrEmail.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Username/Email dan password wajib diisi');
+      setState(() => _errorMessage = 'Username / Email / No. HP dan password wajib diisi');
       return;
     }
 
@@ -215,7 +215,7 @@ class _LoginScreenState extends State<LoginScreen>
         }
       } else {
         setState(() {
-          _errorMessage = 'Username/Email atau password salah';
+          _errorMessage = widget.db.lastLoginError ?? 'Username / Email / No. HP atau password salah';
         });
       }
     } finally {
@@ -732,7 +732,7 @@ class _LoginScreenState extends State<LoginScreen>
 
         _inputField(
           controller: _loginUsernameController,
-          label: 'Username/Email',
+          label: 'Username / Email / No. HP',
           icon: Icons.person_outline_rounded,
         ),
         const SizedBox(height: 16),

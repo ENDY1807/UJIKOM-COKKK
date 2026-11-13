@@ -189,8 +189,21 @@ class DatabaseService extends ChangeNotifier {
       if (connected) {
         // 1. Sinkronisasi User dari tabel user / tb_user
         final cloudUsers = await _supabase.fetchUsers();
-        _users.clear();
-        _users.addAll(cloudUsers);
+        if (cloudUsers.isNotEmpty) {
+          for (final cu in cloudUsers) {
+            final localIdx = _users.indexWhere((u) => u.idUser == cu.idUser || u.username.toLowerCase() == cu.username.toLowerCase());
+            if (localIdx != -1) {
+              final isSub = _users[localIdx].isSubscribed || cu.isSubscribed;
+              _users[localIdx] = cu.copyWith(
+                isSubscribed: isSub,
+                phoneNumber: _users[localIdx].phoneNumber.isNotEmpty ? _users[localIdx].phoneNumber : cu.phoneNumber,
+              );
+            } else {
+              _users.add(cu);
+            }
+          }
+          await _saveUsersLocal();
+        }
         if (_currentUser != null) {
           final match = _users.where((u) =>
               u.idUser == _currentUser!.idUser ||
@@ -269,6 +282,26 @@ class DatabaseService extends ChangeNotifier {
   Future<void> _loadLocalState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+
+      // 0. Restore Local Users List (Pelanggan Berlangganan & User Lokal)
+      final usersJson = prefs.getString('saved_users_list');
+      if (usersJson != null && usersJson.isNotEmpty) {
+        try {
+          final list = (jsonDecode(usersJson) as List)
+              .map((m) => UserModel.fromMap(m as Map<String, dynamic>))
+              .toList();
+          for (final u in list) {
+            final idx = _users.indexWhere((existing) => existing.idUser == u.idUser || existing.username.toLowerCase() == u.username.toLowerCase());
+            if (idx != -1) {
+              _users[idx] = u;
+            } else {
+              _users.add(u);
+            }
+          }
+        } catch (e) {
+          debugPrint('[DatabaseService] restore saved_users_list error: $e');
+        }
+      }
 
       // 1. Restore User Session
       final userJson = prefs.getString('saved_user_session');
@@ -488,6 +521,16 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
+  Future<void> _saveUsersLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final listMap = _users.map((u) => u.toMap()).toList();
+      await prefs.setString('saved_users_list', jsonEncode(listMap));
+    } catch (e) {
+      debugPrint('[DatabaseService] _saveUsersLocal error: $e');
+    }
+  }
+
   Future<void> _saveUserAddressesLocal() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -580,28 +623,42 @@ class DatabaseService extends ChangeNotifier {
   // --- AUTHENTICATION & LOGIN ---
   String? lastLoginError;
 
-  /// Login sinkron lokal (mendukung Username, Email, atau No Telepon)
+  /// Login sinkron lokal (mendukung Username, Email, Nama Lengkap, atau No Telepon)
   bool login(String usernameOrEmail, String password) {
     lastLoginError = null;
     try {
       final clean = usernameOrEmail.trim().toLowerCase();
       final cleanDigits = clean.replaceAll(RegExp(r'[^0-9]'), '');
       final user = _users.firstWhere(
-        (u) =>
-            (u.username.toLowerCase() == clean ||
-             (u.googleEmail != null && u.googleEmail!.toLowerCase() == clean) ||
-             u.displayEmail.toLowerCase() == clean ||
-             (cleanDigits.length >= 8 && u.phoneNumber.replaceAll(RegExp(r'[^0-9]'), '') == cleanDigits)) &&
-            (u.password == password ||
-             password == '123' ||
-             password == '${u.username}123' ||
-             (u.password.isEmpty && u.authProvider == AuthProvider.google)),
+        (u) {
+          final uName = u.username.toLowerCase();
+          final uDisplay = u.namaUser.toLowerCase();
+          final uEmail = (u.googleEmail ?? '').toLowerCase();
+          final uDisplayEmail = u.displayEmail.toLowerCase();
+          final uPhoneDigits = u.phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+
+          final matchIdentifier = uName == clean ||
+              uDisplay == clean ||
+              uEmail == clean ||
+              uDisplayEmail == clean ||
+              (cleanDigits.length >= 8 &&
+                  (uPhoneDigits == cleanDigits ||
+                   (cleanDigits.length >= 8 && uPhoneDigits.endsWith(cleanDigits.substring(cleanDigits.length - 8))) ||
+                   (uPhoneDigits.length >= 8 && cleanDigits.endsWith(uPhoneDigits.substring(uPhoneDigits.length - 8)))));
+
+          final matchPassword = u.password == password ||
+              password == '123' ||
+              password == '${u.username}123' ||
+              (u.password.isEmpty && u.authProvider == AuthProvider.google);
+
+          return matchIdentifier && matchPassword;
+        },
       );
 
-      // Pengecekan Khusus Pelanggan: Hanya Pelanggan Berlangganan yang boleh login
+      // Pengecekan Khusus Pelanggan: Hanya Pelanggan Berlangganan yang boleh login memesan mandiri
       if (user.role == UserRole.pelanggan && !user.isSubscribed) {
         lastLoginError =
-            'Pemesanan mandiri via aplikasi hanya untuk Pelanggan Berlangganan. Silakan hubungi Waiter di meja Anda untuk memesan makanan.';
+            'Pemesanan mandiri via aplikasi hanya untuk Pelanggan Berlangganan (VIP). Silakan hubungi Waiter di meja Anda untuk mengaktifkan langganan.';
         return false;
       }
 
@@ -614,7 +671,7 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  /// Login asinkron dengan validasi langsung ke database Supabase (mendukung Username atau Email)
+  /// Login asinkron dengan validasi langsung ke database Supabase (mendukung Username, Email, No HP, atau Nama)
   Future<bool> loginAsync(String usernameOrEmail, String password) async {
     lastLoginError = null;
     // 1. Cek dari memori lokal terlebih dahulu
@@ -631,23 +688,48 @@ class DatabaseService extends ChangeNotifier {
         final c = _supabase.clientSafe;
         if (c != null) {
           final clean = usernameOrEmail.trim();
-          final res = await c
-              .from('user')
-              .select('*')
-              .or('username.eq.$clean,email.eq.$clean,google_email.eq.$clean,phone_number.eq.$clean')
-              .maybeSingle();
+          final cleanLower = clean.toLowerCase();
+          final cleanDigits = clean.replaceAll(RegExp(r'[^0-9]'), '');
+          final table = _supabase.userTableName;
+
+          dynamic res;
+          // Coba query Supabase case-insensitive
+          try {
+            res = await c
+                .from(table)
+                .select('*')
+                .or('username.ilike.$cleanLower,email.ilike.$cleanLower,google_email.ilike.$cleanLower,nama_user.ilike.$cleanLower${cleanDigits.length >= 8 ? ",phone_number.ilike.%$cleanDigits%" : ""}')
+                .maybeSingle();
+          } catch (_) {
+            try {
+              res = await c
+                  .from(table)
+                  .select('*')
+                  .or('username.eq.$clean,email.eq.$clean,google_email.eq.$clean,phone_number.eq.$clean')
+                  .maybeSingle();
+            } catch (_) {}
+          }
 
           if (res != null) {
-            final user = UserModel.fromMap(res);
+            var user = UserModel.fromMap(res);
             final isMatch = user.password == password ||
                 password == '123' ||
                 password == '${user.username}123' ||
                 (user.password.isEmpty && user.authProvider == AuthProvider.google);
 
             if (isMatch) {
+              // Cek apakah di local data sudah tercatat sebagai subscribed
+              final localMatch = _users.cast<UserModel?>().firstWhere(
+                (u) => u != null && (u.idUser == user.idUser || u.username.toLowerCase() == user.username.toLowerCase()),
+                orElse: () => null,
+              );
+              if (localMatch != null && localMatch.isSubscribed) {
+                user = user.copyWith(isSubscribed: true);
+              }
+
               if (user.role == UserRole.pelanggan && !user.isSubscribed) {
                 lastLoginError =
-                    'Pemesanan mandiri via aplikasi hanya untuk Pelanggan Berlangganan (VIP). Silakan hubungi Waiter di meja Anda untuk memesan makanan.';
+                    'Pemesanan mandiri via aplikasi hanya untuk Pelanggan Berlangganan (VIP). Silakan hubungi Waiter di meja Anda untuk mengaktifkan langganan.';
                 return false;
               }
 
@@ -658,7 +740,8 @@ class DatabaseService extends ChangeNotifier {
                 _users.add(user);
               }
               _currentUser = user;
-              _saveUserSession();
+              await _saveUsersLocal();
+              await _saveUserSession();
               notifyListeners();
               return true;
             }
@@ -881,7 +964,7 @@ class DatabaseService extends ChangeNotifier {
   }
 
   // --- USER MANAGEMENT (Admin, Waiter, Kasir) ---
-  void addUser(
+  Future<UserModel> addUser(
     String username,
     String password,
     String namaUser,
@@ -889,32 +972,43 @@ class DatabaseService extends ChangeNotifier {
     String? email,
     String? phoneNumber,
     bool isSubscribed = false,
-  }) {
+  }) async {
+    final cleanUsername = username.trim();
     final newId = (_users.map((u) => u.idUser).fold(0, (max, id) => id > max ? id : max)) + 1;
     final newUser = UserModel(
       idUser: newId,
-      username: username,
+      username: cleanUsername,
       password: password,
-      namaUser: namaUser,
+      namaUser: namaUser.trim(),
       role: role,
-      googleEmail: email,
-      phoneNumber: phoneNumber ?? '',
+      googleEmail: email?.trim(),
+      phoneNumber: phoneNumber?.trim() ?? '',
       isSubscribed: isSubscribed,
     );
     _users.add(newUser);
+    await _saveUsersLocal();
     notifyListeners();
 
     if (_isSupabaseConnected) {
-      _supabase.insertUser(newUser).then((inserted) {
+      try {
+        final inserted = await _supabase.insertUser(newUser);
         if (inserted != null) {
           final idx = _users.indexOf(newUser);
           if (idx != -1) {
-            _users[idx] = inserted;
+            _users[idx] = inserted.copyWith(
+              isSubscribed: isSubscribed || inserted.isSubscribed,
+              phoneNumber: (phoneNumber != null && phoneNumber.trim().isNotEmpty) ? phoneNumber.trim() : inserted.phoneNumber,
+            );
+            await _saveUsersLocal();
             notifyListeners();
+            return _users[idx];
           }
         }
-      });
+      } catch (e) {
+        debugPrint('[DatabaseService] addUser cloud insert error: $e');
+      }
     }
+    return newUser;
   }
 
   void updateUser(
@@ -936,6 +1030,7 @@ class DatabaseService extends ChangeNotifier {
         phoneNumber: phoneNumber,
         isSubscribed: isSubscribed,
       );
+      _saveUsersLocal();
       notifyListeners();
 
       if (_isSupabaseConnected) {
@@ -946,6 +1041,7 @@ class DatabaseService extends ChangeNotifier {
 
   void deleteUser(int idUser) {
     _users.removeWhere((u) => u.idUser == idUser);
+    _saveUsersLocal();
     notifyListeners();
 
     if (_isSupabaseConnected) {

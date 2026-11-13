@@ -72,7 +72,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
     return candidate;
   }
 
-  void _submitSubscription() {
+  Future<void> _submitSubscription() async {
     if (!_formKey.currentState!.validate()) return;
 
     final name = _nameController.text.trim();
@@ -106,6 +106,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
           username: existingUser.username,
           password: password.isNotEmpty ? password : existingUser.password,
           email: email.isNotEmpty ? email : (existingUser.googleEmail ?? existingUser.displayEmail),
+          phone: phone.isNotEmpty ? phone : existingUser.phoneNumber,
           message: 'Akun pelanggan yang sudah ada berhasil di-upgrade menjadi Member Berlangganan VIP!',
         );
         _resetForm();
@@ -125,7 +126,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
 
     final username = _generateUsername(email, name);
 
-    widget.db.addUser(
+    final registeredUser = await widget.db.addUser(
       username,
       password,
       name,
@@ -138,9 +139,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
     setState(() => _isSubmitting = false);
     _showSuccessDialog(
       customerName: name,
-      username: username,
+      username: registeredUser.username,
       password: password,
       email: email,
+      phone: phone,
       message: 'Pelanggan berhasil didaftarkan sebagai Member Berlangganan VIP dengan Diskon 10%!',
     );
     _resetForm();
@@ -159,6 +161,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
     required String username,
     required String password,
     required String email,
+    String phone = '',
     required String message,
   }) {
     showDialog(
@@ -232,11 +235,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                     style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: context.textPrimary),
                   ),
                   const SizedBox(height: 4),
-                  Text('• Username/Email: $username / $email', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+                  Text('• Username: $username', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+                  Text('• Email: $email', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+                  if (phone.isNotEmpty)
+                    Text('• No. HP: $phone', style: TextStyle(fontSize: 12, color: context.textSecondary)),
                   Text('• Password: $password', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
                   const SizedBox(height: 6),
                   const Text(
-                    'Pelanggan dapat login menggunakan username/email & password di atas untuk memesan mandiri.',
+                    'Pelanggan dapat login menggunakan Username, Email, atau No. HP beserta password di atas untuk memesan mandiri.',
                     style: TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w500),
                   ),
                 ],

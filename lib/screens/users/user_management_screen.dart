@@ -167,7 +167,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   child: const Text('Batal'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     final username = usernameController.text.trim();
                     final name = nameController.text.trim();
                     final email = emailController.text.trim();
@@ -197,7 +197,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         );
                         return;
                       }
-                      widget.db.addUser(
+                      await widget.db.addUser(
                         username,
                         password,
                         name,

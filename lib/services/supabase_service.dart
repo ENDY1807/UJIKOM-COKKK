@@ -44,6 +44,7 @@ class SupabaseService {
 
   // Nama tabel di database Supabase (Standar tabel Rasantara menggunakan prefix tb_)
   String _userTable = 'tb_user';
+  String get userTableName => _userTable;
   String _menuTable = 'tb_masakan';
   String _orderTable = 'tb_order';
   String _detailOrderTable = 'tb_detail_order';
@@ -321,10 +322,17 @@ class SupabaseService {
         'nama_user': user.namaUser,
         'id_level': user.role.id,
         'email': user.displayEmail,
+        'phone_number': user.phoneNumber,
+        'is_subscribed': user.isSubscribed,
+        'is_configured': true,
       };
       try {
         final res = await client.from(_userTable).insert(data).select().single();
-        return UserModel.fromMap(res);
+        final mapped = UserModel.fromMap(res);
+        return mapped.copyWith(
+          isSubscribed: user.isSubscribed || mapped.isSubscribed,
+          phoneNumber: user.phoneNumber.isNotEmpty ? user.phoneNumber : mapped.phoneNumber,
+        );
       } catch (_) {
         // Fallback jika nama kolom adalah google_email bukan email
         final dataGoogleEmail = {
@@ -333,20 +341,48 @@ class SupabaseService {
           'nama_user': user.namaUser,
           'id_level': user.role.id,
           'google_email': user.displayEmail,
+          'phone_number': user.phoneNumber,
+          'is_subscribed': user.isSubscribed,
+          'is_configured': true,
         };
         try {
           final res = await client.from(_userTable).insert(dataGoogleEmail).select().single();
-          return UserModel.fromMap(res);
+          final mapped = UserModel.fromMap(res);
+          return mapped.copyWith(
+            isSubscribed: user.isSubscribed || mapped.isSubscribed,
+            phoneNumber: user.phoneNumber.isNotEmpty ? user.phoneNumber : mapped.phoneNumber,
+          );
         } catch (_) {
-          // Fallback tanpa kolom email
+          // Fallback tanpa kolom email tapi tetap menyertakan data utama
           final coreData = {
             'username': user.username,
             'password': user.password,
             'nama_user': user.namaUser,
             'id_level': user.role.id,
+            'is_subscribed': user.isSubscribed,
+            'phone_number': user.phoneNumber,
           };
-          final res = await client.from(_userTable).insert(coreData).select().single();
-          return UserModel.fromMap(res);
+          try {
+            final res = await client.from(_userTable).insert(coreData).select().single();
+            final mapped = UserModel.fromMap(res);
+            return mapped.copyWith(
+              isSubscribed: user.isSubscribed || mapped.isSubscribed,
+              phoneNumber: user.phoneNumber.isNotEmpty ? user.phoneNumber : mapped.phoneNumber,
+            );
+          } catch (_) {
+            final basicData = {
+              'username': user.username,
+              'password': user.password,
+              'nama_user': user.namaUser,
+              'id_level': user.role.id,
+            };
+            final res = await client.from(_userTable).insert(basicData).select().single();
+            final mapped = UserModel.fromMap(res);
+            return mapped.copyWith(
+              isSubscribed: user.isSubscribed,
+              phoneNumber: user.phoneNumber,
+            );
+          }
         }
       }
     } catch (e) {
@@ -363,6 +399,7 @@ class SupabaseService {
         'id_level': user.role.id,
         'phone_number': user.phoneNumber,
         'is_two_factor_enabled': user.isTwoFactorEnabled,
+        'is_subscribed': user.isSubscribed,
       };
       if (user.password.isNotEmpty) {
         data['password'] = user.password;
@@ -378,13 +415,24 @@ class SupabaseService {
         final fallbackData = <String, dynamic>{
           'nama_user': user.namaUser,
           'id_level': user.role.id,
+          'is_subscribed': user.isSubscribed,
         };
         if (user.password.isNotEmpty) fallbackData['password'] = user.password;
         await client.from(_userTable).update(fallbackData).eq('id_user', user.idUser);
         return true;
       } catch (fallbackErr) {
-        debugPrint('[SupabaseService] updateUser error: $fallbackErr');
-        return false;
+        try {
+          final minimalData = <String, dynamic>{
+            'nama_user': user.namaUser,
+            'id_level': user.role.id,
+          };
+          if (user.password.isNotEmpty) minimalData['password'] = user.password;
+          await client.from(_userTable).update(minimalData).eq('id_user', user.idUser);
+          return true;
+        } catch (_) {
+          debugPrint('[SupabaseService] updateUser error: $fallbackErr');
+          return false;
+        }
       }
     }
   }
