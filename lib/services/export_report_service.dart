@@ -27,7 +27,7 @@ class ExportReportService {
 
   /// URL Google Form resmi untuk ulasan dan masukan kepuasan pelanggan Restoran Rasantara
   static String customerFeedbackGFormUrl =
-      'https://docs.google.com/forms/d/e/1FAIpQLScw7B5X8_RasantaraResto_UlasanPelanggan/viewform';
+      'https://docs.google.com/forms/d/e/1FAIpQLScdOIzQGEARA5Dg8zrQaAdoAADUDpU3n7eFxkgHAhck-cM1yg/viewform?usp=dialog';
 
   static Future<void> exportTransactionsPdf({
     required List<TransactionModel> transactions,
