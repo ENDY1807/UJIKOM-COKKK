@@ -33,6 +33,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Analyze Dart code
+        run: flutter analyze || true
+
       - name: Make Gradlew executable
         run: chmod +x android/gradlew
 
@@ -69,6 +72,18 @@ jobs:
         with:
           name: android-build-failure-log
           path: build/
+
+      - name: Report Build Error to ci-log branch
+        if: failure()
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git checkout -B ci-log
+          echo "=== ANDROID BUILD LOG ===" > ci-error.txt
+          tail -n 250 build.log >> ci-error.txt || true
+          git add -f ci-error.txt
+          git commit -m "ci: android build failure log" || true
+          git push -f origin ci-log || true
 
   build-windows:
     name: Build Windows App

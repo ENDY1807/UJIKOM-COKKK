@@ -57,7 +57,7 @@ class ExportReportService {
                         style: pw.TextStyle(
                           fontSize: 18,
                           fontWeight: pw.FontWeight.bold,
-                          color: PdfColor.fromHex('#EA580C'),
+                          color: _cOrange,
                         ),
                       ),
                       pw.SizedBox(height: 2),
@@ -94,7 +94,7 @@ class ExportReportService {
                         style: pw.TextStyle(
                           fontSize: 11,
                           fontWeight: pw.FontWeight.bold,
-                          color: PdfColor.fromHex('#EA580C'),
+                          color: _cOrange,
                         ),
                       ),
                     ],
@@ -130,8 +130,8 @@ class ExportReportService {
                 fontWeight: pw.FontWeight.bold,
                 color: PdfColors.white,
               ),
-              headerDecoration: pw.BoxDecoration(
-                color: PdfColor.fromHex('#EA580C'),
+              headerDecoration: const pw.BoxDecoration(
+                color: _cOrange,
               ),
               cellStyle: const pw.TextStyle(fontSize: 8),
               cellAlignment: pw.Alignment.centerLeft,
@@ -148,7 +148,7 @@ class ExportReportService {
                 pw.Container(
                   padding: const pw.EdgeInsets.all(10),
                   decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColor.fromHex('#EA580C'), width: 1),
+                    border: pw.Border.all(color: _cOrange, width: 1),
                     borderRadius: pw.BorderRadius.circular(6),
                   ),
                   child: pw.Column(
@@ -163,7 +163,7 @@ class ExportReportService {
                         style: pw.TextStyle(
                           fontSize: 15,
                           fontWeight: pw.FontWeight.bold,
-                          color: PdfColor.fromHex('#EA580C'),
+                          color: _cOrange,
                         ),
                       ),
                     ],
