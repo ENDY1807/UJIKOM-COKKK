@@ -57,11 +57,6 @@ class _LoginScreenState extends State<LoginScreen>
       curve: Curves.easeOutCubic,
     );
     _fadeController.forward();
-
-    if (kIsWeb) {
-      _initWebGoogleListener();
-      _checkWebOAuthCallback();
-    }
   }
 
   Future<void> _checkWebOAuthCallback() async {
@@ -755,15 +750,6 @@ class _LoginScreenState extends State<LoginScreen>
 
         // Primary Login Button (Warm Gradient & Raised Depth)
         _primaryButton('Masuk', Icons.arrow_forward_rounded, _handleLogin),
-
-        const SizedBox(height: 16),
-
-        _orDivider(),
-
-        const SizedBox(height: 16),
-
-        // Google Sign-In Button
-        _googleSignInButton(),
       ],
     );
   }
@@ -917,160 +903,4 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _orDivider() {
-    return Row(
-      children: [
-        Expanded(child: Divider(color: context.borderSubtle, thickness: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Text(
-            'atau',
-            style: TextStyle(
-              fontSize: 11.5,
-              color: context.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        Expanded(child: Divider(color: context.borderSubtle, thickness: 1)),
-      ],
-    );
-  }
-
-  Widget _googleSignInButton() {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: _isGoogleLoading ? null : _handleGoogleLogin,
-        borderRadius: BorderRadius.circular(14),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: context.surfaceCard,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: context.borderSubtle, width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (_isGoogleLoading) ...[
-                const SizedBox(
-                  width: 17,
-                  height: 17,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppTheme.orangePrimary,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Menghubungkan ke Google...',
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: context.textPrimary,
-                  ),
-                ),
-              ] else ...[
-                SizedBox(
-                  width: 19,
-                  height: 19,
-                  child: CustomPaint(painter: _GoogleLogoPainter()),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Masuk dengan Google',
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: context.textPrimary,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Custom painter for the Google 'G' multicolor logo
-class _GoogleLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double w = size.width;
-    final double h = size.height;
-    final center = Offset(w / 2, h / 2);
-    final radius = w / 2;
-
-    final bluePaint = Paint()
-      ..color = const Color(0xFF4285F4)
-      ..style = PaintingStyle.fill;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -0.6,
-      1.8,
-      true,
-      bluePaint,
-    );
-
-    final greenPaint = Paint()
-      ..color = const Color(0xFF34A853)
-      ..style = PaintingStyle.fill;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      1.2,
-      1.2,
-      true,
-      greenPaint,
-    );
-
-    final yellowPaint = Paint()
-      ..color = const Color(0xFFFBBC05)
-      ..style = PaintingStyle.fill;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      2.4,
-      1.0,
-      true,
-      yellowPaint,
-    );
-
-    final redPaint = Paint()
-      ..color = const Color(0xFFEA4335)
-      ..style = PaintingStyle.fill;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      3.4,
-      1.0,
-      true,
-      redPaint,
-    );
-
-    final whitePaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, radius * 0.55, whitePaint);
-
-    canvas.drawRect(
-      Rect.fromLTWH(w * 0.48, h * 0.38, w * 0.52, h * 0.24),
-      bluePaint,
-    );
-
-    canvas.drawRect(
-      Rect.fromLTWH(w * 0.48, h * 0.0, w * 0.52, h * 0.38),
-      whitePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

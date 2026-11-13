@@ -119,8 +119,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               // ── 4. Antrean Pesanan Meja Berjalan (Kitchen & Table Queue) ──
               _buildActiveOrdersQueueSection(activeOrders, role),
 
-              // ── 5. Laporan Grafik untuk Owner / Admin ──
-              if (role == UserRole.owner || role == UserRole.administrator) ...[
+              // ── 5. Laporan Grafik untuk Owner (Beranda Admin Tidak Menampilkan Laporan) ──
+              if (role == UserRole.owner) ...[
                 const SizedBox(height: 24),
                 AnalyticsChartsWidget(db: widget.db),
               ],

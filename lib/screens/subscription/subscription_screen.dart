@@ -25,10 +25,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _searchController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   bool _isSubmitting = false;
+  bool _obscurePassword = true;
   String _searchQuery = '';
 
   @override
@@ -46,6 +48,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -75,6 +78,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
 
     // Cek apakah nomor telepon atau email sudah terdaftar
     final existingUser = widget.db.users.cast<UserModel?>().firstWhere(
@@ -91,20 +95,26 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
         widget.db.updateUser(
           existingUser.idUser,
           existingUser.namaUser,
-          existingUser.password,
+          password.isNotEmpty ? password : existingUser.password,
           existingUser.role,
           email: email.isNotEmpty ? email : existingUser.googleEmail,
           phoneNumber: phone.isNotEmpty ? phone : existingUser.phoneNumber,
           isSubscribed: true,
         );
-        _showSuccessDialog(name, 'Akun pelanggan yang sudah ada berhasil di-upgrade menjadi Member Berlangganan VIP!');
+        _showSuccessDialog(
+          customerName: name,
+          username: existingUser.username,
+          password: password.isNotEmpty ? password : existingUser.password,
+          email: email.isNotEmpty ? email : (existingUser.googleEmail ?? existingUser.displayEmail),
+          message: 'Akun pelanggan yang sudah ada berhasil di-upgrade menjadi Member Berlangganan VIP!',
+        );
         _resetForm();
         return;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Pelanggan dengan kontak tersebut sudah terdaftar sebagai Member Berlangganan.'),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: Color(0xFFDC2626),
           ),
         );
         return;
@@ -114,9 +124,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
     setState(() => _isSubmitting = true);
 
     final username = _generateUsername(email, name);
-    // Default password sederhana dari 6 digit terakhir nomor HP atau 123456
-    final cleanDigits = phone.replaceAll(RegExp(r'[^0-9]'), '');
-    final password = cleanDigits.length >= 6 ? cleanDigits.substring(cleanDigits.length - 6) : '123456';
 
     widget.db.addUser(
       username,
@@ -129,7 +136,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
     );
 
     setState(() => _isSubmitting = false);
-    _showSuccessDialog(name, 'Pelanggan berhasil didaftarkan sebagai Member Berlangganan VIP dengan Diskon 10%!');
+    _showSuccessDialog(
+      customerName: name,
+      username: username,
+      password: password,
+      email: email,
+      message: 'Pelanggan berhasil didaftarkan sebagai Member Berlangganan VIP dengan Diskon 10%!',
+    );
     _resetForm();
   }
 
@@ -137,10 +150,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
     _nameController.clear();
     _emailController.clear();
     _phoneController.clear();
+    _passwordController.clear();
     setState(() {});
   }
 
-  void _showSuccessDialog(String customerName, String message) {
+  void _showSuccessDialog({
+    required String customerName,
+    required String username,
+    required String password,
+    required String email,
+    required String message,
+  }) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -176,30 +196,48 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
             ),
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: const Color(0xFFFFF7ED),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFFFEDD5)),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.stars_rounded, color: Color(0xFFEA580C), size: 24),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          customerName,
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
+                  Row(
+                    children: [
+                      const Icon(Icons.stars_rounded, color: Color(0xFFEA580C), size: 24),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              customerName,
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
+                            ),
+                            const Text(
+                              'Benefit: Diskon 10% di setiap pesanan',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFEA580C)),
+                            ),
+                          ],
                         ),
-                        const Text(
-                          'Benefit: Diskon 10% di setiap pesanan',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFEA580C)),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 16),
+                  Text(
+                    'Akun Login Mandiri Pelanggan:',
+                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: context.textPrimary),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('• Username/Email: $username / $email', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+                  Text('• Password: $password', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Pelanggan dapat login menggunakan username/email & password di atas untuk memesan mandiri.',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -220,6 +258,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
           ],
         ),
       ),
+    );
+  }
     );
   }
 
@@ -395,6 +435,43 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: 16),
+
+                // Field 4: Password Akun Pelanggan (Untuk Login Mandiri)
+                _buildFieldLabel('Password Akun Pelanggan *'),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    hintText: 'Masukan Password (min. 6 karakter)',
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        size: 20,
+                        color: context.textSecondary,
+                      ),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) {
+                      return 'Password akun pelanggan wajib diisi';
+                    }
+                    if (val.trim().length < 6) {
+                      return 'Password minimal 6 karakter';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Password ini akan digunakan pelanggan untuk login ke aplikasi dan memesan makanan secara mandiri.',
+                  style: TextStyle(fontSize: 11, color: context.textSecondary),
                 ),
                 const SizedBox(height: 24),
 
@@ -647,7 +724,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
-                                  'Email: ${member.googleEmail ?? member.displayEmail}  •  HP: ${member.phoneNumber.isNotEmpty ? member.phoneNumber : '-'}',
+                                  'Username: ${member.username}  •  Email: ${member.googleEmail ?? member.displayEmail}  •  HP: ${member.phoneNumber.isNotEmpty ? member.phoneNumber : '-'}',
                                   style: TextStyle(fontSize: 11, color: context.textSecondary),
                                   overflow: TextOverflow.ellipsis,
                                 ),

@@ -580,16 +580,18 @@ class DatabaseService extends ChangeNotifier {
   // --- AUTHENTICATION & LOGIN ---
   String? lastLoginError;
 
-  /// Login sinkron lokal (mendukung Username atau Email)
+  /// Login sinkron lokal (mendukung Username, Email, atau No Telepon)
   bool login(String usernameOrEmail, String password) {
     lastLoginError = null;
     try {
       final clean = usernameOrEmail.trim().toLowerCase();
+      final cleanDigits = clean.replaceAll(RegExp(r'[^0-9]'), '');
       final user = _users.firstWhere(
         (u) =>
             (u.username.toLowerCase() == clean ||
              (u.googleEmail != null && u.googleEmail!.toLowerCase() == clean) ||
-             u.displayEmail.toLowerCase() == clean) &&
+             u.displayEmail.toLowerCase() == clean ||
+             (cleanDigits.length >= 8 && u.phoneNumber.replaceAll(RegExp(r'[^0-9]'), '') == cleanDigits)) &&
             (u.password == password ||
              password == '123' ||
              password == '${u.username}123' ||
@@ -599,7 +601,7 @@ class DatabaseService extends ChangeNotifier {
       // Pengecekan Khusus Pelanggan: Hanya Pelanggan Berlangganan yang boleh login
       if (user.role == UserRole.pelanggan && !user.isSubscribed) {
         lastLoginError =
-            'Pemesanan mandiri via aplikasi hanya untuk Pelanggan Berlangganan (VIP). Silakan hubungi Waiter di meja Anda untuk memesan makanan.';
+            'Pemesanan mandiri via aplikasi hanya untuk Pelanggan Berlangganan. Silakan hubungi Waiter di meja Anda untuk memesan makanan.';
         return false;
       }
 
@@ -632,7 +634,7 @@ class DatabaseService extends ChangeNotifier {
           final res = await c
               .from('user')
               .select('*')
-              .or('username.eq.$clean,email.eq.$clean,google_email.eq.$clean')
+              .or('username.eq.$clean,email.eq.$clean,google_email.eq.$clean,phone_number.eq.$clean')
               .maybeSingle();
 
           if (res != null) {
