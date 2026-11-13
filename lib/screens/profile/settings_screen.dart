@@ -10,6 +10,7 @@ import '../../widgets/biometric_auth_dialog.dart';
 import '../../widgets/phone_otp_dialog.dart';
 import '../../theme/app_theme.dart';
 import '../../services/audio_notification_service.dart';
+import '../../services/export_report_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final DatabaseService db;
@@ -817,6 +818,92 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     isSelected: _mapStyle == 'carto_light',
                   ),
                 ],
+              ),
+              Divider(height: 20, color: context.borderSubtle),
+              InkWell(
+                onTap: () {
+                  final ctrl = TextEditingController(text: ExportReportService.customerFeedbackGFormUrl);
+                  showDialog(
+                    context: context,
+                    builder: (dCtx) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: const Row(
+                        children: [
+                          Icon(Icons.feedback_outlined, color: Color(0xFFEA580C)),
+                          SizedBox(width: 8),
+                          Text('URL Google Form Ulasan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Masukkan tautan Google Form (dari https://docs.google.com/forms/) untuk ulasan pelanggan yang akan dijadikan QR code pada struk transaksi.',
+                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: ctrl,
+                            maxLines: 2,
+                            decoration: InputDecoration(
+                              hintText: 'https://docs.google.com/forms/d/e/.../viewform',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                              contentPadding: const EdgeInsets.all(10),
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dCtx),
+                          child: const Text('Batal'),
+                        ),
+                        FilledButton(
+                          style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
+                          onPressed: () {
+                            if (ctrl.text.trim().isNotEmpty) {
+                              setState(() {
+                                ExportReportService.customerFeedbackGFormUrl = ctrl.text.trim();
+                              });
+                            }
+                            Navigator.pop(dCtx);
+                            _showSnackbar('Tautan Google Form ulasan berhasil diperbarui');
+                          },
+                          child: const Text('Simpan URL'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.qr_code_2_rounded, size: 20, color: Color(0xFFEA580C)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.t('URL Google Form Ulasan Struk', 'Receipt Feedback Google Form URL'),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
+                            ),
+                            Text(
+                              ExportReportService.customerFeedbackGFormUrl,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11, color: Color(0xFFEA580C)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.edit_outlined, size: 18, color: context.textSecondary),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

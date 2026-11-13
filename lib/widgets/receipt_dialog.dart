@@ -26,7 +26,8 @@ class ReceiptDialog extends StatelessWidget {
     final subtotal = order.totalHarga;
     final grandTotal = transaction.totalBayar;
 
-    final qrPayload = 'https://rasantara.resto/verify/trx?id=${transaction.idTransaksi}&ord=${order.idOrder}&amt=$grandTotal&ts=${transaction.tanggal.millisecondsSinceEpoch}';
+    // QR Code mengarahkan ke Google Form Ulasan & Kepuasan Pelanggan
+    final qrPayload = ExportReportService.customerFeedbackGFormUrl;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -206,28 +207,14 @@ class ReceiptDialog extends StatelessWidget {
 
                       const SizedBox(height: 16),
 
-                      // QR Code Verifikasi Keaslian Struk
+                      // QR Code Ulasan Pelanggan (GForm Feedback)
                       Center(
-                        child: Column(
-                          children: [
-                            QrImageView(
-                              data: qrPayload,
-                              version: QrVersions.auto,
-                              size: 90.0,
-                              eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF1E293B)),
-                              dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF1E293B)),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              context.t('Pindai QR untuk verifikasi keaslian struk digital', 'Scan QR to verify digital receipt authenticity'),
-                              style: const TextStyle(fontSize: 9.5, color: Color(0xFF94A3B8)),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              context.t('*** TERIMA KASIH ATAS KUNJUNGAN ANDA ***', '*** THANK YOU FOR YOUR VISIT ***'),
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Color(0xFF475569)),
-                            ),
-                          ],
+                        child: QrImageView(
+                          data: qrPayload,
+                          version: QrVersions.auto,
+                          size: 64.0,
+                          eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF1E293B)),
+                          dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF1E293B)),
                         ),
                       ),
                     ],

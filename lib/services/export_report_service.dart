@@ -14,7 +14,11 @@ class ExportReportService {
     symbol: 'Rp ',
     decimalDigits: 0,
   );
-  static final DateFormat _dateFmt = DateFormat('dd/MM/yyyy HH:mm');
+  static final DateFormat _dateFmt = DateFormat('dd/MM/yyyy HH:mm:ss');
+
+  /// URL Google Form resmi untuk ulasan dan masukan kepuasan pelanggan Restoran Rasantara
+  static String customerFeedbackGFormUrl =
+      'https://docs.google.com/forms/d/e/1FAIpQLScw7B5X8_RasantaraResto_UlasanPelanggan/viewform';
 
   static Future<void> exportTransactionsPdf({
     required List<TransactionModel> transactions,
@@ -240,89 +244,205 @@ class ExportReportService {
     required String address,
   }) async {
     final pdf = pw.Document();
+    final order = transaction.order;
+
+    final diskonEvent = transaction.diskonEvent > 0 ? transaction.diskonEvent : order.diskonEvent;
+    final diskonKupon = transaction.diskonKupon > 0 ? transaction.diskonKupon : order.diskonKupon;
+    final potonganPoin = transaction.potonganPoin > 0 ? transaction.potonganPoin : order.potonganPoin;
+    final diskonMember = transaction.diskonMember > 0 ? transaction.diskonMember : order.diskonMember;
+    final kodeKupon = transaction.kodeKupon.isNotEmpty ? transaction.kodeKupon : order.kodeKupon;
+
+    final subtotal = order.totalHarga;
+    final grandTotal = transaction.totalBayar;
+
+    // Estimasi tinggi kertas termal dinamis agar tidak terpotong
+    final itemsCount = order.items.length;
+    final pageHeightMm = 180.0 + (itemsCount * 7.0);
 
     pdf.addPage(
       pw.Page(
-        pageFormat: const PdfPageFormat(72 * PdfPageFormat.mm, 200 * PdfPageFormat.mm, marginAll: 4 * PdfPageFormat.mm),
+        pageFormat: PdfPageFormat(
+          76 * PdfPageFormat.mm,
+          pageHeightMm * PdfPageFormat.mm,
+          marginAll: 3 * PdfPageFormat.mm,
+        ),
         build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
-            children: [
-              pw.Text(
-                restaurantName.toUpperCase(),
-                style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Text(
-                address,
-                textAlign: pw.TextAlign.center,
-                style: const pw.TextStyle(fontSize: 7),
-              ),
-              pw.Divider(thickness: 0.5),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text('No. Trx: #TRX-${transaction.idTransaksi}', style: const pw.TextStyle(fontSize: 7)),
-                  pw.Text(_dateFmt.format(transaction.tanggal), style: const pw.TextStyle(fontSize: 7)),
-                ],
-              ),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text('Layanan: ${transaction.order.noMeja}', style: const pw.TextStyle(fontSize: 7)),
-                  pw.Text('Kasir: ${transaction.namaKasir}', style: const pw.TextStyle(fontSize: 7)),
-                ],
-              ),
-              pw.Divider(thickness: 0.5),
-              ...transaction.order.items.map((item) {
-                return pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(vertical: 1),
-                  child: pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          return pw.Container(
+            decoration: pw.BoxDecoration(
+              color: PdfColors.white,
+              borderRadius: pw.BorderRadius.circular(14),
+              border: pw.Border.all(color: const PdfColor.fromHex('#E2E8F0'), width: 0.8),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              children: [
+                // ── Header Struk Termal Resmi (Orange Cloche Accent) ──
+                pw.Container(
+                  padding: const pw.EdgeInsets.fromLTRB(14, 14, 14, 10),
+                  decoration: const pw.BoxDecoration(
+                    color: PdfColor.fromHex('#FFF7ED'),
+                    borderRadius: pw.BorderRadius.vertical(top: pw.Radius.circular(14)),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
-                      pw.Expanded(
-                        child: pw.Text('${item.jumlah}x ${item.menu.namaMasakan}', style: const pw.TextStyle(fontSize: 7)),
+                      pw.Container(
+                        width: 28,
+                        height: 28,
+                        decoration: pw.BoxDecoration(
+                          color: const PdfColor.fromHex('#EA580C'),
+                          borderRadius: pw.BorderRadius.circular(7),
+                        ),
+                        alignment: pw.Alignment.center,
+                        child: pw.Text(
+                          'R',
+                          style: pw.TextStyle(
+                            color: PdfColors.white,
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
                       ),
-                      pw.Text(_currencyFmt.format(item.subtotal), style: const pw.TextStyle(fontSize: 7)),
+                      pw.SizedBox(height: 6),
+                      pw.Text(
+                        restaurantName.toUpperCase(),
+                        style: pw.TextStyle(
+                          fontSize: 13,
+                          fontWeight: pw.FontWeight.bold,
+                          letterSpacing: 1.5,
+                          color: const PdfColor.fromHex('#1E293B'),
+                        ),
+                      ),
+                      pw.SizedBox(height: 2),
+                      pw.Text(
+                        'Cita Rasa Kuliner Nusantara',
+                        style: pw.TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: pw.FontWeight.bold,
+                          color: const PdfColor.fromHex('#EA580C'),
+                        ),
+                      ),
+                      pw.SizedBox(height: 3),
+                      pw.Text(
+                        address,
+                        textAlign: pw.TextAlign.center,
+                        style: const pw.TextStyle(fontSize: 7, color: PdfColor.fromHex('#64748B')),
+                      ),
+                      pw.Text(
+                        'Telp: (022) 756-4321 • NPWPD: 98.765.432.1-429.000',
+                        style: const pw.TextStyle(fontSize: 6.5, color: PdfColor.fromHex('#94A3B8')),
+                      ),
                     ],
                   ),
-                );
-              }),
-              pw.Divider(thickness: 0.5),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text('Total Tagihan', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-                  pw.Text(_currencyFmt.format(transaction.totalBayar), style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-                ],
-              ),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text('Bayar (${transaction.metodePembayaran})', style: const pw.TextStyle(fontSize: 7)),
-                  pw.Text(_currencyFmt.format(transaction.jumlahBayar), style: const pw.TextStyle(fontSize: 7)),
-                ],
-              ),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text('Kembalian', style: const pw.TextStyle(fontSize: 7)),
-                  pw.Text(_currencyFmt.format(transaction.kembalian), style: const pw.TextStyle(fontSize: 7)),
-                ],
-              ),
-              pw.SizedBox(height: 8),
-              pw.BarcodeWidget(
-                data: 'TRX-${transaction.idTransaksi}-${transaction.order.noMeja}',
-                barcode: pw.Barcode.qrCode(),
-                width: 36,
-                height: 36,
-              ),
-              pw.SizedBox(height: 4),
-              pw.Text(
-                'Terima Kasih Atas Kunjungan Anda\nRasakan Cita Rasa Nusantara',
-                textAlign: pw.TextAlign.center,
-                style: const pw.TextStyle(fontSize: 6, color: PdfColors.grey700),
-              ),
-            ],
+                ),
+
+                // Perforated Line
+                _buildPdfDashedDivider(),
+
+                // ── Metadata Transaksi ──
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _buildPdfReceiptRow('No. Transaksi', '#TRX-${transaction.idTransaksi.toString().padLeft(5, '0')}'),
+                      _buildPdfReceiptRow('No. Pesanan', '#ORD-${order.idOrder}'),
+                      _buildPdfReceiptRow('Waktu Transaksi', _dateFmt.format(transaction.tanggal)),
+                      _buildPdfReceiptRow('Layanan / Meja', order.noMeja),
+                      _buildPdfReceiptRow('Nama Pelanggan', order.namaPelanggan),
+                      _buildPdfReceiptRow('Kasir Pemroses', transaction.namaKasir),
+                      _buildPdfReceiptRow('Metode Pembayaran', transaction.metodePembayaran, isBoldValue: true),
+
+                      _buildPdfDashedDivider(),
+
+                      // ── Daftar Menu Hidangan ──
+                      ...order.items.map((item) {
+                        return pw.Padding(
+                          padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                          child: pw.Row(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                '${item.jumlah}x',
+                                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: const PdfColor.fromHex('#1E293B')),
+                              ),
+                              pw.SizedBox(width: 4),
+                              pw.Expanded(
+                                child: pw.Column(
+                                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                  children: [
+                                    pw.Text(
+                                      item.menu.namaMasakan,
+                                      style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: const PdfColor.fromHex('#1E293B')),
+                                    ),
+                                    if (item.catatan.isNotEmpty)
+                                      pw.Text(
+                                        'Catatan: ${item.catatan}',
+                                        style: const pw.TextStyle(fontSize: 6, color: PdfColor.fromHex('#64748B')),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              pw.Text(
+                                _currencyFmt.format(item.subtotal),
+                                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: const PdfColor.fromHex('#1E293B')),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+
+                      _buildPdfDashedDivider(),
+
+                      // ── Subtotal & Diskon ──
+                      _buildPdfReceiptRow('Subtotal Hidangan', _currencyFmt.format(subtotal)),
+                      if (diskonEvent > 0)
+                        _buildPdfReceiptRow('Diskon Event Promo', '- ${_currencyFmt.format(diskonEvent)}', isBoldValue: true, valColor: const PdfColor.fromHex('#16A34A')),
+                      if (diskonMember > 0)
+                        _buildPdfReceiptRow('Diskon Pelanggan Langganan (VIP 10%)', '- ${_currencyFmt.format(diskonMember)}', isBoldValue: true, valColor: const PdfColor.fromHex('#16A34A')),
+                      if (diskonKupon > 0)
+                        _buildPdfReceiptRow('Diskon Kupon ${kodeKupon.isNotEmpty ? "($kodeKupon)" : ""}', '- ${_currencyFmt.format(diskonKupon)}', isBoldValue: true, valColor: const PdfColor.fromHex('#16A34A')),
+                      if (potonganPoin > 0)
+                        _buildPdfReceiptRow('Potongan Poin Kuliner', '- ${_currencyFmt.format(potonganPoin)}', isBoldValue: true, valColor: const PdfColor.fromHex('#16A34A')),
+                      _buildPdfReceiptRow('Pajak Restoran PB1 (10%)', 'Sudah Termasuk', valColor: const PdfColor.fromHex('#94A3B8')),
+
+                      _buildPdfDashedDivider(),
+
+                      // ── Total Tagihan & Pembayaran ──
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text(
+                            'TOTAL TAGIHAN',
+                            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: const PdfColor.fromHex('#1E293B')),
+                          ),
+                          pw.Text(
+                            _currencyFmt.format(grandTotal),
+                            style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: const PdfColor.fromHex('#EA580C')),
+                          ),
+                        ],
+                      ),
+                      pw.SizedBox(height: 2),
+                      _buildPdfReceiptRow('Jumlah Dibayar', _currencyFmt.format(transaction.jumlahBayar)),
+                      _buildPdfReceiptRow('Kembalian', _currencyFmt.format(transaction.kembalian), isBoldValue: true),
+
+                      pw.SizedBox(height: 12),
+
+                      // ── QR Code Ulasan Pelanggan (GForm Feedback) ──
+                      pw.Center(
+                        child: pw.BarcodeWidget(
+                          data: customerFeedbackGFormUrl,
+                          barcode: pw.Barcode.qrCode(),
+                          width: 54,
+                          height: 54,
+                        ),
+                      ),
+                      pw.SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -342,6 +462,46 @@ class ExportReportService {
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => bytes,
       name: filename,
+    );
+  }
+
+  static pw.Widget _buildPdfReceiptRow(String title, String val, {bool isBoldValue = false, PdfColor? valColor}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(
+            title,
+            style: const pw.TextStyle(fontSize: 7.5, color: PdfColor.fromHex('#64748B')),
+          ),
+          pw.Text(
+            val,
+            style: pw.TextStyle(
+              fontSize: 7.5,
+              fontWeight: isBoldValue ? pw.FontWeight.bold : pw.FontWeight.normal,
+              color: valColor ?? const PdfColor.fromHex('#1E293B'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildPdfDashedDivider() {
+    return pw.Container(
+      margin: const pw.EdgeInsets.symmetric(vertical: 3.5),
+      child: pw.Row(
+        children: List.generate(
+          28,
+          (index) => pw.Expanded(
+            child: pw.Container(
+              color: index % 2 == 0 ? PdfColors.white : const PdfColor.fromHex('#CBD5E1'),
+              height: 0.8,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
