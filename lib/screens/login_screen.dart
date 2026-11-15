@@ -1,18 +1,7 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'
-    show kIsWeb, defaultTargetPlatform, TargetPlatform;
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:http/http.dart' as http;
 
 import '../models/user_model.dart';
 import '../services/database_service.dart';
-import '../services/desktop_oauth_service.dart';
-import '../services/supabase_config.dart';
-import '../services/web_oauth_helper.dart';
-import '../services/phone_otp_service.dart';
-import '../widgets/phone_otp_dialog.dart';
 import '../theme/app_theme.dart';
 import 'auth/google_onboarding_dialog.dart';
 
@@ -36,11 +25,9 @@ class _LoginScreenState extends State<LoginScreen>
   final _loginPasswordController = TextEditingController();
   bool _loginObscure = true;
 
-  bool _isGoogleLoading = false;
   bool _isSubmitting = false;
   String? _errorMessage;
   String? _successMessage;
-  StreamSubscription<GoogleSignInAuthenticationEvent>? _gsiSub;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -59,130 +46,11 @@ class _LoginScreenState extends State<LoginScreen>
     _fadeController.forward();
   }
 
-  Future<void> _checkWebOAuthCallback() async {
-    final fragment = Uri.base.fragment;
-    final queryParams = Uri.base.queryParameters;
-
-    String? accessToken;
-    String? idToken;
-
-    if (fragment.isNotEmpty) {
-      final params = Uri.splitQueryString(fragment);
-      accessToken = params['access_token'];
-      idToken = params['id_token'];
-    }
-
-    if (accessToken == null && idToken == null) {
-      accessToken = queryParams['access_token'];
-      idToken = queryParams['id_token'];
-    }
-
-    if (accessToken != null || idToken != null) {
-      setState(() => _isGoogleLoading = true);
-      try {
-        String? email;
-        String? name;
-        String? photo;
-        String? uid;
-
-        if (idToken != null && idToken.contains('.')) {
-          try {
-            final parts = idToken.split('.');
-            if (parts.length >= 2) {
-              final payload = parts[1];
-              final normalized = base64Url.normalize(payload);
-              final decodedStr = utf8.decode(base64Url.decode(normalized));
-              final jwtData = jsonDecode(decodedStr) as Map<String, dynamic>;
-              email = jwtData['email']?.toString();
-              name = (jwtData['name'] ?? jwtData['given_name'])?.toString();
-              photo = jwtData['picture']?.toString();
-              uid = jwtData['sub']?.toString();
-            }
-          } catch (jwtErr) {
-            debugPrint('[GoogleOAuth] JWT decode error: $jwtErr');
-          }
-        }
-
-        if ((email == null || uid == null) && accessToken != null) {
-          final res = await http.get(
-            Uri.parse('https://openidconnect.googleapis.com/v1/userinfo'),
-            headers: {'Authorization': 'Bearer $accessToken'},
-          );
-          if (res.statusCode == 200) {
-            final data = jsonDecode(res.body) as Map<String, dynamic>;
-            email = data['email']?.toString();
-            name = (data['name'] ?? data['given_name'])?.toString();
-            photo = data['picture']?.toString();
-            uid = data['sub']?.toString();
-          }
-        }
-
-        if (email != null && uid != null) {
-          final user = await widget.db.loginWithGoogleSupabase(
-            googleUid: uid,
-            googleEmail: email,
-            displayName: name ?? email.split('@').first,
-            photoUrl: photo,
-          );
-
-          WebOAuthHelper.cleanUrlHash();
-
-          if (mounted) {
-            setState(() {
-              _isGoogleLoading = false;
-              _successMessage =
-                  'Berhasil masuk sebagai ${name ?? email} (${user.role.label})';
-            });
-            _completeUserLogin(user);
-          }
-          return;
-        }
-      } catch (e) {
-        debugPrint('[GoogleOAuth] Web OAuth callback error: $e');
-      } finally {
-        if (mounted) {
-          setState(() => _isGoogleLoading = false);
-        }
-      }
-    }
-  }
-
-  void _initWebGoogleListener() {
-    try {
-      _gsiSub = GoogleSignIn.instance.authenticationEvents.listen((event) {
-        if (event is GoogleSignInAuthenticationEventSignIn) {
-          final account = event.user;
-          final email = account.email;
-          final name = account.displayName ??
-              (email.isNotEmpty ? email.split('@').first : 'Pengguna Google');
-          widget.db
-              .loginWithGoogleSupabase(
-                googleUid: account.id,
-                googleEmail: email,
-                displayName: name,
-                photoUrl: account.photoUrl,
-              )
-              .then((user) {
-                if (mounted) {
-                  setState(() {
-                    _isGoogleLoading = false;
-                    _successMessage = 'Berhasil masuk sebagai $name';
-                  });
-                  _completeUserLogin(user);
-                }
-              });
-        }
-      });
-    } catch (_) {}
-  }
-
   @override
   void dispose() {
-    _gsiSub?.cancel();
     _loginUsernameController.dispose();
     _loginPasswordController.dispose();
     _fadeController.dispose();
-    DesktopOAuthServer.stop();
     super.dispose();
   }
 
@@ -225,139 +93,6 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  static bool _googleSignInInitialized = false;
-
-  Future<void> _ensureGoogleSignInInitialized() async {
-    if (_googleSignInInitialized) return;
-    try {
-      await GoogleSignIn.instance.initialize(
-        serverClientId: SupabaseConfig.googleClientId,
-        clientId: kIsWeb ? SupabaseConfig.googleClientId : null,
-      );
-      _googleSignInInitialized = true;
-    } catch (e) {
-      if (!e.toString().contains('already been called')) {
-        debugPrint('[GoogleSignIn] initialize error: $e');
-      }
-    }
-  }
-
-  Future<void> _handleGoogleLogin() async {
-    if (_isGoogleLoading) return;
-
-    setState(() {
-      _errorMessage = null;
-      _successMessage = null;
-      _isGoogleLoading = true;
-    });
-
-    try {
-      GoogleSignInAccount? account;
-
-      try {
-        await _ensureGoogleSignInInitialized();
-        if (GoogleSignIn.instance.supportsAuthenticate()) {
-          account = await GoogleSignIn.instance.authenticate();
-        }
-      } catch (signInErr) {
-        debugPrint('[GoogleOAuth] GoogleSignIn authenticate error: $signInErr');
-        account = null;
-      }
-
-      if (account != null) {
-        final email = account.email;
-        final name = account.displayName ?? email.split('@').first;
-        final photo = account.photoUrl;
-
-        final user = await widget.db.loginWithGoogleSupabase(
-          googleUid: account.id,
-          googleEmail: email,
-          displayName: name,
-          photoUrl: photo,
-        );
-
-        if (mounted) {
-          setState(() {
-            _isGoogleLoading = false;
-            _successMessage =
-                'Berhasil masuk sebagai $name (${user.role.label})';
-          });
-          _completeUserLogin(user);
-        }
-        return;
-      }
-
-      if (kIsWeb) {
-        final origin = Uri.base.origin;
-        final nonce = DateTime.now().millisecondsSinceEpoch.toString();
-        final googleUrl =
-            Uri.https('accounts.google.com', '/o/oauth2/v2/auth', {
-          'client_id': SupabaseConfig.googleClientId,
-          'redirect_uri': origin,
-          'response_type': 'token id_token',
-          'scope': 'openid profile email',
-          'prompt': 'select_account',
-          'nonce': nonce,
-        });
-
-        WebOAuthHelper.redirectTo(googleUrl.toString());
-        return;
-      }
-
-      if (!kIsWeb &&
-          defaultTargetPlatform != TargetPlatform.android &&
-          defaultTargetPlatform != TargetPlatform.iOS) {
-        setState(() {
-          _successMessage =
-              'Membuka Google OAuth di browser... Silakan pilih akun Google Anda.';
-        });
-
-        final googleProfile =
-            await DesktopOAuthServer.listenForGoogleOAuthDirect(port: 3000);
-
-        if (googleProfile != null && mounted) {
-          final appUser = await widget.db.loginWithGoogleSupabase(
-            googleUid: googleProfile.uid,
-            googleEmail: googleProfile.email,
-            displayName: googleProfile.name,
-            photoUrl: googleProfile.photoUrl,
-          );
-
-          if (mounted) {
-            setState(() {
-              _isGoogleLoading = false;
-              _successMessage =
-                  'Berhasil masuk sebagai ${googleProfile.name} (${appUser.role.label})';
-            });
-            _completeUserLogin(appUser);
-          }
-          return;
-        }
-
-        if (mounted) {
-          setState(() {
-            _isGoogleLoading = false;
-            _errorMessage = 'Masuk dengan Google dibatalkan.';
-          });
-          return;
-        }
-      }
-
-      if (mounted) {
-        setState(() => _isGoogleLoading = false);
-      }
-    } catch (e) {
-      debugPrint('[GoogleSignIn] unexpected error: $e');
-      if (mounted) {
-        setState(() {
-          _isGoogleLoading = false;
-          _errorMessage =
-              'Gagal masuk dengan Google. Silakan login menggunakan Username/Email.';
-        });
-      }
-    }
-  }
-
   void _completeUserLogin(UserModel user) {
     if (user.authProvider == AuthProvider.google &&
         (!user.isConfigured ||
@@ -374,34 +109,7 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
 
-    if (user.isTwoFactorEnabled) {
-      _showTwoFactorDialog(user);
-      return;
-    }
-
     widget.onLoginSuccess();
-  }
-
-  void _showTwoFactorDialog(UserModel user) async {
-    final rawPhone =
-        user.phoneNumber.isNotEmpty ? user.phoneNumber : '081234567890';
-
-    await PhoneOtpService.instance.sendOtp(
-      rawPhone: rawPhone,
-    );
-
-    if (!mounted) return;
-
-    PhoneOtpDialog.show(
-      context,
-      phoneNumber: rawPhone,
-      title: 'Verifikasi Dua Langkah',
-      subtitle:
-          'Masukkan 6 digit kode yang dikirim ke ${PhoneOtpService.formatDisplayPhone(rawPhone)}',
-      onVerified: () {
-        widget.onLoginSuccess();
-      },
-    );
   }
 
   @override
@@ -429,14 +137,7 @@ class _LoginScreenState extends State<LoginScreen>
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Aplikasi Rasantara tetap aktif.'),
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        // Prevent accidental app close silently without bottom banner
       },
       child: Scaffold(
         body: Container(

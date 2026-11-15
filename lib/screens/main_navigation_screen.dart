@@ -7,6 +7,7 @@ import 'dashboard/dashboard_screen.dart';
 import 'order/order_entry_screen.dart';
 import 'order/order_history_screen.dart';
 import 'cashier/cashier_screen.dart';
+import 'cashier/cashier_order_history_screen.dart';
 import 'reference/menu_management_screen.dart';
 import 'reports/report_screen.dart';
 import 'users/user_management_screen.dart';
@@ -112,6 +113,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         label: context.t('Entri Transaksi', 'Transactions'),
         icon: Icons.point_of_sale_rounded,
         screen: CashierScreen(db: widget.db),
+      ));
+    }
+
+    // 4. Riwayat Pesanan Restoran: Admin, Waiter, Kasir, Owner
+    if (role.canViewOrderHistory) {
+      list.add(NavDestinationItem(
+        label: context.t('Riwayat Pesanan', 'Order History'),
+        icon: Icons.history_rounded,
+        screen: CashierOrderHistoryScreen(db: widget.db),
       ));
     }
 
@@ -306,13 +316,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               setState(() => _currentIndex = 0);
               return;
             }
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Aplikasi tetap aktif. Gunakan menu Keluar di profil untuk logout.'),
-                duration: Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
           },
           child: Scaffold(
             key: _scaffoldKey,

@@ -1,8 +1,5 @@
 import 'dart:async';
-import 'dart:ui' as ui;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/order_model.dart';

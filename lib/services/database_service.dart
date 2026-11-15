@@ -1265,6 +1265,14 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
+  void updateOrderPaymentStatus(int idOrder, bool isPaid) {
+    final index = _orders.indexWhere((o) => o.idOrder == idOrder);
+    if (index != -1) {
+      _orders[index].isPaid = isPaid;
+      notifyListeners();
+    }
+  }
+
   void deleteOrder(int idOrder) {
     _orders.removeWhere((o) => o.idOrder == idOrder);
     notifyListeners();

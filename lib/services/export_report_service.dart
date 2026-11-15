@@ -4,8 +4,10 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../models/order_model.dart';
 import '../models/transaction_model.dart';
 import 'file_downloader.dart';
+import 'payment_gateway_service.dart';
 
 class ExportReportService {
   static final NumberFormat _currencyFmt = NumberFormat.currency(
@@ -267,59 +269,57 @@ class ExportReportService {
     final subtotal = order.totalHarga;
     final grandTotal = transaction.totalBayar;
 
-    // Estimasi tinggi kertas termal dinamis agar tidak terpotong
+    // Estimasi tinggi kertas termal dinamis agar proporsional dan tidak terpotong
     final itemsCount = order.items.length;
-    final pageHeightMm = 180.0 + (itemsCount * 7.0);
+    final pageHeightMm = 210.0 + (itemsCount * 9.0);
 
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat(
           76 * PdfPageFormat.mm,
           pageHeightMm * PdfPageFormat.mm,
-          marginAll: 3 * PdfPageFormat.mm,
+          marginAll: 2 * PdfPageFormat.mm,
         ),
         build: (pw.Context context) {
           return pw.Container(
             decoration: pw.BoxDecoration(
               color: PdfColors.white,
-              borderRadius: pw.BorderRadius.circular(14),
+              borderRadius: pw.BorderRadius.circular(16),
               border: pw.Border.all(color: _cBorder, width: 0.8),
             ),
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.stretch,
               children: [
-                // ── Header Struk Termal Resmi (Orange Cloche Accent) ──
+                // ── Header Struk Termal Resmi (Sesuai Desain Preview) ──
                 pw.Container(
-                  padding: const pw.EdgeInsets.fromLTRB(14, 14, 14, 10),
+                  padding: const pw.EdgeInsets.fromLTRB(14, 16, 14, 12),
                   decoration: const pw.BoxDecoration(
                     color: _cWarmBg,
-                    borderRadius: pw.BorderRadius.vertical(top: pw.Radius.circular(14)),
+                    borderRadius: pw.BorderRadius.vertical(top: pw.Radius.circular(16)),
                   ),
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
                       pw.Container(
-                        width: 28,
-                        height: 28,
+                        width: 38,
+                        height: 38,
+                        padding: const pw.EdgeInsets.all(7),
                         decoration: pw.BoxDecoration(
                           color: _cOrange,
-                          borderRadius: pw.BorderRadius.circular(7),
+                          borderRadius: pw.BorderRadius.circular(10),
                         ),
                         alignment: pw.Alignment.center,
-                        child: pw.Text(
-                          'R',
-                          style: pw.TextStyle(
-                            color: PdfColors.white,
-                            fontSize: 16,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
+                        child: pw.SvgImage(
+                          svg: '''<svg viewBox="0 0 24 24" fill="white">
+                            <path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.09 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/>
+                          </svg>''',
                         ),
                       ),
-                      pw.SizedBox(height: 6),
+                      pw.SizedBox(height: 8),
                       pw.Text(
-                        restaurantName.toUpperCase(),
+                        'RASANTARA',
                         style: pw.TextStyle(
-                          fontSize: 13,
+                          fontSize: 16,
                           fontWeight: pw.FontWeight.bold,
                           letterSpacing: 1.5,
                           color: _cDark,
@@ -329,20 +329,21 @@ class ExportReportService {
                       pw.Text(
                         'Cita Rasa Kuliner Nusantara',
                         style: pw.TextStyle(
-                          fontSize: 8.5,
+                          fontSize: 10,
                           fontWeight: pw.FontWeight.bold,
                           color: _cOrange,
                         ),
                       ),
-                      pw.SizedBox(height: 3),
+                      pw.SizedBox(height: 4),
                       pw.Text(
-                        address,
+                        'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Bandung',
                         textAlign: pw.TextAlign.center,
-                        style: const pw.TextStyle(fontSize: 7, color: _cGrey),
+                        style: const pw.TextStyle(fontSize: 8, color: _cGrey),
                       ),
+                      pw.SizedBox(height: 1),
                       pw.Text(
-                        'Telp: (022) 756-4321 • NPWPD: 98.765.432.1-429.000',
-                        style: const pw.TextStyle(fontSize: 6.5, color: _cMuted),
+                        'Telp: (022) 756-4321  -  NPWPD: 98.765.432.1-429.000',
+                        style: const pw.TextStyle(fontSize: 7.2, color: _cMuted),
                       ),
                     ],
                   ),
@@ -370,34 +371,34 @@ class ExportReportService {
                       // ── Daftar Menu Hidangan ──
                       ...order.items.map((item) {
                         return pw.Padding(
-                          padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                          padding: const pw.EdgeInsets.symmetric(vertical: 2.5),
                           child: pw.Row(
                             crossAxisAlignment: pw.CrossAxisAlignment.start,
                             children: [
                               pw.Text(
                                 '${item.jumlah}x',
-                                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: _cDark),
+                                style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: _cDark),
                               ),
-                              pw.SizedBox(width: 4),
+                              pw.SizedBox(width: 5),
                               pw.Expanded(
                                 child: pw.Column(
                                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                                   children: [
                                     pw.Text(
                                       item.menu.namaMasakan,
-                                      style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: _cDark),
+                                      style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: _cDark),
                                     ),
                                     if (item.catatan.isNotEmpty)
                                       pw.Text(
                                         'Catatan: ${item.catatan}',
-                                        style: const pw.TextStyle(fontSize: 6, color: _cGrey),
+                                        style: const pw.TextStyle(fontSize: 6.5, color: _cGrey),
                                       ),
                                   ],
                                 ),
                               ),
                               pw.Text(
                                 _currencyFmt.format(item.subtotal),
-                                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: _cDark),
+                                style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: _cDark),
                               ),
                             ],
                           ),
@@ -426,30 +427,30 @@ class ExportReportService {
                         children: [
                           pw.Text(
                             'TOTAL TAGIHAN',
-                            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _cDark),
+                            style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: _cDark),
                           ),
                           pw.Text(
                             _currencyFmt.format(grandTotal),
-                            style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: _cOrange),
+                            style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: _cOrange),
                           ),
                         ],
                       ),
-                      pw.SizedBox(height: 2),
+                      pw.SizedBox(height: 3),
                       _buildPdfReceiptRow('Jumlah Dibayar', _currencyFmt.format(transaction.jumlahBayar)),
                       _buildPdfReceiptRow('Kembalian', _currencyFmt.format(transaction.kembalian), isBoldValue: true),
 
-                      pw.SizedBox(height: 12),
+                      pw.SizedBox(height: 14),
 
                       // ── QR Code Ulasan Pelanggan (GForm Feedback) ──
                       pw.Center(
                         child: pw.BarcodeWidget(
                           data: customerFeedbackGFormUrl,
                           barcode: pw.Barcode.qrCode(),
-                          width: 100,
-                          height: 100,
+                          width: 110,
+                          height: 110,
                         ),
                       ),
-                      pw.SizedBox(height: 8),
+                      pw.SizedBox(height: 10),
                     ],
                   ),
                 ),
@@ -463,17 +464,17 @@ class ExportReportService {
     final filename = 'Struk_TRX_${transaction.idTransaksi}.pdf';
     final bytes = await pdf.save();
 
-    if (kIsWeb) {
-      downloadFileWeb(
-        bytes: bytes,
-        filename: filename,
-        mimeType: 'application/pdf',
-      );
-    }
+    final receiptFormat = PdfPageFormat(
+      76 * PdfPageFormat.mm,
+      pageHeightMm * PdfPageFormat.mm,
+      marginAll: 2 * PdfPageFormat.mm,
+    );
 
+    // Langsung buka print spooler dengan ukuran kertas struk termal tanpa konfirmasi download
     await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => bytes,
+      onLayout: (PdfPageFormat _) async => bytes,
       name: filename,
+      format: receiptFormat,
     );
   }
 
@@ -514,6 +515,221 @@ class ExportReportService {
           ),
         ),
       ),
+    );
+  }
+
+  /// Mencetak Lembar Tagihan QRIS Resmi untuk diberikan ke Meja / Pelanggan
+  static Future<void> printQrisBill({
+    required OrderModel order,
+    String? qrisPayload,
+  }) async {
+    final pdf = pw.Document();
+    final grandTotal = order.grandTotalSetelahDiskon;
+
+    final payload = qrisPayload ??
+        PaymentGatewayService.generateAspiEmvCoQris(
+          orderId: 'ORDER-${order.idOrder}',
+          amount: grandTotal,
+          merchantName: PaymentGatewayConfig.defaultMerchantName,
+          city: PaymentGatewayConfig.defaultCity,
+          postalCode: PaymentGatewayConfig.defaultPostalCode,
+          nmid: PaymentGatewayConfig.defaultNmid,
+        );
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: const PdfPageFormat(
+          80 * PdfPageFormat.mm,
+          double.infinity,
+          marginAll: 4 * PdfPageFormat.mm,
+        ),
+        build: (pw.Context context) {
+          return pw.Container(
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.white,
+              border: pw.Border.all(color: _cBorder, width: 0.8),
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            child: pw.Column(
+              mainAxisSize: pw.MainAxisSize.min,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                // Header Restoran
+                pw.Text(
+                  'RESTORAN RASANTARA',
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    color: _cOrange,
+                  ),
+                ),
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  'Autentik Cita Rasa Nusantara',
+                  style: const pw.TextStyle(fontSize: 7, color: _cGrey),
+                ),
+                pw.SizedBox(height: 6),
+
+                // Badge Tagihan QRIS
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: pw.BoxDecoration(
+                    color: _cWarmBg,
+                    borderRadius: pw.BorderRadius.circular(4),
+                    border: pw.Border.all(color: _cOrange, width: 0.5),
+                  ),
+                  child: pw.Text(
+                    'LEMBAR PEMBAYARAN QRIS',
+                    style: pw.TextStyle(
+                      fontSize: 8,
+                      fontWeight: pw.FontWeight.bold,
+                      color: _cOrange,
+                    ),
+                  ),
+                ),
+
+                _buildPdfDashedDivider(),
+
+                // Metadata Pesanan
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                  child: pw.Column(
+                    children: [
+                      _buildPdfReceiptRow('Layanan / Meja', order.noMeja, isBoldValue: true),
+                      _buildPdfReceiptRow('No. Pesanan', '#ORD-${order.idOrder}'),
+                      _buildPdfReceiptRow('Waktu Pesan', _dateFmt.format(order.tanggal)),
+                      _buildPdfReceiptRow('Nama Tamu', order.namaPelanggan),
+                      _buildPdfReceiptRow('Metode Pembayaran', 'QRIS (Nirsentuh)', isBoldValue: true, valColor: _cOrange),
+                    ],
+                  ),
+                ),
+
+                _buildPdfDashedDivider(),
+
+                // Daftar Item Hidangan
+                ...order.items.map((item) {
+                  return pw.Padding(
+                    padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Expanded(
+                          child: pw.Text(
+                            '${item.jumlah}x ${item.menu.namaMasakan}',
+                            style: pw.TextStyle(
+                              fontSize: 7.5,
+                              fontWeight: pw.FontWeight.bold,
+                              color: _cDark,
+                            ),
+                          ),
+                        ),
+                        pw.Text(
+                          _currencyFmt.format(item.subtotal),
+                          style: const pw.TextStyle(fontSize: 7.5, color: _cDark),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+
+                if (order.totalDiskon > 0) ...[
+                  _buildPdfDashedDivider(),
+                  _buildPdfReceiptRow('Subtotal', _currencyFmt.format(order.totalHarga)),
+                  _buildPdfReceiptRow('Diskon Promosi', '- ${_currencyFmt.format(order.totalDiskon)}', isBoldValue: true, valColor: _cGreen),
+                ],
+
+                _buildPdfDashedDivider(),
+
+                // Total Tagihan
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      'TOTAL PEMBAYARAN',
+                      style: pw.TextStyle(
+                        fontSize: 9,
+                        fontWeight: pw.FontWeight.bold,
+                        color: _cDark,
+                      ),
+                    ),
+                    pw.Text(
+                      _currencyFmt.format(grandTotal),
+                      style: pw.TextStyle(
+                        fontSize: 11,
+                        fontWeight: pw.FontWeight.bold,
+                        color: _cOrange,
+                      ),
+                    ),
+                  ],
+                ),
+
+                pw.SizedBox(height: 8),
+
+                // Area Barcode QRIS
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(6),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.white,
+                    border: pw.Border.all(color: _cBorder, width: 1),
+                    borderRadius: pw.BorderRadius.circular(6),
+                  ),
+                  child: pw.BarcodeWidget(
+                    data: payload,
+                    barcode: pw.Barcode.qrCode(),
+                    width: 130,
+                    height: 130,
+                  ),
+                ),
+
+                pw.SizedBox(height: 5),
+                pw.Text(
+                  'NMID: ${PaymentGatewayConfig.defaultNmid}',
+                  style: const pw.TextStyle(fontSize: 6.5, color: _cGrey),
+                ),
+                pw.Text(
+                  'A.N: ${PaymentGatewayConfig.defaultMerchantName}',
+                  style: pw.TextStyle(
+                    fontSize: 7,
+                    fontWeight: pw.FontWeight.bold,
+                    color: _cDark,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  'Bisa di-scan menggunakan GoPay, OVO, DANA, ShopeePay, BCA, Livin Mandiri, atau Mobile Banking lainnya.',
+                  style: const pw.TextStyle(fontSize: 6, color: _cGrey),
+                  textAlign: pw.TextAlign.center,
+                ),
+
+                _buildPdfDashedDivider(),
+
+                pw.Text(
+                  'Tunjukkan bukti transfer ke kasir / pelayan\nTerima Kasih atas Kunjungan Anda!',
+                  style: const pw.TextStyle(fontSize: 6.5, color: _cMuted),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    final filename = 'QRIS_Meja_${order.noMeja.replaceAll(' ', '_')}_ORD${order.idOrder}.pdf';
+    final bytes = await pdf.save();
+
+    const qrisFormat = PdfPageFormat(
+      80 * PdfPageFormat.mm,
+      double.infinity,
+      marginAll: 4 * PdfPageFormat.mm,
+    );
+
+    // Langsung buka print spooler dengan ukuran kertas struk termal tanpa konfirmasi download
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat _) async => bytes,
+      name: filename,
+      format: qrisFormat,
     );
   }
 }

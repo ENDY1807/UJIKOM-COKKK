@@ -7,8 +7,13 @@ import '../theme/app_theme.dart';
 
 class ReceiptDialog extends StatelessWidget {
   final TransactionModel transaction;
+  final bool allowPrint;
 
-  const ReceiptDialog({super.key, required this.transaction});
+  const ReceiptDialog({
+    super.key,
+    required this.transaction,
+    this.allowPrint = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +95,7 @@ class ReceiptDialog extends StatelessWidget {
                       style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
                     ),
                     const Text(
-                      'Telp: (022) 756-4321 • NPWPD: 98.765.432.1-429.000',
+                      'Telp: (022) 756-4321  -  NPWPD: 98.765.432.1-429.000',
                       style: TextStyle(fontSize: 9.5, color: Color(0xFF94A3B8)),
                     ),
                   ],
@@ -222,44 +227,57 @@ class ReceiptDialog extends StatelessWidget {
                 ),
               ),
 
-              // Tombol Tindakan (Cetak Struk & Tutup)
+              // Tombol Tindakan (Cetak Struk & Tutup untuk Kasir/Admin, atau Hanya Tutup untuk Waiter/Pelanggan)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFEA580C),
-                          side: const BorderSide(color: Color(0xFFEA580C)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                child: allowPrint
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFEA580C),
+                                side: const BorderSide(color: Color(0xFFEA580C)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              onPressed: () async {
+                                await ExportReportService.printReceiptPdf(
+                                  transaction: transaction,
+                                  restaurantName: 'Rasantara Restoran',
+                                  address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Bandung',
+                                );
+                              },
+                              icon: const Icon(Icons.print_rounded, size: 18),
+                              label: Text(context.t('Cetak Struk', 'Print Receipt'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFF1E293B),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text(context.t('Tutup', 'Close'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      )
+                    : SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF1E293B),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(context.t('Tutup', 'Close'), style: const TextStyle(fontWeight: FontWeight.bold)),
                         ),
-                        onPressed: () async {
-                          await ExportReportService.printReceiptPdf(
-                            transaction: transaction,
-                            restaurantName: 'Rasantara Restoran',
-                            address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Bandung',
-                          );
-                        },
-                        icon: const Icon(Icons.print_rounded, size: 18),
-                        label: Text(context.t('Cetak Struk', 'Print Receipt'), style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E293B),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text(context.t('Tutup', 'Close'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),

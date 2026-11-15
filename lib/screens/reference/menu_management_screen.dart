@@ -117,12 +117,6 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                     final name = nameController.text.trim();
                     final price = int.tryParse(priceController.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
                     if (name.isEmpty || price <= 0) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Nama menu dan harga yang valid wajib diisi'),
-                          backgroundColor: AppTheme.statusRed,
-                        ),
-                      );
                       return;
                     }
 
@@ -216,12 +210,6 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                     final no = tableNoController.text.trim();
                     final cap = int.tryParse(capacityController.text.trim()) ?? 0;
                     if (no.isEmpty || cap <= 0) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Nomor meja dan kapasitas valid wajib diisi'),
-                          backgroundColor: AppTheme.statusRed,
-                        ),
-                      );
                       return;
                     }
 
@@ -230,12 +218,6 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                         (t) => t.nomorMeja.toLowerCase() == no.toLowerCase(),
                       );
                       if (exists) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Nomor meja sudah terdaftar'),
-                            backgroundColor: AppTheme.statusRed,
-                          ),
-                        );
                         return;
                       }
                       widget.db.addTable(no, cap);

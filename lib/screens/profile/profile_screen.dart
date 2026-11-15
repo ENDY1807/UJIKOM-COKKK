@@ -78,16 +78,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () {
               final newP = newPassController.text;
               final confP = confirmPassController.text;
-              if (newP.length < 4) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Kata sandi minimal 4 karakter')),
-                );
-                return;
-              }
-              if (newP != confP) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Konfirmasi kata sandi tidak cocok')),
-                );
+              if (newP.length < 4 || newP != confP) {
                 return;
               }
 
@@ -95,12 +86,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (u != null) {
                 widget.db.updateUser(u.idUser, u.namaUser, newP, u.role);
                 Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: Color(0xFF16A34A),
-                    content: Text('Kata sandi berhasil diperbarui!'),
-                  ),
-                );
               }
             },
             child: const Text('Simpan'),
@@ -190,22 +175,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
             onPressed: () {
               final code = otpController.text.trim();
-              if (code.length < 6) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Masukkan 6 digit kode OTP verifikasi')),
-                );
-                return;
-              }
+              if (code.length < 6) return;
 
               widget.db.updateTwoFactor(user.idUser, isEnabled: true, type: 'Google Authenticator');
               Navigator.of(ctx).pop();
               setState(() {});
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  backgroundColor: Color(0xFF16A34A),
-                  content: Text('Autentikasi 2 Langkah (2FA) Berhasil Diaktifkan!'),
-                ),
-              );
             },
             child: const Text('Verifikasi & Aktifkan'),
           ),
@@ -231,9 +205,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               widget.db.updateTwoFactor(user.idUser, isEnabled: false);
               Navigator.of(ctx).pop();
               setState(() {});
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Autentikasi 2 Langkah dinonaktifkan.')),
-              );
             },
             child: const Text('Nonaktifkan'),
           ),

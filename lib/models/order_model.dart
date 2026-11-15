@@ -93,6 +93,7 @@ class OrderModel {
   final int diskonMember;
   final String kodeKupon;
   String? metodePembayaran;
+  bool isPaid;
 
   OrderModel({
     required this.idOrder,
@@ -110,6 +111,7 @@ class OrderModel {
     this.diskonMember = 0,
     this.kodeKupon = '',
     this.metodePembayaran,
+    this.isPaid = false,
   });
 
   int get totalHarga => items.fold(0, (sum, item) => sum + item.subtotal);
@@ -136,6 +138,7 @@ class OrderModel {
     int? diskonMember,
     String? kodeKupon,
     String? metodePembayaran,
+    bool? isPaid,
   }) {
     return OrderModel(
       idOrder: idOrder ?? this.idOrder,
@@ -153,6 +156,7 @@ class OrderModel {
       diskonMember: diskonMember ?? this.diskonMember,
       kodeKupon: kodeKupon ?? this.kodeKupon,
       metodePembayaran: metodePembayaran ?? this.metodePembayaran,
+      isPaid: isPaid ?? this.isPaid,
     );
   }
 
@@ -204,6 +208,7 @@ class OrderModel {
       diskonMember: _parseInt(map['diskon_member']),
       kodeKupon: map['kode_kupon']?.toString() ?? '',
       metodePembayaran: map['metode_pembayaran']?.toString(),
+      isPaid: map['is_paid'] == true || (map['keterangan']?.toString().contains('[LUNAS_QRIS]') ?? false),
     );
   }
 
@@ -223,6 +228,7 @@ class OrderModel {
       'diskon_member': diskonMember,
       'kode_kupon': kodeKupon,
       if (metodePembayaran != null) 'metode_pembayaran': metodePembayaran,
+      if (isPaid) 'is_paid': isPaid,
     };
   }
 }

@@ -123,12 +123,6 @@ class _ReportScreenState extends State<ReportScreen> {
             OutlinedButton.icon(
               onPressed: () async {
                 Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Menyiapkan dan mengunduh berkas Excel (CSV)...'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
                 await ExportReportService.exportTransactionsExcelCsv(
                   transactions: widget.db.transactions,
                 );
@@ -139,12 +133,6 @@ class _ReportScreenState extends State<ReportScreen> {
             ElevatedButton.icon(
               onPressed: () async {
                 Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Menyiapkan dan mengunduh berkas laporan PDF...'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
                 await ExportReportService.exportTransactionsPdf(
                   transactions: widget.db.transactions,
                   totalOmzet: widget.db.totalOmzet,
@@ -201,12 +189,6 @@ class _ReportScreenState extends State<ReportScreen> {
                         side: const BorderSide(color: Color(0xFF16A34A)),
                       ),
                       onPressed: () async {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Menyiapkan dan mengunduh berkas Excel (CSV)...'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
                         await ExportReportService.exportTransactionsExcelCsv(
                           transactions: widget.db.transactions,
                         );
@@ -216,12 +198,6 @@ class _ReportScreenState extends State<ReportScreen> {
                     ),
                     ElevatedButton.icon(
                       onPressed: () async {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Menyiapkan dan mengunduh berkas laporan PDF...'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
                         await ExportReportService.exportTransactionsPdf(
                           transactions: widget.db.transactions,
                           totalOmzet: widget.db.totalOmzet,
@@ -692,10 +668,14 @@ class _ReportScreenState extends State<ReportScreen> {
                                     ),
                                     tooltip: 'Lihat Struk',
                                     onPressed: () {
+                                      final canPrint = widget.db.currentUser?.role.canProcessTransactions ?? false;
                                       showDialog(
                                         context: context,
                                         builder: (context) =>
-                                            ReceiptDialog(transaction: trx),
+                                            ReceiptDialog(
+                                              transaction: trx,
+                                              allowPrint: canPrint,
+                                            ),
                                       );
                                     },
                                   ),

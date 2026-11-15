@@ -229,9 +229,6 @@ class _VirtualAccountPaymentDialogState extends State<VirtualAccountPaymentDialo
                       label: Text(context.t('Salin Nomor VA', 'Copy VA Number'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: _vaNumber));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(context.t('Nomor Virtual Account berhasil disalin!', 'Virtual Account number copied successfully!'))),
-                        );
                       },
                     ),
                   ],

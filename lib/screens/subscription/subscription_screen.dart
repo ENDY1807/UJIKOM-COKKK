@@ -112,12 +112,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
         _resetForm();
         return;
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pelanggan dengan kontak tersebut sudah terdaftar sebagai Member Berlangganan.'),
-            backgroundColor: Color(0xFFDC2626),
-          ),
-        );
         return;
       }
     }

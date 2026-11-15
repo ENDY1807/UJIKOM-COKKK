@@ -4,10 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/user_model.dart';
 import '../../services/database_service.dart';
-import '../../services/phone_otp_service.dart';
 import '../../widgets/app_loading_animation.dart';
 import '../../widgets/biometric_auth_dialog.dart';
-import '../../widgets/phone_otp_dialog.dart';
 import '../../theme/app_theme.dart';
 import '../../services/audio_notification_service.dart';
 import '../../services/export_report_service.dart';
@@ -158,60 +156,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     }
   }
 
-  Future<void> _verifyPhoneWithOtp() async {
-    final rawPhone = _phoneCtrl.text.trim();
-    if (rawPhone.length < 8) {
-      _showSnackbar('Masukkan nomor telepon yang valid terlebih dahulu', isError: true);
-      return;
-    }
-
-    _showSnackbar('Mengirim kode verifikasi...');
-    await PhoneOtpService.instance.sendOtp(
-      rawPhone: rawPhone,
-    );
-
-    if (!mounted) return;
-
-    PhoneOtpDialog.show(
-      context,
-      phoneNumber: rawPhone,
-      title: 'Verifikasi Nomor Telepon',
-      subtitle: 'Masukkan 6 digit kode yang dikirim ke ${PhoneOtpService.formatDisplayPhone(rawPhone)}',
-      onVerified: () {
-        _showSnackbar('Nomor telepon berhasil diverifikasi.');
-        setState(() {});
-      },
-    );
-  }
-
   void _showSnackbar(String msg, {bool isError = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          msg,
-          style: const TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: isError
-            ? const Color(0xFFDC2626)
-            : (context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF0F172A)),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: BorderSide(
-            color: isError
-                ? const Color(0xFFB91C1C)
-                : (context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFEA580C)),
-          ),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    // Dinonaktifkan - Sistem notifikasi banner dihilangkan
   }
 
   @override
@@ -473,34 +419,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 const SizedBox(height: 14),
 
                 // WhatsApp Phone
-                const Text('Nomor WhatsApp Terverifikasi', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                const Text('Nomor WhatsApp / Telepon', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
                 const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _phoneCtrl,
-                        keyboardType: TextInputType.phone,
-                        decoration: InputDecoration(
-                          hintText: '081234567890',
-                          prefixIcon: const Icon(Icons.phone_android, size: 18),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton.tonalIcon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFDCFCE7),
-                        foregroundColor: const Color(0xFF15803D),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
-                      ),
-                      icon: const Icon(Icons.mark_chat_read, size: 16),
-                      label: const Text('Kirim OTP', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      onPressed: _verifyPhoneWithOtp,
-                    ),
-                  ],
+                TextField(
+                  controller: _phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    hintText: '081234567890',
+                    prefixIcon: const Icon(Icons.phone_android, size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
                 const SizedBox(height: 14),
 

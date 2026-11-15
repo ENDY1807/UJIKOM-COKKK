@@ -16,8 +16,7 @@ class AudioNotificationService {
 
   /// Meminta izin notifikasi sistem / OS langsung ke Windows & HP
   static Future<void> requestSystemNotificationPermission() async {
-    if (!kIsWeb) return;
-    webRequestNotificationPermission();
+    // Dinonaktifkan
   }
 
   /// Menampilkan Notifikasi Sistem Asli ke Windows Action Center / HP Notification Drawer
@@ -25,8 +24,7 @@ class AudioNotificationService {
     required String title,
     required String message,
   }) {
-    if (!kIsWeb) return;
-    webShowNotification(title, message);
+    // Dinonaktifkan - Notifikasi sistem dihilangkan
   }
 
   /// Inisialisasi audio synth
@@ -140,7 +138,7 @@ class AudioNotificationService {
     }
   }
 
-  /// Menampilkan In-App Floating Notification Banner
+  /// Menampilkan In-App Floating Notification Banner (Dinonaktifkan)
   static void showBanner(
     BuildContext context, {
     required String title,
@@ -150,72 +148,6 @@ class AudioNotificationService {
     VoidCallback? onTap,
     Duration duration = const Duration(seconds: 4),
   }) {
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null) return;
-
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        elevation: 8,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        backgroundColor: const Color(0xFF1E293B),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: color.withValues(alpha: 0.5), width: 1.5),
-        ),
-        duration: duration,
-        content: InkWell(
-          onTap: () {
-            messenger.hideCurrentSnackBar();
-            onTap?.call();
-          },
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: Colors.white,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      message,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: Color(0xFFCBD5E1),
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              if (onTap != null)
-                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white70),
-            ],
-          ),
-        ),
-      ),
-    );
+    // Dinonaktifkan - Sistem notifikasi banner dihilangkan
   }
 }

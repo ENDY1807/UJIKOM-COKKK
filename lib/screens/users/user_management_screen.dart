@@ -175,12 +175,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     final password = passwordController.text;
 
                     if (name.isEmpty || (existing == null && (username.isEmpty || password.isEmpty))) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Mohon lengkapi Nama, Username, dan Password'),
-                          backgroundColor: AppTheme.statusRed,
-                        ),
-                      );
                       return;
                     }
 
@@ -189,12 +183,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         (u) => u.username.toLowerCase() == username.toLowerCase(),
                       );
                       if (exists) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Username sudah terdaftar, gunakan yang lain'),
-                            backgroundColor: AppTheme.statusRed,
-                          ),
-                        );
                         return;
                       }
                       await widget.db.addUser(
@@ -218,6 +206,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       );
                     }
 
+                    if (!ctx.mounted) return;
                     Navigator.of(ctx).pop();
                     setState(() {});
                   },

@@ -852,7 +852,10 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                   );
                               showDialog(
                                 context: context,
-                                builder: (ctx) => ReceiptDialog(transaction: trxToShow),
+                                builder: (ctx) => ReceiptDialog(
+                                  transaction: trxToShow,
+                                  allowPrint: widget.db.currentUser?.role.canProcessTransactions ?? false,
+                                ),
                               );
                             },
                             icon: const Icon(Icons.receipt_long_rounded, size: 18),

@@ -168,12 +168,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
   void _submitOrder({bool payWithQris = false}) {
     if (_cart.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pilih minimal 1 menu sebelum mengirim pesanan meja.'),
-          backgroundColor: Color(0xFFDC2626),
-        ),
-      );
       return;
     }
 
@@ -195,7 +189,6 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
     widget.db.updateTableStatus(_selectedTableNo, TableStatus.terisi);
 
-    final submittedTable = _selectedTableNo;
     setState(() {
       _cart.clear();
     });
@@ -211,37 +204,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           widget.onOrderSubmitted?.call();
         },
       ).then((_) {
-        // Ketika dialog ditutup, beri notifikasi bahwa QRIS bisa dibuka kembali
-        if (mounted && createdOrder.status != OrderStatus.selesai) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Pesanan $submittedTable tersimpan. QRIS dapat dibuka kembali kapan saja.'),
-              backgroundColor: const Color(0xFFEA580C),
-              behavior: SnackBarBehavior.floating,
-              action: SnackBarAction(
-                label: 'Buka QRIS',
-                textColor: Colors.white,
-                onPressed: () {
-                  QrisPaymentDialog.show(
-                    context,
-                    order: createdOrder,
-                    totalAmount: totalAmountToPay,
-                    db: widget.db,
-                  );
-                },
-              ),
-            ),
-          );
+        if (mounted) {
+          widget.onOrderSubmitted?.call();
         }
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Pesanan $submittedTable untuk "$custName" berhasil dikirim ke Kasir & Dapur.'),
-          backgroundColor: const Color(0xFF16A34A),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
       widget.onOrderSubmitted?.call();
     }
   }
