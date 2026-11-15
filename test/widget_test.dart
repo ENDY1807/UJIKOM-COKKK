@@ -22,7 +22,7 @@ void main() {
     OrderSimulationService().stop();
   });
 
-  testWidgets('App starts on LoginScreen with Username/Email, Password, and Google OAuth',
+  testWidgets('App starts on LoginScreen with Username/Email and Password',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
@@ -36,8 +36,7 @@ void main() {
 
     // Verify Login Screen is displayed
     expect(find.byType(LoginScreen), findsOneWidget);
-    expect(find.text('Masuk dengan Google'), findsOneWidget);
-    expect(find.text('Username/Email'), findsOneWidget);
+    expect(find.text('Username / Email / No. HP'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
     expect(find.text('Masuk'), findsWidgets);
   });
