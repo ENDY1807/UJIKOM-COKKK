@@ -69,20 +69,6 @@ Aplikasi ini mengimplementasikan pembagian hak akses (*Role-Based Access Control
 
 ---
 
-## 🔑 Akun Demo Pengujian (Default Credentials)
-
-Untuk kemudahan pengujian fitur oleh penguji/guru, tersedia akun demo siap pakai:
-
-| Role | Username | Password | Deskripsi Tugas |
-| :--- | :--- | :---: | :--- |
-| **Administrator** | `admin` | `123` | Kelola akun pegawai, daftar menu, & konfigurasi |
-| **Kasir** | `kasir` | `123` | Proses transaksi kasir, input uang, & cetak struk |
-| **Waiter** | `waiter` | `123` | Catat pesanan meja tamu & kirim ke dapur/kasir |
-| **Owner** | `owner` | `123` | Pantau omset penjualan & ekspor laporan PDF/CSV |
-| **Pelanggan** | `pelanggan` | `123` | Pesan menu mandiri & pantau status hidangan |
-
----
-
 ## 📁 Struktur Direktori Utama
 
 ```text
@@ -110,42 +96,3 @@ UJIKOM-COKKK/
 ├── rasantara_database.sql                  # Skrip DDL & DML skema database PostgreSQL/Supabase
 └── README.md
 ```
-
----
-
-## 🚀 Panduan Instalasi & Menjalankan Aplikasi
-
-### Persyaratan Sistem:
-* Flutter SDK (>= 3.3.0)
-* Dart SDK (>= 3.0.0)
-* Android Studio / VS Code / Antigravity IDE
-* Google Chrome (untuk Web) / Visual Studio C++ (untuk Windows Desktop)
-
-### Langkah Menjalankan:
-
-```bash
-# 1. Clone repositori ini
-git clone https://github.com/ENDY1807/UJIKOM-COKKK.git
-cd UJIKOM-COKKK
-
-# 2. Ambil paket dependensi
-flutter pub get
-
-# 3. Jalankan automated tests (15/15 test wajib lulus)
-flutter test
-
-# 4. Jalankan linter & static analyzer
-flutter analyze
-
-# 5. Jalankan aplikasi pada platform yang diinginkan:
-flutter run -d windows    # Windows Desktop
-flutter run -d chrome     # Web Browser
-flutter run -d android    # Perangkat Android / Emulator
-```
-
----
-
-<p align="center">
-  Dibuat dengan ❤️ dan dedikasi oleh <strong>Muhammad Nazril Putra Natrabu</strong><br>
-  <em>SMK Bakti Nusantara 666 &copy; 2026/2027</em>
-</p>
