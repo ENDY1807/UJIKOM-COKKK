@@ -152,6 +152,12 @@ class DatabaseService extends ChangeNotifier {
   bool _appPromoNotification = true;
   bool get appPromoNotification => _appPromoNotification;
 
+  // Pengaturan Persentase Diskon Pelanggan Berlangganan VIP (Dapat diubah oleh Owner & Admin)
+  int _memberDiscountPercent = 10;
+  int get memberDiscountPercent => _memberDiscountPercent;
+
+  Timer? _fastOrderSyncTimer;
+
   // Getters
   List<UserModel> get users => List.unmodifiable(_users);
   List<MenuModel> get menus => List.unmodifiable(_menus);
@@ -174,6 +180,57 @@ class DatabaseService extends ChangeNotifier {
     await _loadLocalState();
     // 2. Sinkronkan dengan Supabase Cloud sebagai Single Source of Truth
     await initSupabase();
+    // 3. Mulai sinkronisasi pesanan cepat (2 detik) agar kasir langsung menerima pesanan dari waiter
+    startFastOrderSync();
+  }
+
+  /// Sinkronisasi cepat berkala pesanan antar perangkat (Waiter -> Kasir)
+  void startFastOrderSync() {
+    _fastOrderSyncTimer?.cancel();
+    _fastOrderSyncTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (_isSupabaseConnected && !_isLoadingFromSupabase) {
+        await _syncOrdersOnly();
+      }
+    });
+  }
+
+  void stopFastOrderSync() {
+    _fastOrderSyncTimer?.cancel();
+    _fastOrderSyncTimer = null;
+  }
+
+  Future<void> _syncOrdersOnly() async {
+    try {
+      final cloudOrders = await _supabase.fetchOrders(_menus, _users);
+      if (cloudOrders.isNotEmpty) {
+        bool hasChanges = false;
+        if (cloudOrders.length != _orders.length) {
+          hasChanges = true;
+        } else {
+          for (int i = 0; i < cloudOrders.length; i++) {
+            if (i >= _orders.length ||
+                cloudOrders[i].idOrder != _orders[i].idOrder ||
+                cloudOrders[i].status != _orders[i].status ||
+                cloudOrders[i].isPaid != _orders[i].isPaid) {
+              hasChanges = true;
+              break;
+            }
+          }
+        }
+        if (hasChanges) {
+          _orders.clear();
+          _orders.addAll(cloudOrders);
+          syncTableStatusWithOrders();
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    stopFastOrderSync();
+    super.dispose();
   }
 
   /// Reload manual seluruh data dari Supabase Cloud
@@ -348,6 +405,7 @@ class DatabaseService extends ChangeNotifier {
       }
 
       // 7. Restore App Preferences
+      _memberDiscountPercent = prefs.getInt('member_discount_percent') ?? 10;
       _appSoundFx = prefs.getBool('app_sound_fx') ?? true;
       _appNotifications = prefs.getBool('app_notifications') ?? true;
       _appAutoPrintReceipt = prefs.getBool('app_auto_print_receipt') ?? false;
@@ -1035,6 +1093,36 @@ class DatabaseService extends ChangeNotifier {
     if (_isSupabaseConnected) {
       _supabase.deleteUser(idUser);
     }
+  }
+
+  /// Menghapus status berlangganan pelanggan (Unsubscribe Member VIP)
+  Future<void> unsubscribeUser(int idUser) async {
+    final idx = _users.indexWhere((u) => u.idUser == idUser);
+    if (idx != -1) {
+      _users[idx] = _users[idx].copyWith(isSubscribed: false);
+      if (_currentUser?.idUser == idUser) {
+        _currentUser = _currentUser!.copyWith(isSubscribed: false);
+        await _saveUserSession();
+      }
+      await _saveUsersLocal();
+      notifyListeners();
+
+      if (_isSupabaseConnected) {
+        await _supabase.updateUserSubscription(idUser, false);
+      }
+    }
+  }
+
+  /// Mengubah persentase diskon member VIP (Dapat diubah oleh Admin & Owner)
+  Future<void> setMemberDiscountPercent(int percent) async {
+    _memberDiscountPercent = percent.clamp(1, 100);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('member_discount_percent', _memberDiscountPercent);
+    } catch (e) {
+      debugPrint('[DatabaseService] setMemberDiscountPercent error: $e');
+    }
+    notifyListeners();
   }
 
   // --- ENTRI REFERENSI MENU / MASAKAN (Admin) ---

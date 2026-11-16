@@ -436,6 +436,16 @@ class SupabaseService {
     }
   }
 
+  Future<bool> updateUserSubscription(int idUser, bool isSubscribed) async {
+    try {
+      await client.from(_userTable).update({'is_subscribed': isSubscribed}).eq('id_user', idUser);
+      return true;
+    } catch (e) {
+      debugPrint('[SupabaseService] updateUserSubscription error: $e');
+      return false;
+    }
+  }
+
   Future<bool> deleteUser(int idUser) async {
     try {
       await client.from(_userTable).delete().eq('id_user', idUser);

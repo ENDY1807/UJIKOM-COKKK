@@ -86,10 +86,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     return false;
   }
 
-  // Potongan harga khusus Pelanggan Langganan (10% dari total belanja menu)
+  // Potongan harga khusus Pelanggan Langganan VIP
   int get _diskonMemberAmount {
     if (!_isCurrentCustomerSubscribed) return 0;
-    return (_cartTotalHarga * 0.10).round();
+    final percent = widget.db.memberDiscountPercent;
+    return (_cartTotalHarga * (percent / 100.0)).round();
   }
 
   int get _cartTotalHarga => _cart.values.fold(0, (sum, i) => sum + i.subtotal);
@@ -1141,10 +1142,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Diskon VIP (10%):',
-                        style: TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
+                        'Diskon VIP (${widget.db.memberDiscountPercent}%):',
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

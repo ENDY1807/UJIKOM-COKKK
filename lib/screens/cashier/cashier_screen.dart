@@ -55,7 +55,283 @@ class _CashierScreenState extends State<CashierScreen> {
   int _selectedFilterIndex = 0; // 0: Semua, 1: Perlu Diterima, 2: Diproses
   bool _isPrintingQris = false;
 
+  final Set<int> _promptedOrderIds = {};
+  bool _isShowingConfirmationDialog = false;
+
   final _currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi daftar pesanan yang sudah berstatus selain menunggu
+    for (final o in widget.db.orders) {
+      if (o.status != OrderStatus.menunggu) {
+        _promptedOrderIds.add(o.idOrder);
+      }
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndPromptPendingOrder();
+    });
+  }
+
+  void _checkAndPromptPendingOrder() {
+    if (!mounted || _isShowingConfirmationDialog) return;
+
+    final unaccepted = widget.db.orders
+        .where((o) => o.status == OrderStatus.menunggu && !_promptedOrderIds.contains(o.idOrder))
+        .toList();
+
+    if (unaccepted.isNotEmpty) {
+      final order = unaccepted.first;
+      _promptedOrderIds.add(order.idOrder);
+      _isShowingConfirmationDialog = true;
+
+      // Haptic & Sound Feedback Notifikasi Pesanan Masuk
+      if (widget.db.appHaptic) {
+        HapticFeedback.heavyImpact();
+      }
+      if (widget.db.appSoundFx) {
+        SystemSound.play(SystemSoundType.click);
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showNewOrderConfirmationModal(order);
+      });
+    }
+  }
+
+  void _showNewOrderConfirmationModal(OrderModel order) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Alert Notifikasi
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFFECACA)),
+                        ),
+                        child: const Icon(
+                          Icons.notifications_active_rounded,
+                          color: Color(0xFFDC2626),
+                          size: 26,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Pesanan Baru dari Waiter!',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Konfirmasi pesanan untuk diproses di dapur',
+                              style: TextStyle(fontSize: 11.5, color: context.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Detail Meja & Tamu Box
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: context.isDarkMode
+                          ? const Color(0xFF1E293B)
+                          : const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: context.isDarkMode
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFFFEDD5),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.table_restaurant_rounded, size: 18, color: Color(0xFFEA580C)),
+                            const SizedBox(width: 8),
+                            Text(
+                              order.noMeja,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFFEA580C)),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          'Tamu: ${order.namaPelanggan}',
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: context.textPrimary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Rincian Hidangan
+                  Text(
+                    'Rincian Menu Pesanan (${order.totalItem} item):',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textSecondary),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 180),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: order.items.length,
+                      separatorBuilder: (_, _) => const Divider(height: 8),
+                      itemBuilder: (context, idx) {
+                        final item = order.items[idx];
+                        return Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: context.fillSubtle,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '${item.jumlah}x',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.menu.namaMasakan,
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary),
+                                  ),
+                                  if (item.catatan.isNotEmpty)
+                                    Text(
+                                      item.catatan,
+                                      style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: context.textSecondary),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              _currencyFormat.format(item.subtotal),
+                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: context.textPrimary),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  const Divider(height: 18),
+
+                  // Total Tagihan & Diskon
+                  if (order.diskonMember > 0) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Diskon Member VIP:', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+                        Text(
+                          '- ${_currencyFormat.format(order.diskonMember)}',
+                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Total Tagihan:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
+                      Text(
+                        _currencyFormat.format(order.grandTotalSetelahDiskon),
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            side: BorderSide(color: context.borderSubtle),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                          },
+                          child: Text('Nanti', style: TextStyle(color: context.textSecondary)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF16A34A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.check_circle_rounded, size: 18),
+                          label: const Text('Terima Pesanan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _acceptOrder(order);
+                            _selectOrder(order);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 18),
+                                    const SizedBox(width: 8),
+                                    Text('Pesanan ${order.noMeja} berhasil diterima & diproses!'),
+                                  ],
+                                ),
+                                backgroundColor: const Color(0xFF1E293B),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      _isShowingConfirmationDialog = false;
+      _checkAndPromptPendingOrder();
+    });
+  }
 
   @override
   void dispose() {
@@ -179,6 +455,11 @@ class _CashierScreenState extends State<CashierScreen> {
             _selectedOrder = updated;
           }
         }
+
+        // Cek apakah ada pesanan baru masuk dari Waiter untuk dimunculkan konfirmasinya
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _checkAndPromptPendingOrder();
+        });
 
         return Scaffold(
           backgroundColor: context.surfaceBg,

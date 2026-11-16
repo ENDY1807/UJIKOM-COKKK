@@ -36,10 +36,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    final role = widget.db.currentUser?.role ?? UserRole.waiter;
-    if (role != UserRole.waiter) {
-      _tabController = TabController(length: 2, vsync: this);
-    }
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -137,7 +134,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
       password: password,
       email: email,
       phone: phone,
-      message: 'Pelanggan berhasil didaftarkan sebagai Member Berlangganan VIP dengan Diskon 10%!',
+      message: 'Pelanggan berhasil didaftarkan sebagai Member Berlangganan VIP dengan Diskon ${widget.db.memberDiscountPercent}%!',
     );
     _resetForm();
   }
@@ -263,9 +260,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    final role = widget.db.currentUser?.role ?? UserRole.waiter;
-    final isWaiter = role == UserRole.waiter;
-
     return Scaffold(
       backgroundColor: context.surfaceBg,
       appBar: AppBar(
@@ -290,51 +284,40 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                 ),
                 Text(
-                  isWaiter ? 'Pendaftaran Pelanggan Langganan' : 'Kelola Pelanggan Langganan VIP',
+                  'Kelola & Pendaftaran Pelanggan Langganan VIP',
                   style: TextStyle(fontSize: 11, color: context.textSecondary),
                 ),
               ],
             ),
           ],
         ),
-        bottom: !isWaiter && _tabController != null
-            ? TabBar(
-                controller: _tabController,
-                indicatorColor: const Color(0xFFEA580C),
-                labelColor: const Color(0xFFEA580C),
-                unselectedLabelColor: context.textSecondary,
-                tabs: const [
-                  Tab(icon: Icon(Icons.people_alt_outlined, size: 18), text: 'Daftar Member'),
-                  Tab(icon: Icon(Icons.person_add_alt_1_outlined, size: 18), text: 'Input Pelanggan'),
-                ],
-              )
-            : null,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: const Color(0xFFEA580C),
+          labelColor: const Color(0xFFEA580C),
+          unselectedLabelColor: context.textSecondary,
+          tabs: const [
+            Tab(icon: Icon(Icons.people_alt_outlined, size: 18), text: 'Daftar Member'),
+            Tab(icon: Icon(Icons.person_add_alt_1_outlined, size: 18), text: 'Input Pelanggan'),
+          ],
+        ),
       ),
-      body: isWaiter
-          ? SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + MediaQuery.of(context).padding.bottom),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 540),
-                  child: _buildInputForm(),
-                ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildSubscriberListView(),
+          SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + MediaQuery.of(context).padding.bottom),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 540),
+                child: _buildInputForm(),
               ),
-            )
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildSubscriberListView(),
-                SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + MediaQuery.of(context).padding.bottom),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 540),
-                      child: _buildInputForm(),
-                    ),
-                  ),
-                ),
-              ],
             ),
+          ),
+        ],
+      ),
+    );
     );
   }
 
@@ -515,8 +498,216 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
     );
   }
 
-  // ── WIDGET DAFTAR PELANGGAN BERLANGGANAN (ADMIN & OWNER) ──
+  // ── DIALOG KONFIRMASI HAPUS LANGGANAN (ADMIN, WAITER, KASIR, OWNER) ──
+  void _confirmUnsubscribe(UserModel member) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.person_remove_rounded, color: Color(0xFFDC2626), size: 22),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Hapus Langganan VIP',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Apakah Anda yakin ingin menghapus status langganan VIP untuk ${member.namaUser} (@${member.username})?',
+              style: const TextStyle(fontSize: 13.5),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7ED),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFFEDD5)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 16, color: Color(0xFFEA580C)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Pelanggan tidak akan lagi mendapatkan potongan diskon member ${widget.db.memberDiscountPercent}% di setiap pemesanan.',
+                      style: const TextStyle(fontSize: 12, color: Color(0xFFC2410C)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await widget.db.unsubscribeUser(member.idUser);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Status langganan ${member.namaUser} berhasil dihapus.'),
+                    backgroundColor: const Color(0xFF1E293B),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: const Text('Hapus Langganan', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── DIALOG PENGATURAN DISKON MEMBER (OWNER & ADMIN) ──
+  void _showEditDiscountDialog() {
+    int selectedPercent = widget.db.memberDiscountPercent;
+    final controller = TextEditingController(text: '$selectedPercent');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEA580C).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.percent_rounded, color: Color(0xFFEA580C), size: 22),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Ubah Diskon Member VIP',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Atur persentase potongan harga untuk seluruh pelanggan yang berlangganan VIP:',
+                  style: TextStyle(fontSize: 12.5),
+                ),
+                const SizedBox(height: 14),
+                // Pilihan Cepat (Presets)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [5, 10, 15, 20, 25, 30].map((p) {
+                    final isSel = selectedPercent == p;
+                    return ChoiceChip(
+                      label: Text('$p%'),
+                      selected: isSel,
+                      selectedColor: const Color(0xFFEA580C),
+                      labelStyle: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isSel ? Colors.white : context.textPrimary,
+                        fontSize: 12,
+                      ),
+                      onSelected: (val) {
+                        if (val) {
+                          setModalState(() {
+                            selectedPercent = p;
+                            controller.text = '$p';
+                          });
+                        }
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Persentase Kustom (%)',
+                    suffixText: '%',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  ),
+                  onChanged: (val) {
+                    final parsed = int.tryParse(val.replaceAll(RegExp(r'[^0-9]'), ''));
+                    if (parsed != null && parsed >= 1 && parsed <= 100) {
+                      setModalState(() => selectedPercent = parsed);
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEA580C),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () async {
+                  final finalVal = int.tryParse(controller.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? selectedPercent;
+                  await widget.db.setMemberDiscountPercent(finalVal);
+                  if (mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Besaran diskon member VIP berhasil diubah menjadi $finalVal%!'),
+                        backgroundColor: const Color(0xFF1E293B),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Simpan Perubahan', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // ── WIDGET DAFTAR PELANGGAN BERLANGGANAN (ADMIN, WAITER, KASIR, OWNER) ──
   Widget _buildSubscriberListView() {
+    final role = widget.db.currentUser?.role ?? UserRole.waiter;
+    final canEditDiscount = role == UserRole.administrator || role == UserRole.owner;
+
     return ListenableBuilder(
       listenable: widget.db,
       builder: (context, _) {
@@ -577,38 +768,52 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: context.surfaceCard,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: context.borderSubtle),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEA580C).withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      onTap: canEditDiscount ? _showEditDiscountDialog : null,
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: context.surfaceCard,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: canEditDiscount ? const Color(0xFFEA580C).withValues(alpha: 0.4) : context.borderSubtle),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEA580C).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.percent_rounded, color: Color(0xFFEA580C), size: 22),
                             ),
-                            child: const Icon(Icons.percent_rounded, color: Color(0xFFEA580C), size: 22),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Potongan Menu',
-                                style: TextStyle(fontSize: 11, color: context.textSecondary),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Potongan Menu',
+                                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                                      ),
+                                      if (canEditDiscount) ...[
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.edit_rounded, size: 12, color: Color(0xFFEA580C)),
+                                      ],
+                                    ],
+                                  ),
+                                  Text(
+                                    '${widget.db.memberDiscountPercent}% OFF',
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                '10% OFF',
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
-                              ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -654,8 +859,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                         const SizedBox(height: 10),
                         Text(
                           _searchQuery.isNotEmpty
-                              ? 'Tidak ada member cocok dengan pencarian'
-                              : 'Belum ada pelanggan berlangganan',
+                                ? 'Tidak ada member cocok dengan pencarian'
+                                : 'Belum ada pelanggan berlangganan',
                           style: TextStyle(fontSize: 13, color: context.textSecondary),
                         ),
                       ],
@@ -713,9 +918,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                                         borderRadius: BorderRadius.circular(6),
                                         border: Border.all(color: const Color(0xFF86EFAC)),
                                       ),
-                                      child: const Text(
-                                        'VIP 10%',
-                                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+                                      child: Text(
+                                        'VIP ${widget.db.memberDiscountPercent}%',
+                                        style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
                                       ),
                                     ),
                                   ],
@@ -728,6 +933,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                                 ),
                               ],
                             ),
+                          ),
+                          // Tombol Hapus Langganan untuk Admin, Waiter, Kasir, Owner
+                          IconButton(
+                            icon: const Icon(Icons.person_remove_rounded, color: Color(0xFFDC2626), size: 20),
+                            tooltip: 'Hapus Langganan VIP',
+                            onPressed: () => _confirmUnsubscribe(member),
                           ),
                         ],
                       ),
