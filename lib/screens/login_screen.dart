@@ -207,29 +207,17 @@ class _LoginScreenState extends State<LoginScreen>
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Logo Aplikasi Rasantara
-                        Container(
-                          width: 96,
-                          height: 96,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.12),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(12),
+                        SizedBox(
+                          width: 104,
+                          height: 104,
                           child: Image.asset(
                             'assets/images/Rasantara Cloche App Icon.png',
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) =>
                                 const Icon(
                               Icons.restaurant_rounded,
-                              color: AppTheme.orangePrimary,
-                              size: 52,
+                              color: Colors.white,
+                              size: 56,
                             ),
                           ),
                         ),
@@ -326,34 +314,16 @@ class _LoginScreenState extends State<LoginScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Clean App Brand Icon
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppTheme.darkSurface : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: isDark ? 0.2 : 0.04,
-                        ),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(8),
+                SizedBox(
+                  width: 80,
+                  height: 80,
                   child: Image.asset(
                     'assets/images/Rasantara Cloche App Icon.png',
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) => const Icon(
                       Icons.restaurant_rounded,
                       color: AppTheme.orangePrimary,
-                      size: 34,
+                      size: 44,
                     ),
                   ),
                 ),

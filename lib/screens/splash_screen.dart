@@ -131,34 +131,16 @@ class _SplashScreenState extends State<SplashScreen>
 
                       ScaleTransition(
                         scale: _scaleAnimation,
-                        child: Container(
-                          width: 108,
-                          height: 108,
-                          decoration: BoxDecoration(
-                            color: isDark ? AppTheme.darkSurface : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(
-                                  alpha: isDark ? 0.3 : 0.06,
-                                ),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 112,
+                          height: 112,
                           child: Image.asset(
                             'assets/images/Rasantara Cloche App Icon.png',
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) => const Center(
                               child: Icon(
                                 Icons.restaurant_rounded,
-                                size: 46,
+                                size: 54,
                                 color: AppTheme.orangePrimary,
                               ),
                             ),
