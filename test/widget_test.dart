@@ -70,6 +70,8 @@ void main() {
     expect(find.text('Beranda'), findsOneWidget);
     expect(find.text('Entri Order'), findsOneWidget);
     expect(find.text('Profil'), findsOneWidget);
+    db.stopFastOrderSync();
+    db.stopBackgroundFullSync();
   });
 
   testWidgets('Test MainNavigationScreen Desktop full render',
@@ -108,6 +110,8 @@ void main() {
     await tester.tap(find.text('Profil'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    db.stopFastOrderSync();
+    db.stopBackgroundFullSync();
   });
 
   testWidgets('Test All Screens Across All Roles without exceptions',
@@ -157,5 +161,7 @@ void main() {
     await tester.tap(find.text('Profil'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    db.stopFastOrderSync();
+    db.stopBackgroundFullSync();
   });
 }

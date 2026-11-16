@@ -15,9 +15,9 @@ void main() {
   SharedPreferences.setMockInitialValues({});
   group('Supabase Configuration & Credentials', () {
     test('Config contains correct project URL and keys', () {
-      expect(SupabaseConfig.url, 'https://kzhqoowfvdyllcaewsao.supabase.co');
-      expect(SupabaseConfig.publishableKey, 'sb_publishable_79_UbfbUBCxW_Q2k_oksYQ_Rh0JjjAU');
-      expect(SupabaseConfig.jwksUrl, 'https://kzhqoowfvdyllcaewsao.supabase.co/auth/v1/.well-known/jwks.json');
+      expect(SupabaseConfig.url, 'https://asyedfpclzehgitbqxml.supabase.co');
+      expect(SupabaseConfig.publishableKey, 'sb_publishable_eZY7OLZbPDTTrX4BSQMhkA_l9xnejzZ');
+      expect(SupabaseConfig.jwksUrl, 'https://asyedfpclzehgitbqxml.supabase.co/auth/v1/.well-known/jwks.json');
       expect(SupabaseConfig.googleClientId, '124635820971-cn5609qedpjbrlq8f181kk6vcojp8jjk.apps.googleusercontent.com');
       expect(SupabaseConfig.googleClientSecret, isNotNull);
     });

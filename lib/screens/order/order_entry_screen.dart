@@ -847,6 +847,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     return Card(
       elevation: 0,
       color: context.surfaceCard,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -856,133 +857,143 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           width: (inCart != null && inCart.jumlah > 0) ? 1.5 : 1,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Gambar Menu
-          Expanded(
-            flex: 5,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (menu.gambarUrl.isNotEmpty)
-                    Image.network(
-                      menu.gambarUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (c, e, s) => Container(
-                        color: const Color(0xFFFFF7ED),
-                        child: const Center(
-                          child: Icon(Icons.lunch_dining_rounded, size: 36, color: Color(0xFFEA580C)),
-                        ),
-                      ),
-                    )
-                  else
-                    Container(
-                      color: const Color(0xFFFFF7ED),
-                      child: const Center(
-                        child: Icon(Icons.restaurant_menu, size: 36, color: Color(0xFFEA580C)),
-                      ),
-                    ),
-                  if (!isAvailable)
-                    Container(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'HABIS',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          // Info & Aksi
-          Expanded(
-            flex: 5,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        menu.namaMasakan,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: context.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _currencyFmt.format(menu.harga),
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.orangePrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Stepper / Tambah
-                  if (inCart != null && inCart.jumlah > 0)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.note_alt_outlined, size: 18),
-                          tooltip: 'Catatan Menu',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                          color: inCart.catatan.isNotEmpty ? AppTheme.orangePrimary : AppTheme.textMuted,
-                          onPressed: () => _editItemNote(inCart),
-                        ),
-                        Row(
-                          children: [
-                            _stepperButton(Icons.remove, () => _removeFromCart(menu)),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(
-                                '${inCart.jumlah}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: context.textPrimary,
+      child: InkWell(
+        onTap: () => _showMenuDetailOverview(menu),
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Gambar Menu
+            Expanded(
+              flex: 5,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (menu.gambarUrl.isNotEmpty)
+                      Image.network(
+                        menu.gambarUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => _buildMenuPlaceholder(menu),
+                        loadingBuilder: (c, child, progress) {
+                          if (progress == null) return child;
+                          return Container(
+                            color: context.fillSubtle,
+                            child: const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppTheme.orangePrimary,
                                 ),
                               ),
                             ),
-                            _stepperButton(Icons.add, () => _addToCart(menu)),
-                          ],
+                          );
+                        },
+                      )
+                    else
+                      _buildMenuPlaceholder(menu),
+                    if (!isAvailable)
+                      Container(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'HABIS',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                         ),
-                      ],
-                    )
-                  else
-                    SizedBox(
-                      width: double.infinity,
-                      height: 32,
-                      child: ElevatedButton(
-                        onPressed: isAvailable ? () => _addToCart(menu) : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.orangePrimary,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('Tambah', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+            // Info & Aksi
+            Expanded(
+              flex: 5,
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          menu.namaMasakan,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _currencyFmt.format(menu.harga),
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.orangePrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Stepper / Tambah
+                    if (inCart != null && inCart.jumlah > 0)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.note_alt_outlined, size: 18),
+                            tooltip: 'Catatan Menu',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                            color: inCart.catatan.isNotEmpty ? AppTheme.orangePrimary : AppTheme.textMuted,
+                            onPressed: () => _editItemNote(inCart),
+                          ),
+                          Row(
+                            children: [
+                              _stepperButton(Icons.remove, () => _removeFromCart(menu)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                child: Text(
+                                  '${inCart.jumlah}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: context.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              _stepperButton(Icons.add, () => _addToCart(menu)),
+                            ],
+                          ),
+                        ],
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        height: 32,
+                        child: ElevatedButton(
+                          onPressed: isAvailable ? () => _addToCart(menu) : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.orangePrimary,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: const Text('Tambah', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1000,6 +1011,566 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         ),
         child: Icon(icon, size: 16, color: AppTheme.orangePrimary),
       ),
+    );
+  }
+
+  // ── PLACEHOLDER GAMBAR ELEGAN (JIKA FOTO KOSONG / GAGAL DIMUAT) ──
+  Widget _buildMenuPlaceholder(MenuModel menu, {bool isLarge = false}) {
+    IconData iconData;
+    String categoryLabel;
+    switch (menu.kategori) {
+      case MenuCategory.minuman:
+        iconData = Icons.local_cafe_rounded;
+        categoryLabel = 'Minuman Segar';
+        break;
+      case MenuCategory.paket:
+        iconData = Icons.set_meal_rounded;
+        categoryLabel = 'Paket Spesial';
+        break;
+      case MenuCategory.addon:
+        iconData = Icons.bakery_dining_rounded;
+        categoryLabel = 'Camilan & Pelengkap';
+        break;
+      default:
+        iconData = Icons.restaurant_rounded;
+        categoryLabel = 'Kuliner Nusantara';
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFFFF7ED),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(isLarge ? 16 : 9),
+              decoration: BoxDecoration(
+                color: AppTheme.orangePrimary.withValues(alpha: isDark ? 0.2 : 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                iconData,
+                size: isLarge ? 48 : 28,
+                color: AppTheme.orangePrimary,
+              ),
+            ),
+            if (isLarge) ...[
+              const SizedBox(height: 10),
+              Text(
+                categoryLabel,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF78350F),
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Cita Rasa Nusantara Autentik',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF9A3412),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── DESKRIPSI DEFAULT JIKA DATA KOSONG ──
+  String _getDefaultDeskripsi(MenuModel menu) {
+    switch (menu.kategori) {
+      case MenuCategory.minuman:
+        return 'Minuman segar pelepas dahaga yang diracik dari bahan alami berkualitas tinggi, disajikan dingin dengan kesegaran maksimal.';
+      case MenuCategory.paket:
+        return 'Paket hidangan komplit hemat dan mengenyangkan dengan perpaduan menu utama, lauk pendamping, serta minuman segar khas Rasantara.';
+      case MenuCategory.addon:
+        return 'Camilan pelengkap hidangan yang renyah dan gurih, dibuat dari bumbu rempah pilihan untuk menemani santap Anda.';
+      default:
+        return 'Olahan kuliner khas Nusantara yang dimasak dengan racikan bumbu rempah tradisional warisan leluhur untuk cita rasa gurih dan lezat.';
+    }
+  }
+
+  // ── KOMPOSISI & BAHAN UTAMA OTOMATIS ──
+  String _getMenuKomposisi(MenuModel menu) {
+    final lower = menu.namaMasakan.toLowerCase();
+    if (lower.contains('rendang')) {
+      return 'Daging sapi pilihan empuk, santan kelapa kental murni, cabai merah, serai, daun jeruk, lengkuas, kapulaga, dan rempah rendang asli Minang.';
+    } else if (lower.contains('betutu')) {
+      return 'Daging ayam segar pilihan, base genep rempah 15 bumbu khas Gilimanuk Bali, kunyit, kencur, jahe, terasi bakar, dan daun singkong.';
+    } else if (lower.contains('liwet')) {
+      return 'Beras pandan wangi pulen, santan segar gurih, serai, daun salam, suwiran ayam gurih, telur pindang, dan sambal goreng labu siam.';
+    } else if (lower.contains('bebek') || lower.contains('sinjay')) {
+      return 'Daging bebek empuk gurih, bumbu rempah marinasi lengkuas khas Madura, serundeng gurih, sambal pencit mangga muda, dan lalapan segar.';
+    } else if (lower.contains('sate')) {
+      return 'Potongan daging segar marinasi bumbu ketumbar, kecap manis kedelai hitam premium, saus kacang tanah gurih kental, dan irisan bawang cabai rawit.';
+    } else if (lower.contains('gado') || lower.contains('pecel')) {
+      return 'Sayuran segar rebus (kangkung, tauge, kacang panjang, kol), tahu tempe goreng renyah, lontong pulen, dan saus kacang tanah legit gurih.';
+    } else if (lower.contains('rawon')) {
+      return 'Daging sapi sandung lamur empuk, kuah hitam rempah kluwek pekat khas Jawa Timur, tauge pendek segar, telur asin, dan sambal terasi.';
+    } else if (lower.contains('soto')) {
+      return 'Kuah kaldu gurih kaya rempah aromatik, suwiran ayam/daging empuk, soun, kol, koya gurih renyah, dan perasan jeruk nipis segar.';
+    } else if (lower.contains('nasi goreng')) {
+      return 'Beras pulen pilihan, telur ayam segar, bawang merah, bawang putih, kecap manis premium, bumbu terasi bakar, acar segar, dan kerupuk.';
+    } else if (lower.contains('cendol') || lower.contains('dawet')) {
+      return 'Cendol tepung beras aroma pandan suji asli, santan kelapa kental gurih, sirup gula aren murni, es serut dingin, dan potongan buah nangka.';
+    } else if (lower.contains('teh') || lower.contains('tea')) {
+      return 'Pucuk daun teh hitam pilihan perkebunan Nusantara, gula tebu alami, air mineral murni teruji, disajikan segar dengan es batu.';
+    } else if (lower.contains('kopi') || lower.contains('coffee')) {
+      return 'Biji kopi pilihan Nusantara (blend Robusta & Arabika), air mineral murni, dan pemanis alami gula aren organik pilihan.';
+    }
+
+    switch (menu.kategori) {
+      case MenuCategory.minuman:
+        return 'Bahan minuman segar berkualitas, air mineral murni teruji, sari buah / ekstrak alami, disajikan higienis.';
+      case MenuCategory.paket:
+        return 'Kombinasi hidangan utama, lauk pendamping, sambal khas, dan minuman pelengkap dengan porsi lengkap memuaskan.';
+      case MenuCategory.addon:
+        return 'Bahan camilan renyah bermutu tinggi, racikan garam rempah gurih, digoreng dengan minyak nabati higienis.';
+      default:
+        return 'Bahan-bahan segar pilihan, racikan bumbu rempah autentik khas Nusantara, minyak nabati higienis, tanpa bahan pengawet sintetis.';
+    }
+  }
+
+  // ── PORSI & SARAN PENYAJIAN ──
+  String _getMenuPorsiInfo(MenuModel menu) {
+    switch (menu.kategori) {
+      case MenuCategory.minuman:
+        return '1 Gelas (350 ml) • Disajikan dingin segar dengan es batu atau hangat sesuai permintaan meja.';
+      case MenuCategory.paket:
+        return '1 Porsi Komplit (1–2 Orang) • Disajikan hangat langsung dari dapur lengkap dengan lauk pauk.';
+      case MenuCategory.addon:
+        return '1 Piring Saji Camilan • Sangat cocok dinikmati bersama teman atau pendamping hidangan utama.';
+      default:
+        return '1 Porsi Utama (1 Orang) • Disajikan hangat langsung dari wajan/kukusan dengan taburan bawang goreng renyah.';
+    }
+  }
+
+  // ── BOTTOM SHEET OVERVIEW HIDANGAN (FOTO FULL TIDAK TERPOTONG) ──
+  void _showMenuDetailOverview(MenuModel menu) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isAvailable = menu.isTersedia;
+
+    final existingItem = _cart[menu.idMasakan];
+    int quantity = existingItem != null ? existingItem.jumlah : 1;
+    final noteController = TextEditingController(text: existingItem?.catatan ?? '');
+
+    final komposisi = _getMenuKomposisi(menu);
+    final porsiInfo = _getMenuPorsiInfo(menu);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final subtotal = menu.harga * quantity;
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.90,
+              ),
+              decoration: BoxDecoration(
+                color: context.surfaceCard,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 8),
+                      width: 44,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+
+                  // Header Bar (Badges & Close Button)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.orangePrimary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                menu.kategori.label,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.orangePrimary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isAvailable
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                    : const Color(0xFFEF4444).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                isAvailable ? 'Tersedia' : 'Habis',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: isAvailable ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 22),
+                          style: IconButton.styleFrom(
+                            backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                          ),
+                          onPressed: () => Navigator.pop(sheetCtx),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Konten Detail
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── FOTO HIDANGAN FULL (TIDAK TERPOTONG!) ──
+                          Container(
+                            height: 220,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF0B132B) : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: context.borderSubtle),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: menu.gambarUrl.isNotEmpty
+                                ? Image.network(
+                                    menu.gambarUrl,
+                                    fit: BoxFit.contain, // FULL UTUH TIDAK TERPOTONG
+                                    errorBuilder: (c, e, s) => _buildMenuPlaceholder(menu, isLarge: true),
+                                    loadingBuilder: (c, child, progress) {
+                                      if (progress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: progress.expectedTotalBytes != null
+                                              ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                                              : null,
+                                          color: AppTheme.orangePrimary,
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : _buildMenuPlaceholder(menu, isLarge: true),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Nama & Harga
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  menu.namaMasakan,
+                                  style: TextStyle(
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.bold,
+                                    color: context.textPrimary,
+                                    height: 1.25,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                _currencyFmt.format(menu.harga),
+                                style: const TextStyle(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppTheme.orangePrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          // Deskripsi Hidangan
+                          Text(
+                            menu.deskripsi.trim().isNotEmpty
+                                ? menu.deskripsi.trim()
+                                : _getDefaultDeskripsi(menu),
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              color: context.textSecondary,
+                              height: 1.5,
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+                          Divider(color: context.borderSubtle, height: 1),
+                          const SizedBox(height: 14),
+
+                          // Komposisi & Bahan Utama
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.orangePrimary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.eco_rounded, size: 18, color: AppTheme.orangePrimary),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Komposisi & Bahan Utama',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: context.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      komposisi,
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        color: context.textSecondary,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          // Porsi & Saran Penyajian
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.room_service_rounded, size: 18, color: Colors.blue),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Porsi & Saran Penyajian',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: context.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      porsiInfo,
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        color: context.textSecondary,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Catatan Khusus Input
+                          TextField(
+                            controller: noteController,
+                            maxLength: 60,
+                            style: TextStyle(fontSize: 13, color: context.textPrimary),
+                            decoration: InputDecoration(
+                              hintText: 'Tambah catatan (misal: pedas sedang, es dipisah)...',
+                              hintStyle: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                              prefixIcon: const Icon(Icons.note_alt_outlined, size: 18, color: AppTheme.textMuted),
+                              counterText: '',
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: context.borderSubtle),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: context.borderSubtle),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppTheme.orangePrimary),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Bottom Action Bar
+                  Container(
+                    padding: EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      top: 14,
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: context.surfaceCard,
+                      border: Border(top: BorderSide(color: context.borderSubtle)),
+                    ),
+                    child: Row(
+                      children: [
+                        // Quantity Stepper
+                        Container(
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: context.borderSubtle),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove, size: 18),
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                padding: EdgeInsets.zero,
+                                color: quantity > 1 ? AppTheme.orangePrimary : AppTheme.textMuted,
+                                onPressed: isAvailable && quantity > 1
+                                    ? () => setSheetState(() => quantity--)
+                                    : null,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                child: Text(
+                                  '$quantity',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: context.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add, size: 18),
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                padding: EdgeInsets.zero,
+                                color: isAvailable ? AppTheme.orangePrimary : AppTheme.textMuted,
+                                onPressed: isAvailable
+                                    ? () => setSheetState(() => quantity++)
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(width: 14),
+
+                        // Tombol Tambah / Perbarui
+                        Expanded(
+                          child: SizedBox(
+                            height: 44,
+                            child: ElevatedButton(
+                              onPressed: isAvailable
+                                  ? () {
+                                      setState(() {
+                                        if (_cart.containsKey(menu.idMasakan)) {
+                                          _cart[menu.idMasakan]!.jumlah = quantity;
+                                          _cart[menu.idMasakan]!.catatan = noteController.text.trim();
+                                        } else {
+                                          _cart[menu.idMasakan] = OrderItemModel(
+                                            idDetailOrder: 0,
+                                            menu: menu,
+                                            jumlah: quantity,
+                                            catatan: noteController.text.trim(),
+                                          );
+                                        }
+                                      });
+                                      Navigator.pop(sheetCtx);
+                                    }
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.orangePrimary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              child: Text(
+                                isAvailable
+                                    ? (existingItem != null
+                                        ? 'Perbarui • ${_currencyFmt.format(subtotal)}'
+                                        : 'Tambah • ${_currencyFmt.format(subtotal)}')
+                                    : 'Stok Habis',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

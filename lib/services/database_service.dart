@@ -174,6 +174,8 @@ class DatabaseService extends ChangeNotifier {
   List<RefundMethod> get refundMethods =>
       List.unmodifiable(_refundMethods);
 
+  bool _isDisposed = false;
+
   DatabaseService() {
     _init();
   }
@@ -181,8 +183,10 @@ class DatabaseService extends ChangeNotifier {
   Future<void> _init() async {
     // 1. Muat sesi pengguna dan data lokal dari SharedPreferences sebagai cache cepat
     await _loadLocalState();
+    if (_isDisposed) return;
     // 2. Sinkronkan dengan Supabase Cloud sebagai Single Source of Truth
     await initSupabase();
+    if (_isDisposed) return;
     // 3. Mulai sinkronisasi pesanan cepat (2 detik) agar kasir langsung menerima pesanan dari waiter
     startFastOrderSync();
     // 4. Mulai sinkronisasi penuh di latar belakang (otomatis berkala tanpa tombol)
@@ -191,6 +195,7 @@ class DatabaseService extends ChangeNotifier {
 
   /// Sinkronisasi berkala data cloud di latar belakang (otomatis tanpa tombol)
   void startBackgroundFullSync() {
+    if (_isDisposed) return;
     _backgroundFullSyncTimer?.cancel();
     _backgroundFullSyncTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
       if (_isSupabaseConnected && !_isLoadingFromSupabase && !_isSyncing) {
@@ -206,6 +211,7 @@ class DatabaseService extends ChangeNotifier {
 
   /// Sinkronisasi cepat berkala pesanan antar perangkat (Waiter -> Kasir)
   void startFastOrderSync() {
+    if (_isDisposed) return;
     _fastOrderSyncTimer?.cancel();
     _fastOrderSyncTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
       if (_isSupabaseConnected && !_isLoadingFromSupabase) {
@@ -249,6 +255,7 @@ class DatabaseService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     stopFastOrderSync();
     stopBackgroundFullSync();
     super.dispose();
