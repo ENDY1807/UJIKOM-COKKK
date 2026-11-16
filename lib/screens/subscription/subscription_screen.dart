@@ -587,12 +587,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
   // ── DIALOG PENGATURAN DISKON MEMBER (OWNER & ADMIN) ──
   void _showEditDiscountDialog() {
     int selectedPercent = widget.db.memberDiscountPercent;
-    final controller = TextEditingController(text: '$selectedPercent');
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Row(
@@ -616,55 +616,92 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
-                  'Atur persentase potongan harga untuk seluruh pelanggan yang berlangganan VIP:',
-                  style: TextStyle(fontSize: 12.5),
-                ),
-                const SizedBox(height: 14),
-                // Pilihan Cepat (Presets)
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [5, 10, 15, 20, 25, 30].map((p) {
-                    final isSel = selectedPercent == p;
-                    return ChoiceChip(
-                      label: Text('$p%'),
-                      selected: isSel,
-                      selectedColor: const Color(0xFFEA580C),
-                      labelStyle: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: isSel ? Colors.white : context.textPrimary,
-                        fontSize: 12,
-                      ),
-                      onSelected: (val) {
-                        if (val) {
-                          setModalState(() {
-                            selectedPercent = p;
-                            controller.text = '$p';
-                          });
-                        }
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: controller,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'Persentase Kustom (%)',
-                    suffixText: '%',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Geser bar untuk mengatur persentase potongan harga pelanggan langganan:',
+                    style: TextStyle(fontSize: 12.5),
                   ),
-                  onChanged: (val) {
-                    final parsed = int.tryParse(val.replaceAll(RegExp(r'[^0-9]'), ''));
-                    if (parsed != null && parsed >= 1 && parsed <= 100) {
-                      setModalState(() => selectedPercent = parsed);
-                    }
-                  },
+                ),
+                const SizedBox(height: 18),
+                // Display Persentase Terpilih
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF2A1C14) : const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFFEA580C).withValues(alpha: 0.35),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '$selectedPercent%',
+                        style: const TextStyle(
+                          fontSize: 38,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFFEA580C),
+                          letterSpacing: -1,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        selectedPercent == 0
+                            ? 'Tidak ada diskon (0%)'
+                            : 'Potongan $selectedPercent% setiap transaksi',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                // Bar Geser (Slider)
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: const Color(0xFFEA580C),
+                    inactiveTrackColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                    thumbColor: const Color(0xFFEA580C),
+                    overlayColor: const Color(0xFFEA580C).withValues(alpha: 0.16),
+                    valueIndicatorColor: const Color(0xFFEA580C),
+                    valueIndicatorTextStyle: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  child: Slider(
+                    value: selectedPercent.toDouble().clamp(0.0, 100.0),
+                    min: 0,
+                    max: 100,
+                    divisions: 100,
+                    label: '$selectedPercent%',
+                    onChanged: (double val) {
+                      setModalState(() {
+                        selectedPercent = val.round();
+                      });
+                    },
+                  ),
+                ),
+                // Indikator Skala Min dan Max
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('0%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.textSecondary)),
+                      Text('50%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.textSecondary)),
+                      Text('100%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.textSecondary)),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -680,18 +717,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 onPressed: () async {
-                  final finalVal = int.tryParse(controller.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? selectedPercent;
-                  await widget.db.setMemberDiscountPercent(finalVal);
-                  if (mounted) {
+                  await widget.db.setMemberDiscountPercent(selectedPercent);
+                  if (ctx.mounted) {
                     Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Besaran diskon member VIP berhasil diubah menjadi $finalVal%!'),
-                        backgroundColor: const Color(0xFF1E293B),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
                   }
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Besaran diskon member VIP berhasil diubah menjadi $selectedPercent%!'),
+                      backgroundColor: const Color(0xFF1E293B),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
                 },
                 child: const Text('Simpan Perubahan', style: TextStyle(fontWeight: FontWeight.bold)),
               ),

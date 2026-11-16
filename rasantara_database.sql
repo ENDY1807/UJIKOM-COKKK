@@ -5,21 +5,10 @@
 -- DIALECT: PostgreSQL 12+ / Supabase / Neon / pgAdmin 4
 -- ============================================================
 
--- Bersihkan view & tabel jika sudah ada sebelumnya (clean install)
--- Hapus semua view alias lama agar tidak menduplikasi daftar tabel di Supabase Dashboard
-DROP VIEW IF EXISTS "user_address" CASCADE;
-DROP VIEW IF EXISTS "transaksi" CASCADE;
-DROP VIEW IF EXISTS "detail_order" CASCADE;
-DROP VIEW IF EXISTS "order" CASCADE;
-DROP VIEW IF EXISTS "masakan" CASCADE;
-DROP VIEW IF EXISTS "meja" CASCADE;
-DROP VIEW IF EXISTS "user" CASCADE;
-DROP VIEW IF EXISTS "level" CASCADE;
-
+-- Bersihkan tabel & enum jika sudah ada sebelumnya (clean install)
 DROP TABLE IF EXISTS tb_user_address CASCADE;
 DROP TABLE IF EXISTS tb_payment_mutasi CASCADE;
 DROP TABLE IF EXISTS tb_user_payment_methods CASCADE;
-DROP TABLE IF EXISTS tb_log_aktivitas CASCADE;
 DROP TABLE IF EXISTS tb_transaksi CASCADE;
 DROP TABLE IF EXISTS tb_detail_order CASCADE;
 DROP TABLE IF EXISTS tb_order CASCADE;
@@ -34,7 +23,6 @@ DROP TYPE IF EXISTS kategori_masakan_type CASCADE;
 DROP TYPE IF EXISTS status_masakan_type CASCADE;
 DROP TYPE IF EXISTS status_order_type CASCADE;
 DROP TYPE IF EXISTS status_detail_type CASCADE;
-DROP TYPE IF EXISTS metode_bayar_type CASCADE;
 
 -- ENUM Types
 CREATE TYPE auth_provider_type AS ENUM ('local', 'google', 'both');
@@ -43,7 +31,6 @@ CREATE TYPE kategori_masakan_type AS ENUM ('Makanan', 'Minuman', 'Paket', 'Addon
 CREATE TYPE status_masakan_type AS ENUM ('Tersedia', 'Habis');
 CREATE TYPE status_order_type AS ENUM ('Menunggu', 'Diproses', 'Selesai', 'Dibatalkan');
 CREATE TYPE status_detail_type AS ENUM ('Menunggu', 'Dimasak', 'Disajikan');
-CREATE TYPE metode_bayar_type AS ENUM ('Tunai', 'QRIS', 'Kartu Debit', 'Kartu Kredit', 'Transfer Bank', 'GoPay / E-Wallet');
 
 -- ============================================================
 -- 1. TABEL LEVEL HAK AKSES
@@ -181,7 +168,8 @@ CREATE TABLE tb_order (
     id_user INT REFERENCES tb_user(id_user) ON DELETE SET NULL ON UPDATE CASCADE,
     keterangan TEXT,
     status_order status_order_type NOT NULL DEFAULT 'Menunggu',
-    diskon_member INT NOT NULL DEFAULT 0, -- Potongan harga 10% untuk Pelanggan Langganan
+    diskon_member INT NOT NULL DEFAULT 0, -- Potongan harga untuk Pelanggan Langganan
+    is_paid BOOLEAN NOT NULL DEFAULT FALSE, -- Status pelunasan transaksi kasir
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -249,19 +237,7 @@ CREATE TABLE IF NOT EXISTS tb_payment_mutasi (
 SELECT setval(pg_get_serial_sequence('tb_payment_mutasi', 'id_mutasi'), COALESCE(MAX(id_mutasi), 1)) FROM tb_payment_mutasi;
 
 -- ============================================================
--- 10. TABEL LOG AKTIVITAS (AUDIT TRAIL)
--- ============================================================
-CREATE TABLE tb_log_aktivitas (
-    id_log SERIAL PRIMARY KEY,
-    id_user INT REFERENCES tb_user(id_user) ON DELETE SET NULL,
-    aktivitas VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-SELECT setval(pg_get_serial_sequence('tb_log_aktivitas', 'id_log'), COALESCE(MAX(id_log), 1)) FROM tb_log_aktivitas;
-
--- ============================================================
--- 11. TABEL ALAMAT PENGGUNA (TAKE AWAY / DELIVERY MULTI-ALAMAT)
+-- 10. TABEL ALAMAT PENGGUNA (TAKE AWAY / DELIVERY MULTI-ALAMAT)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS tb_user_address (
     id_alamat SERIAL PRIMARY KEY,
@@ -561,7 +537,6 @@ ALTER TABLE tb_detail_order ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_transaksi ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_user_payment_methods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_payment_mutasi ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tb_log_aktivitas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_user_address ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all tb_level" ON tb_level;
@@ -590,9 +565,6 @@ CREATE POLICY "Allow all tb_user_payment_methods" ON tb_user_payment_methods FOR
 
 DROP POLICY IF EXISTS "Allow all tb_payment_mutasi" ON tb_payment_mutasi;
 CREATE POLICY "Allow all tb_payment_mutasi" ON tb_payment_mutasi FOR ALL USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Allow all tb_log_aktivitas" ON tb_log_aktivitas;
-CREATE POLICY "Allow all tb_log_aktivitas" ON tb_log_aktivitas FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow all tb_user_address" ON tb_user_address;
 CREATE POLICY "Allow all tb_user_address" ON tb_user_address FOR ALL USING (true) WITH CHECK (true);
