@@ -450,19 +450,21 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.75,
-          ),
-          decoration: BoxDecoration(
-            color: context.surfaceCard,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        return Material(
+          color: Colors.transparent,
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.75,
+            ),
+            decoration: BoxDecoration(
+              color: context.surfaceCard,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Center(
                 child: Container(
                   width: 40,
@@ -527,14 +529,13 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         ? AppTheme.orangePrimary
                         : (isOccupied ? const Color(0xFFEA580C) : context.borderSubtle);
 
-                    return InkWell(
+                    return GestureDetector(
                       onTap: () {
                         setState(() {
                           _selectedTableNo = tbl.nomorMeja;
                         });
                         Navigator.pop(ctx);
                       },
-                      borderRadius: BorderRadius.circular(14),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                         decoration: BoxDecoration(
@@ -620,9 +621,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
               ),
             ],
           ),
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 
   // ── CATEGORY & SEARCH BAR ──
