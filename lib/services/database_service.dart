@@ -1867,11 +1867,6 @@ class DatabaseService extends ChangeNotifier {
     return true;
   }
 
-  // ==========================================
-  // EVENT & PROMOSI RESTORAN (Hanya Owner)
-  // ==========================================
-
-
   // ── Menu Bawaan Otentik Nusantara (Foto Nyata dari Google & Fotografer Kuliner) ──
   static List<MenuModel> get seedDefaultMenus => [
     MenuModel(

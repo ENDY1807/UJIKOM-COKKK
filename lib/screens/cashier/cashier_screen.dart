@@ -393,7 +393,6 @@ class _CashierScreenState extends State<CashierScreen> {
                   final order = filtered[index];
                   final isSelected = _selectedOrder?.idOrder == order.idOrder;
                   final isQris = order.metodePembayaran?.toUpperCase() == 'QRIS';
-                  final isMenunggu = order.status == OrderStatus.menunggu;
 
                   return InkWell(
                     onTap: () => _selectOrder(order),
@@ -596,7 +595,6 @@ class _CashierScreenState extends State<CashierScreen> {
 
     final order = _selectedOrder!;
     final isQris = order.metodePembayaran?.toUpperCase() == 'QRIS';
-    final isMenunggu = order.status == OrderStatus.menunggu;
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Container(

@@ -12,7 +12,6 @@ class AudioNotificationService {
   AudioNotificationService._internal();
 
   String? _orderReceivedWavDataUrl;
-  String? _promoChimeWavDataUrl;
 
   /// Meminta izin notifikasi sistem / OS langsung ke Windows & HP
   static Future<void> requestSystemNotificationPermission() async {
@@ -32,7 +31,6 @@ class AudioNotificationService {
     if (_orderReceivedWavDataUrl != null) return;
     try {
       _orderReceivedWavDataUrl = _createChimeDataUrl(523.25, 659.25); // C5 -> E5 ding-dong
-      _promoChimeWavDataUrl = _createChimeDataUrl(659.25, 880.00); // E5 -> A5 high chime
     } catch (_) {}
   }
 
@@ -104,22 +102,6 @@ class AudioNotificationService {
       } else {
         await SystemSound.play(SystemSoundType.click);
         await HapticFeedback.heavyImpact();
-      }
-    } catch (_) {}
-  }
-
-  /// Memutar notifikasi audio promo / event diskon
-  Future<void> playEventPromoSound({bool enabled = true}) async {
-    if (!enabled) return;
-    try {
-      if (kIsWeb) {
-        _ensureAudioBuffers();
-        if (_promoChimeWavDataUrl != null) {
-          webPlayAudio(_promoChimeWavDataUrl!, 0.75);
-        }
-      } else {
-        await SystemSound.play(SystemSoundType.click);
-        await HapticFeedback.mediumImpact();
       }
     } catch (_) {}
   }
