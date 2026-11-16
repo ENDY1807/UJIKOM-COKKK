@@ -1395,18 +1395,18 @@ class DatabaseService extends ChangeNotifier {
 
     _transactions.insert(0, transaction);
 
-    // Update order status to Selesai
+    // Pesanan otomatis diterima dan masuk ke proses memasak dapur
     final orderIndex = _orders.indexWhere((o) => o.idOrder == order.idOrder);
     if (orderIndex != -1) {
-      _orders[orderIndex].status = OrderStatus.selesai;
+      _orders[orderIndex].status = OrderStatus.diproses;
+      _orders[orderIndex].isPaid = true;
     }
-
-    // Bebaskan meja kembali menjadi Kosong
-    updateTableStatus(order.noMeja, TableStatus.kosong);
     notifyListeners();
 
     // Simpan ke Supabase
     if (_isSupabaseConnected) {
+      _supabase.updateOrderStatus(order.idOrder, OrderStatus.diproses);
+      _supabase.updateOrderPaymentStatus(order.idOrder, true);
       _supabase.insertTransaction(transaction).then((saved) {
         if (saved != null) {
           final idx = _transactions.indexOf(transaction);
