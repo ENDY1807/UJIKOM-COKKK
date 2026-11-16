@@ -148,98 +148,46 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
   }
 
   void _showSuccessDialog({
-    required String customerName,
-    required String username,
-    required String password,
-    required String email,
+    String? customerName,
+    String? username,
+    String? password,
+    String? email,
     String phone = '',
-    required String message,
+    String? message,
   }) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         backgroundColor: context.surfaceCard,
+        contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 10),
             Container(
-              width: 56,
-              height: 56,
+              width: 64,
+              height: 64,
               decoration: const BoxDecoration(
                 color: Color(0xFFDCFCE7),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 36),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF16A34A),
+                size: 42,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             Text(
-              'Pendaftaran Berhasil',
+              'Akun langganan telah di tambahkan',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
                 color: context.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: context.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF7ED),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFFEDD5)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.stars_rounded, color: Color(0xFFEA580C), size: 24),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              customerName,
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
-                            ),
-                            const Text(
-                              'Benefit: Diskon 10% di setiap pesanan',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFEA580C)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 16),
-                  Text(
-                    'Akun Login Mandiri Pelanggan:',
-                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: context.textPrimary),
-                  ),
-                  const SizedBox(height: 4),
-                  Text('• Username: $username', style: TextStyle(fontSize: 12, color: context.textSecondary)),
-                  Text('• Email: $email', style: TextStyle(fontSize: 12, color: context.textSecondary)),
-                  if (phone.isNotEmpty)
-                    Text('• No. HP: $phone', style: TextStyle(fontSize: 12, color: context.textSecondary)),
-                  Text('• Password: $password', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Pelanggan dapat login menggunakan Username, Email, atau No. HP beserta password di atas untuk memesan mandiri.',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -249,7 +197,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                child: const Text('Selesai', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
           ],
