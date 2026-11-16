@@ -86,42 +86,56 @@ class _CustomerOrderHistoryScreenState
           ),
         ),
       ),
-      body: filtered.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+      body: RefreshIndicator(
+        color: const Color(0xFFEA580C),
+        onRefresh: () async {
+          await widget.db.initSupabase();
+          if (mounted) setState(() {});
+        },
+        child: filtered.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: [
-                  Icon(
-                    Icons.receipt_long_rounded,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    context.t('Belum Ada Riwayat Pesanan', 'No Order History Yet'),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: context.textPrimary,
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.receipt_long_rounded,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          context.t('Belum Ada Riwayat Pesanan', 'No Order History Yet'),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          context.t('Pesanan yang Anda buat akan tercatat otomatis di sini.', 'Orders you place will automatically be recorded here.'),
+                          style: TextStyle(fontSize: 12, color: context.textSecondary),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    context.t('Pesanan yang Anda buat akan tercatat otomatis di sini.', 'Orders you place will automatically be recorded here.'),
-                    style: TextStyle(fontSize: 12, color: context.textSecondary),
-                  ),
                 ],
+              )
+            : ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                itemCount: filtered.length,
+                separatorBuilder: (ctx, i) => const SizedBox(height: 12),
+                itemBuilder: (ctx, i) {
+                  final order = filtered[i];
+                  return _buildOrderCard(order);
+                },
               ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: filtered.length,
-              separatorBuilder: (ctx, i) => const SizedBox(height: 12),
-              itemBuilder: (ctx, i) {
-                final order = filtered[i];
-                return _buildOrderCard(order);
-              },
-            ),
+      ),
     );
   }
 

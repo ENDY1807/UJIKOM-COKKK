@@ -238,7 +238,16 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
             children: [
               _buildTopTableBar(),
               _buildCategoryAndSearchBar(),
-              Expanded(child: _buildMenuGrid(isWide: true)),
+              Expanded(
+                child: RefreshIndicator(
+                  color: const Color(0xFFEA580C),
+                  onRefresh: () async {
+                    await widget.db.initSupabase();
+                    if (mounted) setState(() {});
+                  },
+                  child: _buildMenuGrid(isWide: true),
+                ),
+              ),
             ],
           ),
         ),
@@ -264,7 +273,16 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           children: [
             _buildTopTableBar(),
             _buildCategoryAndSearchBar(),
-            Expanded(child: _buildMenuGrid(isWide: false)),
+            Expanded(
+              child: RefreshIndicator(
+                color: const Color(0xFFEA580C),
+                onRefresh: () async {
+                  await widget.db.initSupabase();
+                  if (mounted) setState(() {});
+                },
+                child: _buildMenuGrid(isWide: false),
+              ),
+            ),
             if (_cart.isNotEmpty) SizedBox(height: 76 + bottomInset),
           ],
         ),
@@ -728,6 +746,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       ];
 
       return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: sections.map((sec) {
           final catItems = items.where((m) => m.kategori == sec.category).toList();
@@ -803,6 +822,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     }
 
     return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,

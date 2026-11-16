@@ -697,26 +697,39 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
 
               // ── LIST RIWAYAT PESANAN ──
               Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                child: RefreshIndicator(
+                  color: const Color(0xFFEA580C),
+                  onRefresh: () async {
+                    await widget.db.initSupabase();
+                    if (mounted) setState(() {});
+                  },
+                  child: filtered.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           children: [
-                            Icon(Icons.history_toggle_off_rounded, size: 54, color: AppTheme.textMuted.withValues(alpha: 0.6)),
-                            const SizedBox(height: 12),
-                            Text(
-                              _searchQuery.isNotEmpty
-                                  ? 'Tidak ada pesanan cocok dengan kata kunci "$_searchQuery"'
-                                  : 'Belum ada riwayat pesanan pada filter tanggal ini',
-                              style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                            SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                            Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.history_toggle_off_rounded, size: 54, color: AppTheme.textMuted.withValues(alpha: 0.6)),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _searchQuery.isNotEmpty
+                                        ? 'Tidak ada pesanan cocok dengan kata kunci "$_searchQuery"'
+                                        : 'Belum ada riwayat pesanan pada filter tanggal ini',
+                                    style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final order = filtered[index];
                           final isQris = order.metodePembayaran?.toUpperCase() == 'QRIS';
@@ -826,6 +839,7 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
                           );
                         },
                       ),
+                ),
               ),
             ],
           ),

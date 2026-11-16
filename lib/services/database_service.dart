@@ -166,10 +166,19 @@ class DatabaseService extends ChangeNotifier {
       List.unmodifiable(_refundMethods);
 
   DatabaseService() {
-    // 1. Muat sesi pengguna dan data lokal dari SharedPreferences
-    _loadLocalState();
-    // 2. Sinkronkan dengan Supabase Cloud
-    initSupabase();
+    _init();
+  }
+
+  Future<void> _init() async {
+    // 1. Muat sesi pengguna dan data lokal dari SharedPreferences sebagai cache cepat
+    await _loadLocalState();
+    // 2. Sinkronkan dengan Supabase Cloud sebagai Single Source of Truth
+    await initSupabase();
+  }
+
+  /// Reload manual seluruh data dari Supabase Cloud
+  Future<void> reloadFromSupabase() async {
+    await initSupabase();
   }
 
   /// Sinkronisasi langsung dengan database cloud Supabase
@@ -182,30 +191,22 @@ class DatabaseService extends ChangeNotifier {
       _isSupabaseConnected = connected;
 
       if (connected) {
-        // 1. Sinkronisasi User dari tabel user / tb_user
+        // 1. Sinkronisasi User dari tabel user / tb_user (Single Source of Truth)
         final cloudUsers = await _supabase.fetchUsers();
         if (cloudUsers.isNotEmpty) {
-          for (final cu in cloudUsers) {
-            final localIdx = _users.indexWhere((u) => u.idUser == cu.idUser || u.username.toLowerCase() == cu.username.toLowerCase());
-            if (localIdx != -1) {
-              final isSub = _users[localIdx].isSubscribed || cu.isSubscribed;
-              _users[localIdx] = cu.copyWith(
-                isSubscribed: isSub,
-                phoneNumber: _users[localIdx].phoneNumber.isNotEmpty ? _users[localIdx].phoneNumber : cu.phoneNumber,
-              );
-            } else {
-              _users.add(cu);
-            }
-          }
+          _users.clear();
+          _users.addAll(cloudUsers);
           await _saveUsersLocal();
         }
         if (_currentUser != null) {
           final match = _users.where((u) =>
               u.idUser == _currentUser!.idUser ||
               (u.googleUid != null && u.googleUid == _currentUser!.googleUid) ||
-              (u.googleEmail != null && u.googleEmail!.toLowerCase() == _currentUser!.googleEmail?.toLowerCase()));
+              (u.googleEmail != null && u.googleEmail!.toLowerCase() == _currentUser!.googleEmail?.toLowerCase()) ||
+              (u.username.isNotEmpty && u.username.toLowerCase() == _currentUser!.username.toLowerCase()));
           if (match.isNotEmpty) {
             _currentUser = match.first;
+            await _saveUserSession();
           } else {
             _users.add(_currentUser!);
           }
@@ -231,6 +232,8 @@ class DatabaseService extends ChangeNotifier {
         if (cloudTables.isNotEmpty) {
           _tables.addAll(cloudTables);
         }
+        // Sesuaikan status meja dengan order aktif
+        syncTableStatusWithOrders();
 
         // 5. Sinkronisasi Transaksi dari tabel transaksi
         final cloudTrx = await _supabase.fetchTransactions(_orders, _users);
@@ -248,7 +251,7 @@ class DatabaseService extends ChangeNotifier {
           if (cloudAddresses.isNotEmpty) {
             _userAddresses.clear();
             _userAddresses.addAll(cloudAddresses);
-            _saveUserAddressesLocal();
+            await _saveUserAddressesLocal();
           }
         }
         _ensureDefaultDanaSandbox();
@@ -1170,7 +1173,9 @@ class DatabaseService extends ChangeNotifier {
 
   void syncTableStatusWithOrders() {
     for (int i = 0; i < _tables.length; i++) {
-      _tables[i] = _tables[i].copyWith(status: TableStatus.kosong);
+      if (_tables[i].status != TableStatus.reservasi) {
+        _tables[i] = _tables[i].copyWith(status: TableStatus.kosong);
+      }
     }
     for (final order in _orders) {
       if (order.status != OrderStatus.selesai && order.status != OrderStatus.dibatalkan) {

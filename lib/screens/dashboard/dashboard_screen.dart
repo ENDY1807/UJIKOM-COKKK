@@ -86,8 +86,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: RefreshIndicator(
         color: const Color(0xFFEA580C),
         onRefresh: () async {
-          widget.db.syncTableStatusWithOrders();
-          setState(() {});
+          await widget.db.initSupabase();
+          if (mounted) setState(() {});
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

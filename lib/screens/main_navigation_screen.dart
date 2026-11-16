@@ -408,6 +408,70 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ),
                 const SizedBox(width: 4),
               ],
+              // Tombol Sinkronisasi / Reload Data Cloud Supabase
+              widget.db.isLoadingFromSupabase
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Center(
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFFEA580C),
+                          ),
+                        ),
+                      ),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.sync_rounded, color: AppTheme.textMuted, size: 20),
+                      tooltip: 'Sinkronisasi Data Cloud (Supabase)',
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        messenger.hideCurrentSnackBar();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  context.t('Menyinkronkan data dengan Supabase...', 'Syncing data with Supabase...'),
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ],
+                            ),
+                            duration: const Duration(milliseconds: 1500),
+                            behavior: SnackBarBehavior.floating,
+                            backgroundColor: const Color(0xFF1E293B),
+                          ),
+                        );
+                        await widget.db.initSupabase();
+                        if (!context.mounted) return;
+                        messenger.hideCurrentSnackBar();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 18),
+                                const SizedBox(width: 10),
+                                Text(
+                                  context.t('Data berhasil disinkronkan dengan Supabase Cloud', 'Data synchronized with Supabase Cloud'),
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ],
+                            ),
+                            duration: const Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                            backgroundColor: const Color(0xFF1E293B),
+                          ),
+                        );
+                      },
+                    ),
               IconButton(
                 icon: const Icon(Icons.settings_outlined, color: AppTheme.textMuted, size: 20),
                 tooltip: 'Pengaturan Aplikasi',

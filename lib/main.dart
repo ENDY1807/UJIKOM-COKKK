@@ -34,7 +34,7 @@ class KasirRestoranApp extends StatefulWidget {
   State<KasirRestoranApp> createState() => _KasirRestoranAppState();
 }
 
-class _KasirRestoranAppState extends State<KasirRestoranApp> {
+class _KasirRestoranAppState extends State<KasirRestoranApp> with WidgetsBindingObserver {
   late final DatabaseService _db;
   StreamSubscription<AuthState>? _authSub;
   bool _showSplash = true;
@@ -42,11 +42,20 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _db = DatabaseService();
     _db.addListener(_onDbChange);
 
     // Dengarkan perubahan sesi autentikasi Supabase (misal return dari Google OAuth Browser)
     _listenSupabaseAuth();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Ketika aplikasi dibuka kembali / kembali ke fokus, sesuaikan data dengan Supabase Cloud
+      _db.initSupabase();
+    }
   }
 
   void _listenSupabaseAuth() {
@@ -80,6 +89,7 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _authSub?.cancel();
     _db.removeListener(_onDbChange);
     _db.dispose();
