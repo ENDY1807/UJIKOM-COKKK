@@ -158,6 +158,8 @@ class DatabaseService extends ChangeNotifier {
   int get memberDiscountPercent => _memberDiscountPercent;
 
   Timer? _fastOrderSyncTimer;
+  Timer? _backgroundFullSyncTimer;
+  bool _isSyncing = false;
 
   // Getters
   List<UserModel> get users => List.unmodifiable(_users);
@@ -183,6 +185,23 @@ class DatabaseService extends ChangeNotifier {
     await initSupabase();
     // 3. Mulai sinkronisasi pesanan cepat (2 detik) agar kasir langsung menerima pesanan dari waiter
     startFastOrderSync();
+    // 4. Mulai sinkronisasi penuh di latar belakang (otomatis berkala tanpa tombol)
+    startBackgroundFullSync();
+  }
+
+  /// Sinkronisasi berkala data cloud di latar belakang (otomatis tanpa tombol)
+  void startBackgroundFullSync() {
+    _backgroundFullSyncTimer?.cancel();
+    _backgroundFullSyncTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+      if (_isSupabaseConnected && !_isLoadingFromSupabase && !_isSyncing) {
+        await initSupabase(silent: true);
+      }
+    });
+  }
+
+  void stopBackgroundFullSync() {
+    _backgroundFullSyncTimer?.cancel();
+    _backgroundFullSyncTimer = null;
   }
 
   /// Sinkronisasi cepat berkala pesanan antar perangkat (Waiter -> Kasir)
@@ -231,6 +250,7 @@ class DatabaseService extends ChangeNotifier {
   @override
   void dispose() {
     stopFastOrderSync();
+    stopBackgroundFullSync();
     super.dispose();
   }
 
@@ -240,9 +260,13 @@ class DatabaseService extends ChangeNotifier {
   }
 
   /// Sinkronisasi langsung dengan database cloud Supabase
-  Future<void> initSupabase() async {
-    _isLoadingFromSupabase = true;
-    notifyListeners();
+  Future<void> initSupabase({bool silent = false}) async {
+    if (_isSyncing) return;
+    _isSyncing = true;
+    if (!silent) {
+      _isLoadingFromSupabase = true;
+      notifyListeners();
+    }
 
     try {
       final connected = await _supabase.checkConnection();
@@ -320,7 +344,10 @@ class DatabaseService extends ChangeNotifier {
       debugPrint('[DatabaseService] initSupabase error: $e');
       _ensureDefaultDanaSandbox();
     } finally {
-      _isLoadingFromSupabase = false;
+      _isSyncing = false;
+      if (!silent) {
+        _isLoadingFromSupabase = false;
+      }
       notifyListeners();
     }
   }

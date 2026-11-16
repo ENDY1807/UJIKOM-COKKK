@@ -49,6 +49,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final db = DatabaseService();
+    addTearDown(db.dispose);
     // Simulate user login
     db.loginWithGoogle(
       googleUid: 'test_uid',
@@ -79,6 +80,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final db = DatabaseService();
+    addTearDown(db.dispose);
     // Simulate user
     db.loginWithGoogle(
       googleUid: 'google_user_123',
@@ -116,6 +118,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final db = DatabaseService();
+    addTearDown(db.dispose);
 
     // Test Admin (has all screens according to UKK 2134)
     db.switchRole(UserRole.administrator);
