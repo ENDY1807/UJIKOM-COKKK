@@ -318,7 +318,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
         ],
       ),
     );
-    );
   }
 
   // ── WIDGET FORM INPUT PELANGGAN BERLANGGANAN ──
