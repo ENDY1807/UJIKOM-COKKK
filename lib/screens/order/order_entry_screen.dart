@@ -610,9 +610,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   Widget _buildCategoryAndSearchBar() {
     final categories = [
       MenuCategory.semua,
+      MenuCategory.paket,
       MenuCategory.makanan,
       MenuCategory.minuman,
-      MenuCategory.paket,
       MenuCategory.addon,
     ];
 
