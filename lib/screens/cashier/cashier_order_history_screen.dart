@@ -464,9 +464,9 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
 
         // Filter status
         var filtered = allOrders.where((o) {
-          if (_statusFilter == 'selesai') return o.status == OrderStatus.selesai;
+          if (_statusFilter == 'selesai') return o.status == OrderStatus.selesai || o.isPaid;
           if (_statusFilter == 'aktif') {
-            return o.status == OrderStatus.menunggu || o.status == OrderStatus.diproses;
+            return (o.status == OrderStatus.menunggu || o.status == OrderStatus.diproses) && !o.isPaid;
           }
           if (_statusFilter == 'dibatalkan') return o.status == OrderStatus.dibatalkan;
           return true;
@@ -492,7 +492,7 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
         // Hitung ringkasan
         final totalPesanan = filtered.length;
         final totalNominal = filtered
-            .where((o) => o.status == OrderStatus.selesai)
+            .where((o) => o.status == OrderStatus.selesai || o.isPaid)
             .fold(0, (sum, o) => sum + o.grandTotalSetelahDiskon);
 
         return Scaffold(

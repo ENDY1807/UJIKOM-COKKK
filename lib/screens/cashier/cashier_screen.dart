@@ -135,11 +135,12 @@ class _CashierScreenState extends State<CashierScreen> {
       metodePembayaran: isQris ? 'QRIS' : 'Tunai',
     );
 
-    // 2. Pesanan otomatis diterima dan langsung masuk proses memasak di dapur
-    widget.db.updateOrderStatus(order.idOrder, OrderStatus.diproses);
+    // 2. Pesanan otomatis lunas & selesai, langsung masuk ke riwayat pesanan dan meja kembali kosong
+    widget.db.updateOrderStatus(order.idOrder, OrderStatus.selesai);
     widget.db.updateOrderPaymentStatus(order.idOrder, true);
+    widget.db.updateTableStatus(order.noMeja, TableStatus.kosong);
 
-    // 3. Masukkan ke simulasi alur dapur koki (Step 2: Dimasak / Proses Memasak)
+    // 3. Masukkan ke simulasi alur dapur koki
     OrderSimulationService().getOrCreateProgress(order);
 
     setState(() {
@@ -167,11 +168,11 @@ class _CashierScreenState extends State<CashierScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.restaurant_rounded, color: Color(0xFF22C55E), size: 18),
+            const Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Pembayaran berhasil! Pesanan ${order.noMeja} otomatis diterima & masuk proses memasak dapur.',
+                'Pembayaran lunas! Transaksi tersimpan dan pesanan ${order.noMeja} langsung masuk ke Riwayat Pesanan.',
                 style: const TextStyle(fontSize: 13),
               ),
             ),
@@ -1138,10 +1139,10 @@ class _CashierScreenState extends State<CashierScreen> {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       isQris
-                          ? (order.isPaid ? 'Selesaikan Transaksi & Masak' : 'Menunggu Pembayaran QRIS (Belum Lunas)')
+                          ? (order.isPaid ? 'Selesaikan Transaksi & Cetak Struk' : 'Menunggu Pembayaran QRIS (Belum Lunas)')
                           : (_parsedBayar <= 0
                               ? 'Masukkan Uang Pembayaran'
-                              : (_isPaymentValid ? 'Bayar & Proses Memasak' : 'Uang Pembayaran Masih Kurang')),
+                              : (_isPaymentValid ? 'Bayar & Selesaikan Transaksi' : 'Uang Pembayaran Masih Kurang')),
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                     ),
                   ),

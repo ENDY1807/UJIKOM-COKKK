@@ -52,10 +52,10 @@ class _CustomerOrderHistoryScreenState
 
     final filtered = displayOrders.where((o) {
       if (_filter == 'aktif') {
-        return o.status == OrderStatus.menunggu ||
-            o.status == OrderStatus.diproses;
+        return (o.status == OrderStatus.menunggu ||
+            o.status == OrderStatus.diproses) && !o.isPaid;
       } else if (_filter == 'selesai') {
-        return o.status == OrderStatus.selesai;
+        return o.status == OrderStatus.selesai || o.isPaid;
       }
       return true;
     }).toList();
