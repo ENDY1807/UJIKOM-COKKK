@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "44989673378",
+    "project_id": "rasantara-b20b5",
+    "storage_bucket": "rasantara-b20b5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:44989673378:android:0e3f4cf298171e54b44cfb",
+        "android_client_info": {
+          "package_name": "com.example.kasir_restoran"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMNJB-7NY49YKaJusN37cvfh2vkDJHZFc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

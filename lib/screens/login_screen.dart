@@ -64,14 +64,14 @@ class _LoginScreenState extends State<LoginScreen>
     final password = _loginPasswordController.text;
 
     if (usernameOrEmail.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Username / Email / No. HP dan password wajib diisi');
+      setState(() => _errorMessage = 'Kolom wajib diisi');
       return;
     }
 
     setState(() => _isSubmitting = true);
 
     try {
-      final success = await widget.db.loginAsync(usernameOrEmail, password);
+      final success = await widget.db.loginAsync(_loginUsernameController.text.trim(), password);
       if (!mounted) return;
 
       if (success) {

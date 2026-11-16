@@ -1,15 +1,15 @@
 /// Konfigurasi Supabase Project Kasir Restoran
 /// Berisi URL, Publishable Key, Secret Key, JWKS URL, dan Google OAuth Credentials.
 class SupabaseConfig {
-  static const String url = 'https://kzhqoowfvdyllcaewsao.supabase.co';
+  static const String url = 'https://asyedfpclzehgitbqxml.supabase.co';
   static const String publishableKey =
-      'sb_publishable_79_UbfbUBCxW_Q2k_oksYQ_Rh0JjjAU';
+      'sb_publishable_eZY7OLZbPDTTrX4BSQMhkA_l9xnejzZ';
   static const String secretKey = String.fromEnvironment(
     'SUPABASE_SECRET_KEY',
     defaultValue: 'YOUR_SUPABASE_SECRET_KEY',
-  );
+  ); 
   static const String jwksUrl =
-      'https://kzhqoowfvdyllcaewsao.supabase.co/auth/v1/.well-known/jwks.json';
+      'https://asyedfpclzehgitbqxml.supabase.co/auth/v1/.well-known/jwks.json';
 
   // Google OAuth Credentials
   // Web Client ID (digunakan untuk serverClientId / web / desktop OAuth & Supabase)
