@@ -706,6 +706,19 @@ class SupabaseService {
     }
   }
 
+  Future<bool> updateOrderPaymentStatus(int idOrder, bool isPaid) async {
+    try {
+      await client
+          .from(_orderTable)
+          .update({'is_paid': isPaid})
+          .eq('id_order', idOrder);
+      return true;
+    } catch (e) {
+      debugPrint('[SupabaseService] updateOrderPaymentStatus error: $e');
+      return false;
+    }
+  }
+
   Future<bool> deleteOrder(int idOrder) async {
     try {
       await client.from(_detailOrderTable).delete().eq('id_order', idOrder);

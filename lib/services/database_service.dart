@@ -1342,6 +1342,10 @@ class DatabaseService extends ChangeNotifier {
       _orders[index].isPaid = isPaid;
       notifyListeners();
     }
+
+    if (_isSupabaseConnected) {
+      _supabase.updateOrderPaymentStatus(idOrder, isPaid);
+    }
   }
 
   void deleteOrder(int idOrder) {
