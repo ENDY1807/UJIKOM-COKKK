@@ -1293,7 +1293,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 _buildPolicySection(
                   number: '2',
                   title: 'Tujuan Pemrosesan & Penggunaan Data',
-                  body: 'Data digunakan secara sah untuk verifikasi identitas masuk akun (2FA WhatsApp OTP), memproses pesanan makanan di dapur restoran, navigasi pengantaran pesanan oleh kurir/driver, perhitungan promo dan kupon diskon, serta integrasi resmi payment gateway Midtrans Snap BI.',
+                  body: 'Data digunakan secara sah untuk verifikasi identitas masuk akun (2FA WhatsApp OTP), memproses pesanan makanan di dapur restoran, navigasi pengantaran pesanan oleh kurir/driver, perhitungan potongan harga pelanggan langganan, serta integrasi resmi payment gateway Midtrans Snap BI.',
                 ),
                 _buildPolicySection(
                   number: '3',

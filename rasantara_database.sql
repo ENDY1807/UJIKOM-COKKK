@@ -8,7 +8,6 @@
 -- Bersihkan view & tabel jika sudah ada sebelumnya (clean install)
 -- Hapus semua view alias lama agar tidak menduplikasi daftar tabel di Supabase Dashboard
 DROP VIEW IF EXISTS "user_address" CASCADE;
-DROP VIEW IF EXISTS "event" CASCADE;
 DROP VIEW IF EXISTS "transaksi" CASCADE;
 DROP VIEW IF EXISTS "detail_order" CASCADE;
 DROP VIEW IF EXISTS "order" CASCADE;
@@ -65,6 +64,7 @@ SELECT setval(pg_get_serial_sequence('tb_level', 'id_level'), COALESCE(MAX(id_le
 
 -- ============================================================
 -- 2. TABEL USER / PENGGUNA (DUKUNGAN GOOGLE OAUTH & LOKAL)
+--    Memiliki kolom 'is_subscribed' untuk status Pelanggan Berlangganan (VIP Member)
 -- ============================================================
 CREATE TABLE tb_user (
     id_user SERIAL PRIMARY KEY,
@@ -79,7 +79,7 @@ CREATE TABLE tb_user (
     google_email VARCHAR(150) UNIQUE DEFAULT NULL,
     google_photo VARCHAR(500) DEFAULT NULL,
     is_configured BOOLEAN NOT NULL DEFAULT FALSE,
-    is_subscribed BOOLEAN NOT NULL DEFAULT FALSE,
+    is_subscribed BOOLEAN NOT NULL DEFAULT FALSE, -- TRUE = Pelanggan Berlangganan VIP (Diskon 10%)
     is_two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -172,6 +172,7 @@ SELECT setval(pg_get_serial_sequence('tb_masakan', 'id_masakan'), COALESCE(MAX(i
 
 -- ============================================================
 -- 5. TABEL ORDER / PESANAN
+--    Kolom 'diskon_member' mencatat potongan 10% khusus Pelanggan Langganan
 -- ============================================================
 CREATE TABLE tb_order (
     id_order SERIAL PRIMARY KEY,
@@ -180,10 +181,7 @@ CREATE TABLE tb_order (
     id_user INT REFERENCES tb_user(id_user) ON DELETE SET NULL ON UPDATE CASCADE,
     keterangan TEXT,
     status_order status_order_type NOT NULL DEFAULT 'Menunggu',
-    diskon_event INT NOT NULL DEFAULT 0,
-    diskon_kupon INT NOT NULL DEFAULT 0,
-    potongan_poin INT NOT NULL DEFAULT 0,
-    kode_kupon VARCHAR(50) DEFAULT '',
+    diskon_member INT NOT NULL DEFAULT 0, -- Potongan harga 10% untuk Pelanggan Langganan
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -203,6 +201,7 @@ CREATE TABLE tb_detail_order (
 
 -- ============================================================
 -- 7. TABEL TRANSAKSI KASIR
+--    Kolom 'diskon_member' mencatat potongan 10% khusus Pelanggan Langganan
 -- ============================================================
 CREATE TABLE tb_transaksi (
     id_transaksi SERIAL PRIMARY KEY,
@@ -213,33 +212,9 @@ CREATE TABLE tb_transaksi (
     jumlah_bayar INT NOT NULL CHECK (jumlah_bayar >= 0),
     kembalian INT NOT NULL DEFAULT 0 CHECK (kembalian >= 0),
     metode_pembayaran VARCHAR(50) NOT NULL DEFAULT 'Tunai',
-    diskon_event INT NOT NULL DEFAULT 0,
-    diskon_kupon INT NOT NULL DEFAULT 0,
-    potongan_poin INT NOT NULL DEFAULT 0,
-    kode_kupon VARCHAR(50) DEFAULT '',
+    diskon_member INT NOT NULL DEFAULT 0, -- Potongan harga 10% untuk Pelanggan Langganan
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-
--- ============================================================
--- 7b. TABEL KUPON PROMO RESTORAN
--- ============================================================
-CREATE TABLE IF NOT EXISTS tb_kupon (
-    id_kupon SERIAL PRIMARY KEY,
-    kode_kupon VARCHAR(50) UNIQUE NOT NULL,
-    nama_kupon VARCHAR(100) NOT NULL,
-    tipe_diskon VARCHAR(20) NOT NULL DEFAULT 'persen',
-    nilai_diskon INT NOT NULL DEFAULT 10,
-    minimal_transaksi INT NOT NULL DEFAULT 0,
-    maksimal_potongan INT NOT NULL DEFAULT 50000,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-INSERT INTO tb_kupon (kode_kupon, nama_kupon, tipe_diskon, nilai_diskon, minimal_transaksi, maksimal_potongan) VALUES
-('RASANTARA10', 'Diskon Spesial Nusantara 10%', 'persen', 10, 30000, 20000),
-('DISKONMEMBER', 'Kupon Eksklusif Pelanggan Rp 15.000', 'nominal', 15000, 50000, 15000),
-('HEMAT20', 'Promo Pesta Kuliner 20%', 'persen', 20, 60000, 30000)
-ON CONFLICT (kode_kupon) DO NOTHING;
 
 -- ============================================================
 -- 8. TABEL METODE PEMBAYARAN PENGGUNA (E-WALLET & M-BANKING)
@@ -271,6 +246,8 @@ CREATE TABLE IF NOT EXISTS tb_payment_mutasi (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+SELECT setval(pg_get_serial_sequence('tb_payment_mutasi', 'id_mutasi'), COALESCE(MAX(id_mutasi), 1)) FROM tb_payment_mutasi;
+
 -- ============================================================
 -- 10. TABEL LOG AKTIVITAS (AUDIT TRAIL)
 -- ============================================================
@@ -280,6 +257,8 @@ CREATE TABLE tb_log_aktivitas (
     aktivitas VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+SELECT setval(pg_get_serial_sequence('tb_log_aktivitas', 'id_log'), COALESCE(MAX(id_log), 1)) FROM tb_log_aktivitas;
 
 -- ============================================================
 -- 11. TABEL ALAMAT PENGGUNA (TAKE AWAY / DELIVERY MULTI-ALAMAT)
@@ -304,103 +283,65 @@ CREATE TABLE IF NOT EXISTS tb_user_address (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
--- 12. TABEL EVENT & PROMOSI RESTORAN (HANYA OWNER YANG BISA MEMBUAT)
--- ============================================================
-CREATE TABLE IF NOT EXISTS tb_event (
-    id_event SERIAL PRIMARY KEY,
-    judul_event VARCHAR(255) NOT NULL,
-    deskripsi TEXT,
-    gambar_url TEXT,
-    kode_promo VARCHAR(50) DEFAULT '',
-    diskon_persen INT DEFAULT 10,
-    tanggal_mulai DATE DEFAULT CURRENT_DATE,
-    tanggal_selesai DATE DEFAULT (CURRENT_DATE + INTERVAL '14 days'),
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_by VARCHAR(50) NOT NULL DEFAULT 'owner',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Initial Seed Event Restoran
-INSERT INTO tb_event (id_event, judul_event, deskripsi, gambar_url, kode_promo, diskon_persen, tanggal_mulai, tanggal_selesai, is_active, created_by)
-VALUES
-    (1, 'Festival Kuliner Nusantara', 'Nikmati potongan diskon 20% untuk semua menu Paket Spesial & Rendang Minang warisan asli.', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80', 'NUSANTARA20', 20, CURRENT_DATE, CURRENT_DATE + INTERVAL '14 days', TRUE, 'owner'),
-    (2, 'Pesta Gurih Akhir Pekan', 'Spesial kuah rempah! Diskon 15% untuk Rawon Surabaya & Soto Banjar menggunakan Saldo Rasantara.', 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80', 'GURIHHEMAT', 15, CURRENT_DATE, CURRENT_DATE + INTERVAL '7 days', TRUE, 'owner'),
-    (3, 'Gebyar Dobel Poin Rasantara', 'Dapatkan 2x lipat Poin Kuliner untuk setiap pesanan Take Away menggunakan titik pin GPS.', 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80', 'DOBELPOIN', 10, CURRENT_DATE, CURRENT_DATE + INTERVAL '30 days', TRUE, 'owner')
-ON CONFLICT (id_event) DO UPDATE SET
-    judul_event = EXCLUDED.judul_event,
-    deskripsi = EXCLUDED.deskripsi,
-    kode_promo = EXCLUDED.kode_promo,
-    diskon_persen = EXCLUDED.diskon_persen;
-
--- Security Policy RLS: Hanya role owner yang boleh INSERT / UPDATE / DELETE event
-ALTER TABLE tb_event ENABLE ROW LEVEL SECURITY;
-
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'tb_event' AND policyname = 'Semua pengguna dapat melihat event aktif') THEN
-        CREATE POLICY "Semua pengguna dapat melihat event aktif" ON tb_event FOR SELECT USING (is_active = TRUE);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'tb_event' AND policyname = 'Hanya Owner yang dapat mengelola event') THEN
-        CREATE POLICY "Hanya Owner yang dapat mengelola event" ON tb_event FOR ALL USING (
-            auth.jwt() ->> 'role' = 'owner' OR 
-            (SELECT id_level FROM tb_user WHERE id_user = (auth.jwt() ->> 'sub')::int) = 4
-        );
-    END IF;
-END $$;
+SELECT setval(pg_get_serial_sequence('tb_user_address', 'id_alamat'), COALESCE(MAX(id_alamat), 1)) FROM tb_user_address;
 
 -- ============================================================
 -- SEED DATA HISTORIS TRANSAKSI & PESANAN (MENGISI DIAGRAM REAL-TIME)
--- Menghasilkan data transaksi 7 hari terakhir, variasi metode bayar,
--- serta persebaran tipe layanan (Dine-in, GoFood Delivery, Take Away).
--- Menggunakan subquery COALESCE agar aman dari Foreign Key error
--- jika dijalankan berulang atau jika urutan ID user berbeda.
+-- Menghasilkan data transaksi 7 hari terakhir.
+-- Khusus Pelanggan Langganan (VIP Member / username 'pelanggan')
+-- otomatis mendapatkan Potongan Harga 10% (diskon_member).
+-- Pelanggan reguler (username 'pelanggan_reguler') diskon = 0.
 -- ============================================================
 
--- Order 1: 6 Hari lalu (Dine In Meja 03) - Bayar Tunai
-INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, created_at)
+-- Order 1: 6 Hari lalu (Dine In Meja 03) - Pelanggan VIP Langganan (Diskon 10%)
+-- Subtotal: Rp 134.000 | Diskon 10%: Rp 13.400 | Total Bayar: Rp 120.600 | Bayar Tunai: Rp 150.000 | Kembalian: Rp 29.400
+INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, diskon_member, created_at)
 VALUES (
     101, 
     'Meja 03', 
     CURRENT_DATE - INTERVAL '6 day', 
-    COALESCE((SELECT id_user FROM tb_user WHERE username = 'budi' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
-    'Dine-In (2 Orang)', 
+    COALESCE((SELECT id_user FROM tb_user WHERE username = 'pelanggan' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
+    'Dine-In (2 Orang) - Member VIP', 
     'Selesai', 
+    13400,
     CURRENT_TIMESTAMP - INTERVAL '6 day'
 )
-ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user;
+ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user, diskon_member = EXCLUDED.diskon_member;
 
 INSERT INTO tb_detail_order (id_detail_order, id_order, id_masakan, jumlah, harga_satuan, subtotal, keterangan, status_detail_order) VALUES
 (1001, 101, 1, 2, 45000, 90000, 'Pedas sedang', 'Disajikan'),
 (1002, 101, 13, 2, 22000, 44000, 'Durian banyak', 'Disajikan')
 ON CONFLICT (id_detail_order) DO NOTHING;
 
-INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, created_at)
+INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, diskon_member, created_at)
 VALUES (
     201, 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'kasir' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 3 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
     101, 
     CURRENT_DATE - INTERVAL '6 day', 
-    134000, 
+    120600, 
     150000, 
-    16000, 
+    29400, 
     'Tunai', 
+    13400,
     CURRENT_TIMESTAMP - INTERVAL '6 day'
 )
 ON CONFLICT (id_transaksi) DO NOTHING;
 
--- Order 2: 5 Hari lalu (GoFood Delivery Rumah) - Bayar QRIS
-INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, created_at)
+-- Order 2: 5 Hari lalu (GoFood Delivery Rumah) - Pelanggan Reguler (Diskon 0)
+-- Subtotal: Rp 152.000 | Diskon: Rp 0 | Total Bayar: Rp 152.000 | Bayar QRIS: Rp 152.000
+INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, diskon_member, created_at)
 VALUES (
     102, 
     'Delivery (Rumah)', 
     CURRENT_DATE - INTERVAL '5 day', 
-    COALESCE((SELECT id_user FROM tb_user WHERE username = 'siti' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
+    COALESCE((SELECT id_user FROM tb_user WHERE username = 'pelanggan_reguler' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
     'GoFood Delivery: Jl. Kaliurang KM 5 No. 12 | Jarak: 3.2km | Ongkir: Rp 10500', 
     'Selesai', 
+    0,
     CURRENT_TIMESTAMP - INTERVAL '5 day'
 )
-ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user;
+ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user, diskon_member = EXCLUDED.diskon_member;
 
 INSERT INTO tb_detail_order (id_detail_order, id_order, id_masakan, jumlah, harga_satuan, subtotal, keterangan, status_detail_order) VALUES
 (1003, 102, 2, 1, 42000, 42000, 'Ayam bagian paha', 'Disajikan'),
@@ -408,7 +349,7 @@ INSERT INTO tb_detail_order (id_detail_order, id_order, id_masakan, jumlah, harg
 (1005, 102, 14, 2, 20000, 40000, 'Es sedikit', 'Disajikan')
 ON CONFLICT (id_detail_order) DO NOTHING;
 
-INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, created_at)
+INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, diskon_member, created_at)
 VALUES (
     202, 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'kasir' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 3 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
@@ -418,61 +359,67 @@ VALUES (
     152000, 
     0, 
     'QRIS', 
+    0,
     CURRENT_TIMESTAMP - INTERVAL '5 day'
 )
 ON CONFLICT (id_transaksi) DO NOTHING;
 
--- Order 3: 4 Hari lalu (Dine In Meja 05) - Bayar GoPay
-INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, created_at)
+-- Order 3: 4 Hari lalu (Dine In Meja 05) - Pelanggan VIP Langganan (Diskon 10%)
+-- Subtotal: Rp 168.000 | Diskon 10%: Rp 16.800 | Total Bayar: Rp 151.200 | Bayar GoPay: Rp 151.200
+INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, diskon_member, created_at)
 VALUES (
     103, 
     'Meja 05', 
     CURRENT_DATE - INTERVAL '4 day', 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'pelanggan' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
-    'Dine-In (4 Orang)', 
+    'Dine-In (4 Orang) - Member VIP', 
     'Selesai', 
+    16800,
     CURRENT_TIMESTAMP - INTERVAL '4 day'
 )
-ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user;
+ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user, diskon_member = EXCLUDED.diskon_member;
 
 INSERT INTO tb_detail_order (id_detail_order, id_order, id_masakan, jumlah, harga_satuan, subtotal, keterangan, status_detail_order) VALUES
 (1006, 103, 4, 3, 38000, 114000, 'Kecambah dipisah', 'Disajikan'),
 (1007, 103, 16, 3, 18000, 54000, 'Segar dingin', 'Disajikan')
 ON CONFLICT (id_detail_order) DO NOTHING;
 
-INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, created_at)
+INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, diskon_member, created_at)
 VALUES (
     203, 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'kasir' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 3 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
     103, 
     CURRENT_DATE - INTERVAL '4 day', 
-    168000, 
-    168000, 
+    151200, 
+    151200, 
     0, 
     'GoPay / E-Wallet', 
+    16800,
     CURRENT_TIMESTAMP - INTERVAL '4 day'
 )
 ON CONFLICT (id_transaksi) DO NOTHING;
 
--- Order 4: 3 Hari lalu (Take Away Counter) - Bayar Tunai
-INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, created_at)
+-- Order 4: 3 Hari lalu (Take Away Counter) - Pelanggan Reguler (Diskon 0)
+-- Subtotal: Rp 136.000 | Diskon: Rp 0 | Total Bayar: Rp 136.000 | Bayar Tunai: Rp 150.000 | Kembalian: Rp 14.000
+INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, diskon_member, created_at)
 VALUES (
     104, 
     'Take Away (Pick-up)', 
     CURRENT_DATE - INTERVAL '3 day', 
-    COALESCE((SELECT id_user FROM tb_user WHERE username = 'budi' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
+    COALESCE((SELECT id_user FROM tb_user WHERE username = 'pelanggan_reguler' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
     'Take Away di Counter | Ambil jam 12:30', 
     'Selesai', 
+    0,
     CURRENT_TIMESTAMP - INTERVAL '3 day'
 )
-ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user;
+ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user, diskon_member = EXCLUDED.diskon_member;
 
 INSERT INTO tb_detail_order (id_detail_order, id_order, id_masakan, jumlah, harga_satuan, subtotal, keterangan, status_detail_order) VALUES
 (1008, 104, 6, 3, 32000, 96000, 'Bumbu kacang dipisah', 'Disajikan'),
 (1009, 104, 18, 2, 20000, 40000, 'Kental manis', 'Disajikan')
 ON CONFLICT (id_detail_order) DO NOTHING;
 
-INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, created_at)
+INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, diskon_member, created_at)
 VALUES (
     204, 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'kasir' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 3 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
@@ -482,22 +429,25 @@ VALUES (
     150000, 
     14000, 
     'Tunai', 
+    0,
     CURRENT_TIMESTAMP - INTERVAL '3 day'
 )
 ON CONFLICT (id_transaksi) DO NOTHING;
 
--- Order 5: 2 Hari lalu (Dine In Meja 08) - Bayar Kartu Debit
-INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, created_at)
+-- Order 5: 2 Hari lalu (Dine In Meja 08) - Pelanggan VIP Langganan (Diskon 10%)
+-- Subtotal: Rp 289.000 | Diskon 10%: Rp 28.900 | Total Bayar: Rp 260.100 | Bayar Kartu Debit: Rp 260.100
+INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, diskon_member, created_at)
 VALUES (
     105, 
     'Meja 08', 
     CURRENT_DATE - INTERVAL '2 day', 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'pelanggan' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
-    'Dine-In (6 Orang Keluarga)', 
+    'Dine-In (6 Orang Keluarga) - Member VIP', 
     'Selesai', 
+    28900,
     CURRENT_TIMESTAMP - INTERVAL '2 day'
 )
-ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user;
+ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user, diskon_member = EXCLUDED.diskon_member;
 
 INSERT INTO tb_detail_order (id_detail_order, id_order, id_masakan, jumlah, harga_satuan, subtotal, keterangan, status_detail_order) VALUES
 (1010, 105, 20, 1, 155000, 155000, 'Paket Rantang Berempat Komplit', 'Disajikan'),
@@ -505,32 +455,35 @@ INSERT INTO tb_detail_order (id_detail_order, id_order, id_masakan, jumlah, harg
 (1012, 105, 13, 2, 22000, 44000, 'Durian asli', 'Disajikan')
 ON CONFLICT (id_detail_order) DO NOTHING;
 
-INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, created_at)
+INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, diskon_member, created_at)
 VALUES (
     205, 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'kasir' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 3 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
     105, 
     CURRENT_DATE - INTERVAL '2 day', 
-    289000, 
-    289000, 
+    260100, 
+    260100, 
     0, 
     'Kartu Debit', 
+    28900,
     CURRENT_TIMESTAMP - INTERVAL '2 day'
 )
 ON CONFLICT (id_transaksi) DO NOTHING;
 
--- Order 6: Kemarin (GoFood Delivery Rumah) - Bayar QRIS
-INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, created_at)
+-- Order 6: Kemarin (GoFood Delivery Rumah) - Pelanggan Reguler (Diskon 0)
+-- Subtotal: Rp 165.000 | Diskon: Rp 0 | Total Bayar: Rp 165.000 | Bayar QRIS: Rp 165.000
+INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, diskon_member, created_at)
 VALUES (
     106, 
     'Delivery (Rumah)', 
     CURRENT_DATE - INTERVAL '1 day', 
-    COALESCE((SELECT id_user FROM tb_user WHERE username = 'siti' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
+    COALESCE((SELECT id_user FROM tb_user WHERE username = 'pelanggan_reguler' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
     'GoFood Delivery: Perumahan Asri Blok C-4 | Ongkir: Rp 8000', 
     'Selesai', 
+    0,
     CURRENT_TIMESTAMP - INTERVAL '1 day'
 )
-ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user;
+ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user, diskon_member = EXCLUDED.diskon_member;
 
 INSERT INTO tb_detail_order (id_detail_order, id_order, id_masakan, jumlah, harga_satuan, subtotal, keterangan, status_detail_order) VALUES
 (1013, 106, 9, 2, 40000, 80000, 'Bakar pedas lombok', 'Disajikan'),
@@ -538,7 +491,7 @@ INSERT INTO tb_detail_order (id_detail_order, id_order, id_masakan, jumlah, harg
 (1015, 106, 1, 1, 45000, 45000, 'Rendang Minang', 'Disajikan')
 ON CONFLICT (id_detail_order) DO NOTHING;
 
-INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, created_at)
+INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, diskon_member, created_at)
 VALUES (
     206, 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'kasir' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 3 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
@@ -548,22 +501,25 @@ VALUES (
     165000, 
     0, 
     'QRIS', 
+    0,
     CURRENT_TIMESTAMP - INTERVAL '1 day'
 )
 ON CONFLICT (id_transaksi) DO NOTHING;
 
--- Order 7: Hari Ini (Dine In Meja 02) - Bayar QRIS
-INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, created_at)
+-- Order 7: Hari Ini (Dine In Meja 02) - Pelanggan VIP Langganan (Diskon 10%)
+-- Subtotal: Rp 169.000 | Diskon 10%: Rp 16.900 | Total Bayar: Rp 152.100 | Bayar QRIS: Rp 152.100
+INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, diskon_member, created_at)
 VALUES (
     107, 
     'Meja 02', 
     CURRENT_DATE, 
-    COALESCE((SELECT id_user FROM tb_user WHERE username = 'budi' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
-    'Dine-In (2 Orang)', 
+    COALESCE((SELECT id_user FROM tb_user WHERE username = 'pelanggan' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
+    'Dine-In (2 Orang) - Member VIP', 
     'Selesai', 
+    16900,
     CURRENT_TIMESTAMP
 )
-ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user;
+ON CONFLICT (id_order) DO UPDATE SET status_order = EXCLUDED.status_order, id_user = EXCLUDED.id_user, diskon_member = EXCLUDED.diskon_member;
 
 INSERT INTO tb_detail_order (id_detail_order, id_order, id_masakan, jumlah, harga_satuan, subtotal, keterangan, status_detail_order) VALUES
 (1016, 107, 1, 2, 45000, 90000, 'Rendang Minang favorit', 'Disajikan'),
@@ -571,16 +527,17 @@ INSERT INTO tb_detail_order (id_detail_order, id_order, id_masakan, jumlah, harg
 (1018, 107, 13, 2, 22000, 44000, 'Es Cendol Durian', 'Disajikan')
 ON CONFLICT (id_detail_order) DO NOTHING;
 
-INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, created_at)
+INSERT INTO tb_transaksi (id_transaksi, id_user, id_order, tanggal, total_bayar, jumlah_bayar, kembalian, metode_pembayaran, diskon_member, created_at)
 VALUES (
     207, 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'kasir' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 3 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
     107, 
     CURRENT_DATE, 
-    169000, 
-    169000, 
+    152100, 
+    152100, 
     0, 
     'QRIS', 
+    16900,
     CURRENT_TIMESTAMP
 )
 ON CONFLICT (id_transaksi) DO NOTHING;
@@ -591,7 +548,7 @@ SELECT setval(pg_get_serial_sequence('tb_detail_order', 'id_detail_order'), COAL
 SELECT setval(pg_get_serial_sequence('tb_transaksi', 'id_transaksi'), COALESCE(MAX(id_transaksi), 1)) FROM tb_transaksi;
 
 -- ============================================================
--- 9. ROW LEVEL SECURITY (RLS) & PUBLIC GRANT FOR SUPABASE
+-- 12. ROW LEVEL SECURITY (RLS) & PUBLIC GRANT FOR SUPABASE
 -- Mengaktifkan izin penuh kepada role 'anon' dan 'authenticated'
 -- agar koneksi aplikasi Flutter dapat membaca dan menulis data tanpa kendala.
 -- ============================================================
@@ -606,7 +563,6 @@ ALTER TABLE tb_user_payment_methods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_payment_mutasi ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_log_aktivitas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tb_user_address ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tb_kupon ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all tb_level" ON tb_level;
 CREATE POLICY "Allow all tb_level" ON tb_level FOR ALL USING (true) WITH CHECK (true);
@@ -640,9 +596,6 @@ CREATE POLICY "Allow all tb_log_aktivitas" ON tb_log_aktivitas FOR ALL USING (tr
 
 DROP POLICY IF EXISTS "Allow all tb_user_address" ON tb_user_address;
 CREATE POLICY "Allow all tb_user_address" ON tb_user_address FOR ALL USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Allow all tb_kupon" ON tb_kupon;
-CREATE POLICY "Allow all tb_kupon" ON tb_kupon FOR ALL USING (true) WITH CHECK (true);
 
 -- Grant privileges ke anon, authenticated, dan service_role
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;

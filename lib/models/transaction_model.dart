@@ -10,11 +10,7 @@ class TransactionModel {
   final int jumlahBayar;
   final int kembalian;
   final String metodePembayaran;
-  final int diskonEvent;
-  final int diskonKupon;
-  final int potonganPoin;
   final int diskonMember;
-  final String kodeKupon;
 
   TransactionModel({
     required this.idTransaksi,
@@ -26,11 +22,7 @@ class TransactionModel {
     required this.jumlahBayar,
     required this.kembalian,
     this.metodePembayaran = 'Tunai',
-    this.diskonEvent = 0,
-    this.diskonKupon = 0,
-    this.potonganPoin = 0,
     this.diskonMember = 0,
-    this.kodeKupon = '',
   });
 
   static int _parseInt(dynamic val, {int fallback = 0}) {
@@ -67,11 +59,7 @@ class TransactionModel {
       jumlahBayar: jBayar,
       kembalian: kembali,
       metodePembayaran: map['metode_pembayaran'] ?? 'Tunai',
-      diskonEvent: _parseInt(map['diskon_event'], fallback: order.diskonEvent),
-      diskonKupon: _parseInt(map['diskon_kupon'], fallback: order.diskonKupon),
-      potonganPoin: _parseInt(map['potongan_poin'], fallback: order.potonganPoin),
       diskonMember: _parseInt(map['diskon_member'], fallback: order.diskonMember),
-      kodeKupon: map['kode_kupon']?.toString() ?? order.kodeKupon,
     );
   }
 
@@ -86,11 +74,7 @@ class TransactionModel {
       'jumlah_uang': jumlahBayar,
       'kembalian': kembalian,
       'metode_pembayaran': metodePembayaran,
-      'diskon_event': diskonEvent,
-      'diskon_kupon': diskonKupon,
-      'potongan_poin': potonganPoin,
       'diskon_member': diskonMember,
-      'kode_kupon': kodeKupon,
     };
   }
 }

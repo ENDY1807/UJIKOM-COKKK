@@ -587,7 +587,7 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
-                                      'Diskon & Kupon Promosi',
+                                      'Diskon Pelanggan Langganan (10%)',
                                       style: TextStyle(fontSize: 12, color: Color(0xFFEA580C)),
                                     ),
                                     Text(
@@ -845,10 +845,7 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                     jumlahBayar: widget.order.grandTotalSetelahDiskon,
                                     kembalian: 0,
                                     metodePembayaran: widget.order.metodePembayaran ?? 'Pembayaran Kasir',
-                                    diskonEvent: widget.order.diskonEvent,
-                                    diskonKupon: widget.order.diskonKupon,
-                                    potonganPoin: widget.order.potonganPoin,
-                                    kodeKupon: widget.order.kodeKupon,
+                                    diskonMember: widget.order.diskonMember,
                                   );
                               showDialog(
                                 context: context,

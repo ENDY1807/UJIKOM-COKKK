@@ -8,7 +8,6 @@ import '../models/order_model.dart';
 import '../models/transaction_model.dart';
 import '../models/payment_method_model.dart';
 import '../models/user_address_model.dart';
-import '../models/event_model.dart';
 import 'supabase_config.dart';
 
 /// Service untuk mengelola interaksi langsung dengan Supabase PostgreSQL & Auth.
@@ -643,6 +642,7 @@ class SupabaseService {
             ? 'Pelanggan: ${order.namaPelanggan}${order.keterangan.isNotEmpty ? ' | ${order.keterangan}' : ''}'
             : order.keterangan,
         'status_order': order.status.label,
+        'diskon_member': order.diskonMember,
       };
 
       dynamic insertedOrder;
@@ -778,6 +778,7 @@ class SupabaseService {
         'jumlah_bayar': trx.jumlahBayar,
         'kembalian': trx.kembalian,
         'metode_pembayaran': trx.metodePembayaran,
+        'diskon_member': trx.diskonMember,
       };
 
       dynamic res;
@@ -992,70 +993,6 @@ class SupabaseService {
         return true;
       } catch (e) {
         debugPrint('[SupabaseService] setPrimaryUserAddress error: $e');
-        return false;
-      }
-    }
-  }
-
-  // ==========================================
-  // EVENT & PROMOSI RESTORAN (Hanya Owner yang berhak menambah/mengubah)
-  // ==========================================
-
-  Future<List<EventModel>> fetchEvents() async {
-    if (!isInitialized) return [];
-    try {
-      final res = await client
-          .from('tb_event')
-          .select('*')
-          .eq('is_active', true)
-          .order('id_event', ascending: false);
-      return (res as List).map((m) => EventModel.fromMap(m as Map<String, dynamic>)).toList();
-    } catch (_) {
-      try {
-        final res = await client
-            .from('event')
-            .select('*')
-            .eq('is_active', true)
-            .order('id_event', ascending: false);
-        return (res as List).map((m) => EventModel.fromMap(m as Map<String, dynamic>)).toList();
-      } catch (e) {
-        debugPrint('[SupabaseService] fetchEvents error: $e');
-        return [];
-      }
-    }
-  }
-
-  Future<EventModel?> insertEvent(EventModel event) async {
-    if (!isInitialized) return null;
-    try {
-      final data = event.toMap();
-      data.remove('id_event');
-      final res = await client.from('tb_event').insert(data).select().single();
-      return EventModel.fromMap(res);
-    } catch (_) {
-      try {
-        final data = event.toMap();
-        data.remove('id_event');
-        final res = await client.from('event').insert(data).select().single();
-        return EventModel.fromMap(res);
-      } catch (e) {
-        debugPrint('[SupabaseService] insertEvent error: $e');
-        return null;
-      }
-    }
-  }
-
-  Future<bool> deleteEvent(int idEvent) async {
-    if (!isInitialized) return false;
-    try {
-      await client.from('tb_event').delete().eq('id_event', idEvent);
-      return true;
-    } catch (_) {
-      try {
-        await client.from('event').delete().eq('id_event', idEvent);
-        return true;
-      } catch (e) {
-        debugPrint('[SupabaseService] deleteEvent error: $e');
         return false;
       }
     }

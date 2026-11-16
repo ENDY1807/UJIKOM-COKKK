@@ -21,12 +21,8 @@ class ReceiptDialog extends StatelessWidget {
     final dateFmt = DateFormat('dd/MM/yyyy HH:mm:ss');
     final order = transaction.order;
 
-    // Hitung diskon & potongan
-    final diskonEvent = transaction.diskonEvent > 0 ? transaction.diskonEvent : order.diskonEvent;
-    final diskonKupon = transaction.diskonKupon > 0 ? transaction.diskonKupon : order.diskonKupon;
-    final potonganPoin = transaction.potonganPoin > 0 ? transaction.potonganPoin : order.potonganPoin;
+    // Hitung diskon khusus pelanggan langganan (10%)
     final diskonMember = transaction.diskonMember > 0 ? transaction.diskonMember : order.diskonMember;
-    final kodeKupon = transaction.kodeKupon.isNotEmpty ? transaction.kodeKupon : order.kodeKupon;
 
     final subtotal = order.totalHarga;
     final grandTotal = transaction.totalBayar;
@@ -178,14 +174,8 @@ class ReceiptDialog extends StatelessWidget {
 
                       // Rincian Biaya & Diskon
                       _buildCostSummaryRow(context.t('Subtotal Hidangan', 'Dishes Subtotal'), currencyFmt.format(subtotal)),
-                      if (diskonEvent > 0)
-                        _buildCostSummaryRow(context.t('Diskon Event Promo', 'Promo Event Discount'), '- ${currencyFmt.format(diskonEvent)}', isDiscount: true),
                       if (diskonMember > 0)
                         _buildCostSummaryRow(context.t('Diskon Pelanggan Langganan (VIP 10%)', 'VIP Member Discount (10%)'), '- ${currencyFmt.format(diskonMember)}', isDiscount: true),
-                      if (diskonKupon > 0)
-                        _buildCostSummaryRow('${context.t('Diskon Kupon', 'Coupon Discount')} ${kodeKupon.isNotEmpty ? "($kodeKupon)" : ""}', '- ${currencyFmt.format(diskonKupon)}', isDiscount: true),
-                      if (potonganPoin > 0)
-                        _buildCostSummaryRow(context.t('Potongan Poin Kuliner (1 Poin = Rp 1)', 'Culinary Points Discount (1 Point = Rp 1)'), '- ${currencyFmt.format(potonganPoin)}', isDiscount: true),
                       _buildCostSummaryRow(context.t('Pajak Restoran PB1 (10%)', 'Restaurant Tax PB1 (10%)'), context.t('Sudah Termasuk', 'Included'), isMuted: true),
 
                       const SizedBox(height: 8),

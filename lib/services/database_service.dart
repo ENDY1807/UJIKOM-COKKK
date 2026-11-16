@@ -8,7 +8,6 @@ import '../models/order_model.dart';
 import '../models/transaction_model.dart';
 import '../models/payment_method_model.dart';
 import '../models/user_address_model.dart';
-import '../models/event_model.dart';
 import 'supabase_service.dart';
 import 'app_localization.dart';
 
@@ -112,10 +111,6 @@ class DatabaseService extends ChangeNotifier {
   // Daftar Alamat Pengantaran Pengguna (Multi-Alamat)
   final List<UserAddressModel> _userAddresses = [];
   List<UserAddressModel> get userAddresses => List.unmodifiable(_userAddresses);
-
-  // Daftar Event & Promosi Restoran (Dibuat oleh Owner)
-  final List<EventModel> _events = [];
-  List<EventModel> get events => List.unmodifiable(_events);
 
   UserAddressModel? get primaryAddress {
     try {
@@ -255,16 +250,6 @@ class DatabaseService extends ChangeNotifier {
             _userAddresses.addAll(cloudAddresses);
             _saveUserAddressesLocal();
           }
-        }
-
-        // 8. Sinkronisasi Event Restoran dari cloud (Data mengikuti Supabase secara real)
-        try {
-          final cloudEvents = await _supabase.fetchEvents();
-          _events.clear();
-          _events.addAll(cloudEvents);
-        } catch (e) {
-          debugPrint('[DatabaseService] fetchEvents error: $e');
-          _events.clear();
         }
         _ensureDefaultDanaSandbox();
       } else {
@@ -1204,11 +1189,7 @@ class DatabaseService extends ChangeNotifier {
     required String namaPelanggan,
     required String keterangan,
     required List<OrderItemModel> items,
-    int diskonEvent = 0,
-    int diskonKupon = 0,
-    int potonganPoin = 0,
     int diskonMember = 0,
-    String? kodeKupon,
     String? metodePembayaran,
   }) {
     final newId = (_orders.map((o) => o.idOrder).fold(100, (max, id) => id > max ? id : max)) + 1;
@@ -1222,11 +1203,7 @@ class DatabaseService extends ChangeNotifier {
       keterangan: keterangan,
       status: OrderStatus.menunggu,
       items: items,
-      diskonEvent: diskonEvent,
-      diskonKupon: diskonKupon,
-      potonganPoin: potonganPoin,
       diskonMember: diskonMember,
-      kodeKupon: kodeKupon ?? '',
       metodePembayaran: metodePembayaran,
     );
     _orders.insert(0, order);
@@ -1287,23 +1264,15 @@ class DatabaseService extends ChangeNotifier {
     required OrderModel order,
     required int jumlahBayar,
     required String metodePembayaran,
-    int? diskonEvent,
-    int? diskonKupon,
-    int? potonganPoin,
     int? diskonMember,
-    String? kodeKupon,
   }) {
     final newId = (_transactions
             .map((t) => t.idTransaksi)
             .fold(0, (max, id) => id > max ? id : max)) +
         1;
-    final effDiskonEvent = diskonEvent ?? order.diskonEvent;
-    final effDiskonKupon = diskonKupon ?? order.diskonKupon;
-    final effPotonganPoin = potonganPoin ?? order.potonganPoin;
     final effDiskonMember = diskonMember ?? order.diskonMember;
-    final effKodeKupon = kodeKupon ?? order.kodeKupon;
 
-    final total = (order.totalHarga - effDiskonEvent - effDiskonKupon - effPotonganPoin - effDiskonMember).clamp(0, order.totalHarga);
+    final total = (order.totalHarga - effDiskonMember).clamp(0, order.totalHarga);
     final kembalian = jumlahBayar - total;
 
     // Tentukan user kasir pemroses yang valid dari database
@@ -1327,11 +1296,7 @@ class DatabaseService extends ChangeNotifier {
       jumlahBayar: jumlahBayar,
       kembalian: kembalian >= 0 ? kembalian : 0,
       metodePembayaran: metodePembayaran,
-      diskonEvent: effDiskonEvent,
-      diskonKupon: effDiskonKupon,
-      potonganPoin: effPotonganPoin,
       diskonMember: effDiskonMember,
-      kodeKupon: effKodeKupon,
     );
 
     _transactions.insert(0, transaction);
@@ -1808,51 +1773,6 @@ class DatabaseService extends ChangeNotifier {
   // EVENT & PROMOSI RESTORAN (Hanya Owner)
   // ==========================================
 
-  /// Refresh data event langsung dari Supabase Cloud (single source of truth)
-  Future<void> refreshEvents() async {
-    try {
-      final cloudEvents = await _supabase.fetchEvents();
-      _events.clear();
-      _events.addAll(cloudEvents);
-      notifyListeners();
-    } catch (e) {
-      debugPrint('[DatabaseService] refreshEvents error: $e');
-    }
-  }
-
-  Future<bool> addEvent(EventModel event) async {
-    // Validasi otorisasi: Hanya owner yang boleh membuat event
-    if (_currentUser?.role != UserRole.owner) {
-      debugPrint('[DatabaseService] Ditolak: Hanya akun dengan role owner yang dapat membuat event.');
-      return false;
-    }
-
-    EventModel? savedCloud;
-    try {
-      savedCloud = await _supabase.insertEvent(event);
-    } catch (e) {
-      debugPrint('[DatabaseService] addEvent Supabase error: $e');
-    }
-
-    final newId = savedCloud?.idEvent ??
-        ((_events.map((e) => e.idEvent).fold(0, (max, id) => id > max ? id : max)) + 1);
-    final finalModel = (savedCloud ?? event).copyWith(idEvent: newId, createdBy: 'owner');
-    _events.insert(0, finalModel);
-    notifyListeners();
-    return true;
-  }
-
-  Future<bool> deleteEvent(int idEvent) async {
-    if (_currentUser?.role != UserRole.owner) {
-      return false;
-    }
-    _events.removeWhere((e) => e.idEvent == idEvent);
-    notifyListeners();
-    try {
-      await _supabase.deleteEvent(idEvent);
-    } catch (_) {}
-    return true;
-  }
 
   // ── Menu Bawaan Otentik Nusantara (Foto Nyata dari Google & Fotografer Kuliner) ──
   static List<MenuModel> get seedDefaultMenus => [

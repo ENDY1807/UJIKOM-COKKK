@@ -87,11 +87,7 @@ class OrderModel {
   final String keterangan;
   OrderStatus status;
   final List<OrderItemModel> items;
-  final int diskonEvent;
-  final int diskonKupon;
-  final int potonganPoin;
   final int diskonMember;
-  final String kodeKupon;
   String? metodePembayaran;
   bool isPaid;
 
@@ -105,18 +101,14 @@ class OrderModel {
     this.keterangan = '',
     this.status = OrderStatus.menunggu,
     required this.items,
-    this.diskonEvent = 0,
-    this.diskonKupon = 0,
-    this.potonganPoin = 0,
     this.diskonMember = 0,
-    this.kodeKupon = '',
     this.metodePembayaran,
     this.isPaid = false,
   });
 
   int get totalHarga => items.fold(0, (sum, item) => sum + item.subtotal);
   int get totalItem => items.fold(0, (sum, item) => sum + item.jumlah);
-  int get totalDiskon => diskonEvent + diskonKupon + potonganPoin + diskonMember;
+  int get totalDiskon => diskonMember;
   int get grandTotalSetelahDiskon {
     final net = totalHarga - totalDiskon;
     return net > 0 ? net : 0;
@@ -132,11 +124,7 @@ class OrderModel {
     String? keterangan,
     OrderStatus? status,
     List<OrderItemModel>? items,
-    int? diskonEvent,
-    int? diskonKupon,
-    int? potonganPoin,
     int? diskonMember,
-    String? kodeKupon,
     String? metodePembayaran,
     bool? isPaid,
   }) {
@@ -150,11 +138,7 @@ class OrderModel {
       keterangan: keterangan ?? this.keterangan,
       status: status ?? this.status,
       items: items ?? this.items,
-      diskonEvent: diskonEvent ?? this.diskonEvent,
-      diskonKupon: diskonKupon ?? this.diskonKupon,
-      potonganPoin: potonganPoin ?? this.potonganPoin,
       diskonMember: diskonMember ?? this.diskonMember,
-      kodeKupon: kodeKupon ?? this.kodeKupon,
       metodePembayaran: metodePembayaran ?? this.metodePembayaran,
       isPaid: isPaid ?? this.isPaid,
     );
@@ -202,11 +186,7 @@ class OrderModel {
       keterangan: ket,
       status: OrderStatus.fromString(map['status_order']?.toString() ?? map['status']?.toString() ?? 'Menunggu'),
       items: items ?? [],
-      diskonEvent: _parseInt(map['diskon_event']),
-      diskonKupon: _parseInt(map['diskon_kupon']),
-      potonganPoin: _parseInt(map['potongan_poin']),
       diskonMember: _parseInt(map['diskon_member']),
-      kodeKupon: map['kode_kupon']?.toString() ?? '',
       metodePembayaran: map['metode_pembayaran']?.toString(),
       isPaid: map['is_paid'] == true || (map['keterangan']?.toString().contains('[LUNAS_QRIS]') ?? false),
     );
@@ -222,11 +202,7 @@ class OrderModel {
           ? 'Pelanggan: $namaPelanggan${keterangan.isNotEmpty ? ' | $keterangan' : ''}'
           : keterangan,
       'status_order': status.label,
-      'diskon_event': diskonEvent,
-      'diskon_kupon': diskonKupon,
-      'potongan_poin': potonganPoin,
       'diskon_member': diskonMember,
-      'kode_kupon': kodeKupon,
       if (metodePembayaran != null) 'metode_pembayaran': metodePembayaran,
       if (isPaid) 'is_paid': isPaid,
     };

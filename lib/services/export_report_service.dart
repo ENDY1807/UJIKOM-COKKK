@@ -260,11 +260,7 @@ class ExportReportService {
     final pdf = pw.Document();
     final order = transaction.order;
 
-    final diskonEvent = transaction.diskonEvent > 0 ? transaction.diskonEvent : order.diskonEvent;
-    final diskonKupon = transaction.diskonKupon > 0 ? transaction.diskonKupon : order.diskonKupon;
-    final potonganPoin = transaction.potonganPoin > 0 ? transaction.potonganPoin : order.potonganPoin;
     final diskonMember = transaction.diskonMember > 0 ? transaction.diskonMember : order.diskonMember;
-    final kodeKupon = transaction.kodeKupon.isNotEmpty ? transaction.kodeKupon : order.kodeKupon;
 
     final subtotal = order.totalHarga;
     final grandTotal = transaction.totalBayar;
@@ -409,14 +405,8 @@ class ExportReportService {
 
                       // ── Subtotal & Diskon ──
                       _buildPdfReceiptRow('Subtotal Hidangan', _currencyFmt.format(subtotal)),
-                      if (diskonEvent > 0)
-                        _buildPdfReceiptRow('Diskon Event Promo', '- ${_currencyFmt.format(diskonEvent)}', isBoldValue: true, valColor: _cGreen),
                       if (diskonMember > 0)
                         _buildPdfReceiptRow('Diskon Pelanggan Langganan (VIP 10%)', '- ${_currencyFmt.format(diskonMember)}', isBoldValue: true, valColor: _cGreen),
-                      if (diskonKupon > 0)
-                        _buildPdfReceiptRow('Diskon Kupon ${kodeKupon.isNotEmpty ? "($kodeKupon)" : ""}', '- ${_currencyFmt.format(diskonKupon)}', isBoldValue: true, valColor: _cGreen),
-                      if (potonganPoin > 0)
-                        _buildPdfReceiptRow('Potongan Poin Kuliner', '- ${_currencyFmt.format(potonganPoin)}', isBoldValue: true, valColor: _cGreen),
                       _buildPdfReceiptRow('Pajak Restoran PB1 (10%)', 'Sudah Termasuk', valColor: _cMuted),
 
                       _buildPdfDashedDivider(),
