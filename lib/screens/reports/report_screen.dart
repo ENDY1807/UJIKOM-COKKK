@@ -25,7 +25,6 @@ class _ReportScreenState extends State<ReportScreen> {
   final _dateFormat = DateFormat('dd/MM/yyyy HH:mm');
   bool _showDiagrams = true;
   bool _isSyncingCloud = false;
-  DateTime? _lastSyncTime;
 
   @override
   void initState() {
@@ -53,7 +52,6 @@ class _ReportScreenState extends State<ReportScreen> {
     if (mounted) {
       setState(() {
         _isSyncingCloud = false;
-        _lastSyncTime = DateTime.now();
       });
     }
   }
@@ -325,72 +323,6 @@ class _ReportScreenState extends State<ReportScreen> {
                   ],
                 );
               },
-            ),
-            const SizedBox(height: 12),
-
-            // Banner Sinkronisasi Supabase Cloud
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: context.isDarkMode
-                    ? const Color(0xFF0F172A)
-                    : const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: context.isDarkMode
-                      ? const Color(0xFF1E293B)
-                      : const Color(0xFFBBF7D0),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF16A34A).withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.cloud_done_rounded, size: 16, color: Color(0xFF16A34A)),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Data Laporan Live Supabase Cloud (${transactions.length} Transaksi)',
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF16A34A),
-                          ),
-                        ),
-                        Text(
-                          _lastSyncTime != null
-                              ? 'Terakhir disinkronkan: ${_dateFormat.format(_lastSyncTime!)}'
-                              : 'Real-time sync aktif ke PostgreSQL Supabase',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: context.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_isSyncingCloud)
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF16A34A)),
-                    )
-                  else
-                    IconButton(
-                      icon: const Icon(Icons.refresh_rounded, size: 20, color: Color(0xFF16A34A)),
-                      tooltip: 'Sinkronkan Sekarang',
-                      onPressed: _refreshFromSupabase,
-                    ),
-                ],
-              ),
             ),
             const SizedBox(height: 16),
 
