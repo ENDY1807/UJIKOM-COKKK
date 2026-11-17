@@ -1,98 +1,175 @@
 <p align="center">
-  <img src="assets/images/Rasantara Cloche App Icon.png" alt="Rasantara Logo" width="130" style="border-radius: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);" />
+  <img src="assets/images/Rasantara Cloche App Icon.png" alt="Rasantara Logo" width="120" style="border-radius: 20px;" />
 </p>
 
-<h1 align="center">🍽️ RASANTARA — RESTORAN & POS SYSTEM</h1>
+<h1 align="center">RASANTARA — RESTAURANT OPERATING SYSTEM & POS</h1>
 
 <p align="center">
-  <strong>Sistem Informasi Pemesanan Meja (Table Service) & Kasir Pintar Berbasis Flutter Multi-Platform</strong><br>
-  <em>Autentik Cita Rasa Kuliner Nusantara</em>
+  <strong>Enterprise-Grade Table Service Management, Customer Self-Order, and Point of Sale System</strong><br>
+  <em>Built with Flutter Multi-Platform and Supabase PostgreSQL</em>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Flutter-%3E%3D3.3.0-02569B?logo=flutter&logoColor=white" alt="Flutter Version" />
-  <img src="https://img.shields.io/badge/Dart-%3E%3D3.0.0-0175C2?logo=dart&logoColor=white" alt="Dart Version" />
-  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20Windows%20%7C%20Web-E44D26" alt="Platforms" />
-  <img src="https://img.shields.io/badge/Tests-15%2F15%20Passing-success" alt="Unit & Widget Tests" />
-  <img src="https://img.shields.io/badge/Backend-Supabase%20PostgreSQL-3ECF8E?logo=supabase&logoColor=white" alt="Supabase" />
+  <img src="https://img.shields.io/badge/Flutter-%3E%3D3.3.0-02569B?logo=flutter&logoColor=white" alt="Flutter" />
+  <img src="https://img.shields.io/badge/Dart-%3E%3D3.0.0-0175C2?logo=dart&logoColor=white" alt="Dart" />
+  <img src="https://img.shields.io/badge/Database-PostgreSQL%20%2F%20Supabase-3ECF8E?logo=supabase&logoColor=white" alt="Supabase PostgreSQL" />
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Web%20%7C%20Android-EA580C" alt="Platforms" />
+  <img src="https://img.shields.io/badge/Tests-22%2F22%20Passing-16A34A" alt="Tests" />
+  <img src="https://img.shields.io/badge/Architecture-Clean%20%2F%20Offline--First-0F172A" alt="Architecture" />
 </p>
 
 ---
 
-## 📌 Tentang Proyek
+## Ringkasan Eksekutif
 
-**Rasantara** adalah aplikasi sistem kasir (*Point of Sale*) dan manajemen operasional restoran terpadu yang dirancang untuk mempercepat alur kerja dari pemesanan meja (*table service*) hingga transaksi pembayaran di kasir. 
+**Rasantara** adalah sistem operasional restoran modern dan *Point of Sale* (POS) terintegrasi yang dirancang untuk mengotomatisasi alur pemesanan meja (*Table Service*), alur pesanan mandiri tamu (*Customer Self-Order via QR Code*), hingga pemrosesan transaksi keuangan di kasir secara *real-time*.
 
-Aplikasi ini dikembangkan untuk memenuhi kriteria kelulusan **Uji Kompetensi Keahlian (UKK) Rekayasa Perangkat Lunak 2026/2027**:
+Aplikasi ini dikembangkan sebagai pemenuhan instrumen verifikasi **Uji Kompetensi Keahlian (UKK) Rekayasa Perangkat Lunak**:
 * **Paket Soal:** Paket 1 — Aplikasi Kasir Restoran (Kode: 2134)
-* **Pengembang:** Muhammad Nazril Putra Natrabu
-* **Kelas:** XII PPLG 2
-* **Instansi:** SMK Bakti Nusantara 666
+* **Penyusun:** Muhammad Nazril Putra Natrabu
+* **Program Keahlian:** Pengembangan Perangkat Lunak dan GIM (PPLG)
+* **Institusi:** SMK Bakti Nusantara 666
 
 ---
 
-## 👥 Hak Akses 5 Level Pengguna (Role-Based Access Control)
+## Hak Akses Pengguna (Role-Based Access Control)
 
-Aplikasi ini mengimplementasikan pembagian hak akses (*Role-Based Access Control*) yang ketat dan presisi sesuai standar operasional restoran profesional:
+Sistem menerapkan kontrol otorisasi granular berbasis 5 tingkatan pengguna (*Five-Tier RBAC*) untuk menjaga integritas data transaksi dan pemisahan tugas operasional (*Separation of Duties*):
 
-| Role | Ikon | Modul Utama | Akses Struk |
-| :--- | :---: | :--- | :---: |
-| **Administrator** | 🛡️ | Manajemen Menu, Manajemen User & Pegawai, Entri Transaksi, Riwayat, Laporan, Berlangganan | Pratinjau & Cetak Resmi |
-| **Kasir** | 💼 | Entri Transaksi (Tunai/QRIS), Riwayat Pesanan Restoran (Filter & Search), Laporan Penjualan, Profil | Pratinjau & Cetak Resmi |
-| **Waiter** | 📋 | Entri Order Meja (Table Service), Pelacakan Meja, Riwayat Pesanan Restoran, Laporan Menu, Profil | Pratinjau Saja *(Tanpa Tombol Cetak)* |
-| **Owner** | 👑 | Dasbor Analitik Penjualan, Laporan Omset/Keuangan Lengkap, Riwayat Pesanan, Profil | Pratinjau Saja *(Tanpa Tombol Cetak)* |
-| **Pelanggan** | 👤 | Entri Order Mandiri (Self-Order), Riwayat Pesanan Saya, Pelacakan Status Hidangan, Profil | Pratinjau Saja *(Tanpa Tombol Cetak)* |
-
----
-
-## ✨ Fitur Unggulan
-
-### 1. 💵 Entri Transaksi Kasir Pintar
-- **Kesesuaian Metode:** Menampilkan metode pembayaran secara dinamis sesuai pilihan waiter (Tunai / QRIS) dan terkunci otomatis.
-- **Pemisah Ribuan Otomatis:** Input nominal pembayaran tunai otomatis memformat titik ribuan (misal: `1000000` menjadi `1.000.000`).
-- **Kalkulasi Kembalian Otomatis:** Menghitung sisa kembalian atau kekurangan uang secara *real-time*.
-- **Direct Thermal Print:** Transaksi diselesaikan dengan satu klik tombol "Terima Pesanan", langsung memicu pencetakan struk termal resmi tanpa pop-up konfirmasi yang berbelit.
-
-### 2. 🧾 Struk Termal Standar POS (76mm / 80mm)
-- Tata letak cetak PDF termal dan dialog pratinjau di dalam aplikasi disinkronkan secara presisi (100% identik).
-- Memuat logo kuliner nusantara, nama resto, nomor transaksi & order, nama kasir pemroses, rincian hidangan, subtotal, pajak restoran (PB1), status bayar, kembalian, serta QR Code survei kepuasan pelanggan.
-
-### 3. 🔍 Riwayat Pesanan Restoran Komprehensif
-- Dilengkapi fitur pencarian cepat berdasarkan nomor pesanan (#ORD) atau nama meja/tamu.
-- Filter tanggal kalender untuk meninjau rekapan transaksi sebelumnya.
-- Fitur **Cetak Ulang Struk Resmi** dan **Cetak Slip Tagihan QRIS** khusus untuk Administrator dan Kasir.
-
-### 4. 📱 Tampilan Responsif & Clean Architecture
-- **Multi-Device Ready:** Mendukung antarmuka responsif untuk ponsel Android (pelanggan & waiter), tablet dapur, dan layar monitor kasir Desktop (Windows & Web).
-- **Dual Mode Synchronization:** Terhubung ke cloud backend PostgreSQL melalui **Supabase**, dengan sistem fallback lokal (*offline-first*) yang memastikan aplikasi tetap berjalan lancar saat demo atau tanpa koneksi internet.
-- **User Experience Nyaman:** Bersih dari notifikasi banner atau snackbar bawah yang menumpuk.
+| Tingkat Pengguna | Tanggung Jawab Operasional | Modul yang Dapat Diakses | Otoritas Cetak Struk |
+| :--- | :--- | :--- | :---: |
+| **Administrator** | Manajemen sistem penuh, master data, audit user, dan kelola meja | Seluruh modul sistem, Manajemen User, Kelola Menu & Meja, Analitik, Berlangganan | Penuh (Pratinjau & Cetak Fisik) |
+| **Kasir** | Pemrosesan pembayaran transaksi (Tunai/QRIS), verifikasi kas masuk | Entri Transaksi Kasir, Riwayat Pesanan, Laporan Keuangan Harian, Profil Akun | Penuh (Pratinjau & Cetak Fisik) |
+| **Waiter** | Pelayanan tamu, pemesanan hidangan meja kosong, koordinasi hidangan | Entri Order Meja, Monitor Ketersediaan Meja, Riwayat Pesanan, Profil Akun | Terbatas (Hanya Pratinjau Struk) |
+| **Owner** | Pemantauan kinerja bisnis, audit omzet harian/bulanan, tren penjualan | Dashboard Metrik Eksekutif, Laporan Omzet, Grafik Analitik Penjualan, Profil | Terbatas (Hanya Pratinjau Struk) |
+| **Pelanggan** | Pemesanan mandiri melalui pemindaian stiker QR meja, pelacakan pesanan | Scan QR Meja Otomatis, Menu Hidangan Meja, Live Order Tracker, Profil | Terbatas (Hanya Pratinjau Struk) |
 
 ---
 
-## 📁 Struktur Direktori Utama
+## Spesifikasi Fungsional Sistem
+
+### 1. Alur Pesanan Mandiri Pelanggan (QR Code Table Self-Order)
+* **Pindai QR Presisi:** Pelanggan mengakses antarmuka pemindaian kamera berbingkai fokus (*viewport frame*) dengan deteksi instan payload kode meja.
+* **Pencegahan Human-Error:** Akses hidangan terkunci sebelum meja terverifikasi, memastikan setiap pesanan terikat valid ke nomor meja fisik restoran.
+* **Live Order Tracker:** Status hidangan terpantau secara transparan melalui tahapan antrean, persiapan dapur koki, pengantaran meja oleh waiter, hingga selesai disajikan.
+
+### 2. Generator Kartu Stiker QR Meja (PNG & PDF Export)
+* **Ekspor Kartu PNG Resolusi Tinggi:** Menghasilkan stiker meja berformat grafis lengkap (600 DPI) memuat logo resmi Rasantara, QR code beresolusi tinggi, nomor meja, dan panduan kapasitas tamu.
+* **Dokumen PDF Siap Cetak:** Format presisi dimensi stiker 100 × 130 mm dan lembar multi-stiker A4 terpadu yang terintegrasi langsung dengan dialog cetak sistem operasi (*Native Print Dialog*).
+
+### 3. Pemrosesan Transaksi Kasir Pintar (Smart POS Cashier)
+* **Format Mata Uang Otomatis:** Input nominal tunai dilengkapi pemisah ribuan dinamis untuk mencegah kesalahan entri kasir.
+* **Kalkulasi Kembalian Real-Time:** Perhitungan otomatis selisih pembayaran dan kembalian secara instan.
+* **Integrasi Pembayaran Digital (QRIS):** Mendukung pembayaran nontunai QRIS dinamis yang siap dipindai oleh seluruh aplikasi perbankan dan e-wallet nasional.
+* **Thermal Printing Standar POS:** Layout struk termal ukuran standar 76mm/80mm memuat nomor transaksi, identitas kasir, rincian menu, tarif pajak restoran (PB1), potongan member, dan QR survei kepuasan pelanggan.
+
+### 4. Dasbor Analitik & Pelaporan Finansial
+* **Metrik Keuangan Harian & Periodik:** Pemantauan omzet total, laba kotor, volume transaksi harian, dan rata-rata belanja tamu (*Average Order Value*).
+* **Visualisasi Tren Penjualan:** Grafik analitik pergerakan pendapatan 7 hari terakhir dan analisis kategori hidangan paling diminati (*Best Seller Ranking*).
+* **Ekspor Laporan:** Dukungan ekspor laporan rekapitulasi penjualan ke dalam format PDF dan file spreadsheet CSV.
+
+---
+
+## Arsitektur Teknis & Dependensi
+
+```text
+[ Presentation Layer ]  Flutter UI Widgets (Material 3 Theme Engine)
+         │
+[ State & Domain ]     DatabaseService (ChangeNotifier & Event-Driven)
+         │
+    ┌────┴───────────────────────────┐
+    ▼                                ▼
+[ Local Persistence ]      [ Cloud Backend ]
+SharedPreferences Engine    Supabase Cloud PostgreSQL
+(Offline-First Cache)       (Remote Sync & REST Data Source)
+```
+
+* **Framework:** Flutter SDK `>=3.3.0` / Dart SDK `>=3.0.0`
+* **Manajemen State:** Provider Pattern (`ChangeNotifier` & reactive listeners)
+* **Database Backend:** PostgreSQL via Supabase PostgREST
+* **Penyimpanan Lokal:** `shared_preferences` dengan mekanisme fallback offline
+* **Format Dokumen:** `pdf: ^3.13.1` & `printing: ^5.15.1`
+* **Pemrosesan Barcode:** `qr_flutter: ^4.1.0` & `mobile_scanner: ^5.2.3`
+
+---
+
+## Struktur Direktori Repositori
 
 ```text
 UJIKOM-COKKK/
 ├── assets/
 │   └── images/
-│       ├── Rasantara Cloche App Icon.png   # Logo resmi aplikasi Rasantara
-│       └── logo_smk_baknus_666.png         # Logo SMK Bakti Nusantara 666
+│       ├── Rasantara Cloche App Icon.png   # Identitas visual aplikasi Rasantara
+│       └── logo_smk_baknus_666.png         # Logo instansi pendidikan
 ├── lib/
-│   ├── models/                             # Data model (Order, Menu, User, Table, Transaction)
+│   ├── main.dart                           # Titik masuk aplikasi & routing otentikasi
+│   ├── models/                             # Definisi data model (Order, Menu, User, Table, Trx)
 │   ├── screens/
-│   │   ├── cashier/                        # Layar transaksi kasir & riwayat pesanan restoran
-│   │   ├── dashboard/                      # Dasbor metrik penjualan Owner & Admin
-│   │   ├── order/                          # Entri order meja waiter & order mandiri pelanggan
-│   │   ├── profile/                        # Profil pengguna, preferensi, & keamanan
-│   │   ├── reference/                      # Manajemen menu makanan/minuman
-│   │   ├── reports/                        # Laporan keuangan & ekspor PDF/CSV
-│   │   └── users/                          # Manajemen data pengguna & pegawai (Admin)
-│   ├── services/                           # DatabaseService, SupabaseService, ExportReportService
-│   ├── theme/                              # Desain tema warna Rasantara (Warm Spice & Charcoal)
-│   └── widgets/                            # Komponen reusable (ReceiptDialog, QRISDialog, dll.)
+│   │   ├── auth/                           # Dialog onboarding pengguna Google OAuth
+│   │   ├── cashier/                        # Antarmuka kasir & riwayat transaksi restoran
+│   │   ├── dashboard/                      # Dasbor metrik eksekutif Owner & Administrator
+│   │   ├── order/                          # Entri pesanan waiter & alur QR mandiri pelanggan
+│   │   ├── profile/                        # Konfigurasi akun, preferensi tema, & audit profil
+│   │   ├── reference/                      # Modul manajemen master data menu & meja restoran
+│   │   ├── reports/                        # Pelaporan pendapatan & ekspor rekapitulasi
+│   │   ├── subscription/                   # Modul langganan keanggotaan VIP pelanggan
+│   │   └── users/                          # Pengelolaan data hak akses dan akun pegawai
+│   ├── services/                           # Lapisan layanan (Database, Supabase, Ekspor, Audio)
+│   ├── theme/                              # Konfigurasi palet warna & tipografi Material 3
+│   └── widgets/                            # Komponen visual modular (Struk, QRIS, Analitik)
 ├── test/
-│   ├── supabase_google_test.dart           # Automated tests integrasi data model & config
-│   └── widget_test.dart                    # Automated tests widget antarmuka seluruh role
-├── rasantara_database.sql                  # Skrip DDL & DML skema database PostgreSQL/Supabase
+│   ├── login_email_and_settings_test.dart  # Pengujian otentikasi dan preferensi sistem
+│   ├── supabase_google_test.dart           # Pengujian integrasi skema cloud dan mapping model
+│   └── widget_test.dart                    # Pengujian otomasi widget antarmuka seluruh peran
+├── rasantara_database.sql                  # Skrip DDL & DML skema database PostgreSQL
 └── README.md
 ```
+
+---
+
+## Petunjuk Instalasi & Menjalankan Aplikasi
+
+### Prasyarat
+1. Flutter SDK terpasang (versi `>=3.3.0`).
+2. Dart SDK terpasang (versi `>=3.0.0`).
+3. Google Chrome (untuk Web target) atau perangkat Windows / Android.
+
+### Langkah Menjalankan
+```bash
+# 1. Kloning repositori
+git clone https://github.com/ENDY1807/UJIKOM-COKKK.git
+cd UJIKOM-COKKK
+
+# 2. Unduh seluruh dependensi paket
+flutter pub get
+
+# 3. Jalankan verifikasi statis kode
+flutter analyze
+
+# 4. Jalankan rangkaian automated testing
+flutter test
+
+# 5. Jalankan aplikasi pada platform yang dituju
+flutter run -d chrome     # Target Web Browser
+flutter run -d windows    # Target Windows Desktop
+```
+
+---
+
+## Kredensial Pengujian Sistem (Demo Akun)
+
+| Peran Akun | Username | Password | Otoritas Utama |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `admin` | `admin123` | Master Menu, Meja, User, Transaksi, Laporan |
+| **Kasir** | `kasir` | `kasir123` | Entri Transaksi, Pembayaran QRIS/Tunai, Cetak Struk |
+| **Waiter** | `waiter` | `waiter123` | Entri Pesanan Meja Tamu, Cek Meja Kosong |
+| **Owner** | `owner` | `owner123` | Analitik Omzet, Laporan Penjualan, Audit Bisnis |
+| **Pelanggan VIP** | `pelanggan` | `pelanggan123` | Scan QR Meja, Diskon Otomatis Member 10% |
+| **Pelanggan Reguler** | `pelanggan_reguler` | `pelanggan123` | Scan QR Meja, Pesan Mandiri |
+
+---
+
+<p align="center">
+  <strong>Proyek Uji Kompetensi Keahlian (UKK) Rekayasa Perangkat Lunak 2026/2027</strong><br>
+  SMK Bakti Nusantara 666 — Bandung
+</p>
