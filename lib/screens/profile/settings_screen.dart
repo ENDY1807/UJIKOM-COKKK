@@ -665,19 +665,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.t('Hubungi Kontak CS via WhatsApp', 'Contact Support via WhatsApp'),
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'https://wa.me/qr/LXPSUAAWEP7YJ1',
-                              style: const TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w600),
-                            ),
-                          ],
+                        child: Text(
+                          context.t('Hubungi Kontak CS via WhatsApp', 'Contact Support via WhatsApp'),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                         ),
                       ),
                       const Icon(Icons.open_in_new_rounded, size: 18, color: Color(0xFF16A34A)),
@@ -945,8 +935,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   number: '4',
                   title: context.t('Layanan Bantuan & Kontak CS', 'Customer Care & Contact'),
                   body: context.t(
-                    'Jika memiliki pertanyaan mengenai privasi akun, hubungi Layanan Pelanggan resmi Rasantara via WhatsApp:\nhttps://wa.me/qr/LXPSUAAWEP7YJ1',
-                    'For inquiries regarding your data privacy, reach out to our Customer Service via WhatsApp:\nhttps://wa.me/qr/LXPSUAAWEP7YJ1',
+                    'Jika memiliki pertanyaan mengenai privasi akun, hubungi Layanan Pelanggan resmi Rasantara via WhatsApp.',
+                    'For inquiries regarding your data privacy, reach out to our Customer Service via WhatsApp.',
                   ),
                 ),
               ],

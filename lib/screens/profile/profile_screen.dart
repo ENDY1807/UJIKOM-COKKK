@@ -179,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _buildPolicyItem('3', context.t('Keamanan Data', 'Data Security'),
                     context.t('Semua komunikasi dilindungi enkripsi SSL/TLS dan database cloud Supabase berstandar enterprise.', 'Communications are encrypted via SSL/TLS and stored securely on cloud database.')),
                 _buildPolicyItem('4', context.t('Layanan Kontak CS', 'Customer Care Support'),
-                    context.t('Hubungi Layanan CS resmi WhatsApp:\nhttps://wa.me/qr/LXPSUAAWEP7YJ1', 'Official WhatsApp customer care:\nhttps://wa.me/qr/LXPSUAAWEP7YJ1')),
+                    context.t('Hubungi Layanan CS resmi WhatsApp Rasantara.', 'Official WhatsApp customer care.')),
               ],
             ),
           ),
@@ -462,19 +462,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             const SizedBox(width: 14),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    context.t('Kontak CS WhatsApp', 'WhatsApp Customer Service'),
-                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  const Text(
-                                    'https://wa.me/qr/LXPSUAAWEP7YJ1',
-                                    style: TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w600),
-                                  ),
-                                ],
+                              child: Text(
+                                context.t('Kontak CS WhatsApp', 'WhatsApp Customer Service'),
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary),
                               ),
                             ),
                             const Icon(Icons.open_in_new_rounded, size: 18, color: Color(0xFF16A34A)),
