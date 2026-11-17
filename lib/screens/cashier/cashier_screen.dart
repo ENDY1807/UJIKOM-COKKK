@@ -291,7 +291,7 @@ class _CashierScreenState extends State<CashierScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   visualDensity: VisualDensity.compact,
                 ),
-                icon: const Icon(Icons.history_rounded, size: 10),
+                icon: const Icon(Icons.history_rounded, size: 15),
                 label: const Text('Riwayat', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 onPressed: () {
                   Navigator.push(
@@ -302,7 +302,7 @@ class _CashierScreenState extends State<CashierScreen> {
                   );
                 },
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
