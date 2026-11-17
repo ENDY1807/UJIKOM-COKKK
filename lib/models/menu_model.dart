@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 enum MenuCategory {
   semua('Semua'),
   paket('Paket Spesial'),
@@ -109,13 +111,41 @@ class MenuModel {
     return double.tryParse(val.toString())?.round() ?? 0;
   }
 
+  /// Membangun widget gambar menu, mendukung gambar lokal (assets/) dan cloud (http/https).
+  static Widget buildImage(
+    String url, {
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.cover,
+    Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+    Widget Function(BuildContext, Widget, ImageChunkEvent?)? loadingBuilder,
+  }) {
+    if (url.startsWith('assets/')) {
+      return Image.asset(
+        url,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: errorBuilder,
+      );
+    }
+    return Image.network(
+      url,
+      width: width,
+      height: height,
+      fit: fit,
+      errorBuilder: errorBuilder,
+      loadingBuilder: loadingBuilder,
+    );
+  }
+
   static String defaultImageForMenu(String name, MenuCategory cat) {
     final n = name.toLowerCase();
     if (n.contains('bebek')) {
       return 'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?w=600&auto=format&fit=crop&q=80';
     }
     if (n.contains('alpukat')) {
-      return 'https://images.unsplash.com/photo-1601039641847-7857b994d704?w=600&auto=format&fit=crop&q=80';
+      return 'assets/images/alpukat_kocok.png';
     }
     if (n.contains('rendang')) {
       return 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80';

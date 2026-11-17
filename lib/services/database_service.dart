@@ -2269,8 +2269,7 @@ class DatabaseService extends ChangeNotifier {
       status: MenuStatus.tersedia,
       deskripsi:
           'Jus alpukat mentega segar kental dengan swirl cokelat premium kental manis yang melimpah.',
-      gambarUrl:
-          'https://images.unsplash.com/photo-1601039641847-7857b994d704?w=600&auto=format&fit=crop&q=80',
+      gambarUrl: 'assets/images/alpukat_kocok.png',
     ),
     MenuModel(
       idMasakan: 19,

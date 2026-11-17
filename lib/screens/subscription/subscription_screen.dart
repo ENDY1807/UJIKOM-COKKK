@@ -453,7 +453,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                           )
                         : const Icon(Icons.check_circle_outline_rounded, size: 20, color: Colors.white),
                     label: Text(
-                      _isSubmitting ? 'Mendaftarkan...' : 'Daftarkan Pelanggan Berlangganan',
+                      _isSubmitting ? 'Mendaftarkan...' : 'Daftarkan',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(

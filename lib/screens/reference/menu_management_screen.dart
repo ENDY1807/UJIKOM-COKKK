@@ -328,10 +328,10 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                     height: 72,
                     color: context.fillSubtle,
                     child: (menu.gambarUrl.isNotEmpty)
-                        ? Image.network(
+                        ? MenuModel.buildImage(
                             menu.gambarUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (c, e, s) => Image.network(
+                            errorBuilder: (c, e, s) => MenuModel.buildImage(
                               MenuModel.defaultImageForMenu(menu.namaMasakan, menu.kategori),
                               fit: BoxFit.cover,
                               errorBuilder: (c2, e2, s2) => Icon(
@@ -343,7 +343,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                               ),
                             ),
                           )
-                        : Image.network(
+                        : MenuModel.buildImage(
                             MenuModel.defaultImageForMenu(menu.namaMasakan, menu.kategori),
                             fit: BoxFit.cover,
                             errorBuilder: (c, e, s) => Icon(

@@ -871,10 +871,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   fit: StackFit.expand,
                   children: [
                     if (menu.gambarUrl.isNotEmpty)
-                      Image.network(
+                      MenuModel.buildImage(
                         menu.gambarUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (c, e, s) => Image.network(
+                        errorBuilder: (c, e, s) => MenuModel.buildImage(
                           MenuModel.defaultImageForMenu(menu.namaMasakan, menu.kategori),
                           fit: BoxFit.cover,
                           errorBuilder: (c2, e2, s2) => _buildMenuPlaceholder(menu),
@@ -897,7 +897,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                         },
                       )
                     else
-                      Image.network(
+                      MenuModel.buildImage(
                         MenuModel.defaultImageForMenu(menu.namaMasakan, menu.kategori),
                         fit: BoxFit.cover,
                         errorBuilder: (c2, e2, s2) => _buildMenuPlaceholder(menu),
@@ -1320,10 +1320,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             ),
                             clipBehavior: Clip.antiAlias,
                             child: menu.gambarUrl.isNotEmpty
-                                ? Image.network(
+                                ? MenuModel.buildImage(
                                     menu.gambarUrl,
                                     fit: BoxFit.contain, // FULL UTUH TIDAK TERPOTONG
-                                    errorBuilder: (c, e, s) => Image.network(
+                                    errorBuilder: (c, e, s) => MenuModel.buildImage(
                                       MenuModel.defaultImageForMenu(menu.namaMasakan, menu.kategori),
                                       fit: BoxFit.contain,
                                       errorBuilder: (c2, e2, s2) => _buildMenuPlaceholder(menu, isLarge: true),
@@ -1340,7 +1340,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                       );
                                     },
                                   )
-                                : Image.network(
+                                : MenuModel.buildImage(
                                     MenuModel.defaultImageForMenu(menu.namaMasakan, menu.kategori),
                                     fit: BoxFit.contain,
                                     errorBuilder: (c2, e2, s2) => _buildMenuPlaceholder(menu, isLarge: true),

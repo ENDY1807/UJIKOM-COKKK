@@ -529,12 +529,12 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                     height: 48,
                                     color: const Color(0xFFFFF7ED),
                                     child: item.menu.gambarUrl.isNotEmpty
-                                        ? Image.network(
+                                        ? MenuModel.buildImage(
                                             item.menu.gambarUrl,
                                             width: 48,
                                             height: 48,
                                             fit: BoxFit.cover,
-                                            errorBuilder: (ctx, err, stack) => Image.network(
+                                            errorBuilder: (ctx, err, stack) => MenuModel.buildImage(
                                               MenuModel.defaultImageForMenu(item.menu.namaMasakan, item.menu.kategori),
                                               fit: BoxFit.cover,
                                               errorBuilder: (c, e, s) => const Center(
@@ -542,7 +542,7 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                               ),
                                             ),
                                           )
-                                        : Image.network(
+                                        : MenuModel.buildImage(
                                             MenuModel.defaultImageForMenu(item.menu.namaMasakan, item.menu.kategori),
                                             fit: BoxFit.cover,
                                             errorBuilder: (c, e, s) => const Center(
