@@ -127,48 +127,6 @@ UJIKOM-COKKK/
 
 ---
 
-## Petunjuk Instalasi & Menjalankan Aplikasi
-
-### Prasyarat
-1. Flutter SDK terpasang (versi `>=3.3.0`).
-2. Dart SDK terpasang (versi `>=3.0.0`).
-3. Google Chrome (untuk Web target) atau perangkat Windows / Android.
-
-### Langkah Menjalankan
-```bash
-# 1. Kloning repositori
-git clone https://github.com/ENDY1807/UJIKOM-COKKK.git
-cd UJIKOM-COKKK
-
-# 2. Unduh seluruh dependensi paket
-flutter pub get
-
-# 3. Jalankan verifikasi statis kode
-flutter analyze
-
-# 4. Jalankan rangkaian automated testing
-flutter test
-
-# 5. Jalankan aplikasi pada platform yang dituju
-flutter run -d chrome     # Target Web Browser
-flutter run -d windows    # Target Windows Desktop
-```
-
----
-
-## Kredensial Pengujian Sistem (Demo Akun)
-
-| Peran Akun | Username | Password | Otoritas Utama |
-| :--- | :--- | :--- | :--- |
-| **Administrator** | `admin` | `admin123` | Master Menu, Meja, User, Transaksi, Laporan |
-| **Kasir** | `kasir` | `kasir123` | Entri Transaksi, Pembayaran QRIS/Tunai, Cetak Struk |
-| **Waiter** | `waiter` | `waiter123` | Entri Pesanan Meja Tamu, Cek Meja Kosong |
-| **Owner** | `owner` | `owner123` | Analitik Omzet, Laporan Penjualan, Audit Bisnis |
-| **Pelanggan VIP** | `pelanggan` | `pelanggan123` | Scan QR Meja, Diskon Otomatis Member 10% |
-| **Pelanggan Reguler** | `pelanggan_reguler` | `pelanggan123` | Scan QR Meja, Pesan Mandiri |
-
----
-
 <p align="center">
   <strong>Proyek Uji Kompetensi Keahlian (UKK) Rekayasa Perangkat Lunak 2026/2027</strong><br>
   SMK Bakti Nusantara 666 — Bandung
