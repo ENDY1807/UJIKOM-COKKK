@@ -292,21 +292,30 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Isi informasi pelanggan yang ingin didaftarkan berlangganan.',
+                  'Isi informasi pelanggan yang ingin didaftarkan membership.',
                   style: TextStyle(fontSize: 12, color: context.textSecondary),
                 ),
                 const SizedBox(height: 18),
 
                 // Field 1: Nama Pelanggan
-                _buildFieldLabel('Nama Lengkap Pelanggan *'),
-                const SizedBox(height: 6),
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    hintText: 'Masukan Nama Lengkap',
+                    labelText: 'Nama Lengkap Pelanggan *',
+                    floatingLabelBehavior: FloatingLabelBehavior.auto,
+                    labelStyle: TextStyle(
+                      fontSize: 13.5,
+                      color: context.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    floatingLabelStyle: const TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.orangePrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                     prefixIcon: const Icon(Icons.person_outline, size: 20),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {
@@ -318,16 +327,25 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                 const SizedBox(height: 16),
 
                 // Field 2: Email
-                _buildFieldLabel('Alamat Email *'),
-                const SizedBox(height: 6),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    hintText: 'Masukan Email',
+                    labelText: 'Alamat Email *',
+                    floatingLabelBehavior: FloatingLabelBehavior.auto,
+                    labelStyle: TextStyle(
+                      fontSize: 13.5,
+                      color: context.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    floatingLabelStyle: const TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.orangePrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                     prefixIcon: const Icon(Icons.email_outlined, size: 20),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {
@@ -342,16 +360,25 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                 const SizedBox(height: 16),
 
                 // Field 3: No Telepon
-                _buildFieldLabel('Nomor Telepon / WhatsApp *'),
-                const SizedBox(height: 6),
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   decoration: InputDecoration(
-                    hintText: 'Masukan Nomor Telepon',
+                    labelText: 'Nomor Telepon / WhatsApp *',
+                    floatingLabelBehavior: FloatingLabelBehavior.auto,
+                    labelStyle: TextStyle(
+                      fontSize: 13.5,
+                      color: context.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    floatingLabelStyle: const TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.orangePrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                     prefixIcon: const Icon(Icons.phone_outlined, size: 20),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {
@@ -367,13 +394,22 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                 const SizedBox(height: 16),
 
                 // Field 4: Password Akun Pelanggan (Untuk Login Mandiri)
-                _buildFieldLabel('Password Akun Pelanggan *'),
-                const SizedBox(height: 6),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    hintText: 'Masukan Password (min. 6 karakter)',
+                    labelText: 'Password Akun Pelanggan *',
+                    floatingLabelBehavior: FloatingLabelBehavior.auto,
+                    labelStyle: TextStyle(
+                      fontSize: 13.5,
+                      color: context.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    floatingLabelStyle: const TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.orangePrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                     prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -384,7 +420,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                       onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {
@@ -430,17 +466,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFieldLabel(String label) {
-    return Text(
-      label,
-      style: TextStyle(
-        fontSize: 12.5,
-        fontWeight: FontWeight.bold,
-        color: context.textPrimary,
       ),
     );
   }

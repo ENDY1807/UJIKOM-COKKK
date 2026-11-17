@@ -487,6 +487,7 @@ class _LoginScreenState extends State<LoginScreen>
       ),
       decoration: InputDecoration(
         labelText: label,
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
         labelStyle: TextStyle(
           fontSize: 13.5,
           color: context.textSecondary,

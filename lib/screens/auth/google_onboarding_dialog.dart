@@ -290,16 +290,15 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
         ],
 
         // Input Email (Read Only - Sesuai Akun Google)
-        Text(
-          'Email Akun Google (Terkunci)',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
-        ),
-        const SizedBox(height: 6),
         TextField(
           controller: _emailCtrl,
           enabled: false,
           style: TextStyle(color: context.textSecondary, fontWeight: FontWeight.w600),
           decoration: InputDecoration(
+            labelText: 'Email Akun Google (Terkunci)',
+            floatingLabelBehavior: FloatingLabelBehavior.auto,
+            labelStyle: TextStyle(fontSize: 13, color: context.textSecondary),
+            floatingLabelStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold),
             prefixIcon: const Icon(Icons.lock_outline, size: 18, color: Color(0xFF94A3B8)),
             filled: true,
             fillColor: context.fillSubtle,
@@ -309,20 +308,17 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
         // Input Username
-        Text(
-          'Username Akun',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
-        ),
-        const SizedBox(height: 6),
         TextField(
           controller: _usernameCtrl,
           style: TextStyle(color: context.textPrimary),
           decoration: InputDecoration(
-            hintText: 'contoh: endy_rasantara',
-            hintStyle: TextStyle(color: context.textSecondary),
+            labelText: 'Username Akun',
+            floatingLabelBehavior: FloatingLabelBehavior.auto,
+            labelStyle: TextStyle(fontSize: 13, color: context.textSecondary),
+            floatingLabelStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFEA580C), fontWeight: FontWeight.bold),
             prefixIcon: const Icon(Icons.alternate_email, size: 18, color: Color(0xFFEA580C)),
             filled: true,
             fillColor: context.fillSubtle,
@@ -332,21 +328,18 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
         // Input Password
-        Text(
-          'Password Akun Baru',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
-        ),
-        const SizedBox(height: 6),
         TextField(
           controller: _passwordCtrl,
           obscureText: _obscurePassword,
           style: TextStyle(color: context.textPrimary),
           decoration: InputDecoration(
-            hintText: 'Buat password untuk login langsung',
-            hintStyle: TextStyle(color: context.textSecondary),
+            labelText: 'Password Akun Baru',
+            floatingLabelBehavior: FloatingLabelBehavior.auto,
+            labelStyle: TextStyle(fontSize: 13, color: context.textSecondary),
+            floatingLabelStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFEA580C), fontWeight: FontWeight.bold),
             prefixIcon: const Icon(Icons.vpn_key_outlined, size: 18, color: Color(0xFFEA580C)),
             suffixIcon: IconButton(
               icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, size: 18),
@@ -360,21 +353,18 @@ class _GoogleOnboardingDialogState extends State<GoogleOnboardingDialog> {
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
         // Input Nomor Telepon
-        Text(
-          'Nomor Telepon',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary),
-        ),
-        const SizedBox(height: 6),
         TextField(
           controller: _phoneCtrl,
           keyboardType: TextInputType.phone,
           style: TextStyle(color: context.textPrimary),
           decoration: InputDecoration(
-            hintText: '081234567890',
-            hintStyle: TextStyle(color: context.textSecondary),
+            labelText: 'Nomor Telepon',
+            floatingLabelBehavior: FloatingLabelBehavior.auto,
+            labelStyle: TextStyle(fontSize: 13, color: context.textSecondary),
+            floatingLabelStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFEA580C), fontWeight: FontWeight.bold),
             prefixIcon: const Icon(Icons.phone_android, size: 18, color: Color(0xFFEA580C)),
             helperText: 'Kode verifikasi akan dikirimkan untuk konfirmasi nomor telepon',
             helperStyle: TextStyle(fontSize: 11, color: context.textSecondary),

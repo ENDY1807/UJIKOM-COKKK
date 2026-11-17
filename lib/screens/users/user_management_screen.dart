@@ -45,7 +45,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       controller: nameController,
                       decoration: const InputDecoration(
                         labelText: 'Nama Lengkap',
-                        hintText: 'Contoh: Ahmad Fauzi',
+                        floatingLabelBehavior: FloatingLabelBehavior.auto,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -54,7 +54,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       enabled: existing == null,
                       decoration: const InputDecoration(
                         labelText: 'Username',
-                        hintText: 'Contoh: fauzi123',
+                        floatingLabelBehavior: FloatingLabelBehavior.auto,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -63,7 +63,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
                         labelText: 'Email Pelanggan',
-                        hintText: 'Contoh: fauzi@gmail.com',
+                        floatingLabelBehavior: FloatingLabelBehavior.auto,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -72,15 +72,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(
                         labelText: 'No Telepon / WhatsApp',
-                        hintText: 'Contoh: 081234567890',
+                        floatingLabelBehavior: FloatingLabelBehavior.auto,
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: passwordController,
                       decoration: InputDecoration(
-                        labelText: 'Password',
-                        hintText: existing == null ? 'Masukkan Password' : 'Kosongkan jika tidak diubah',
+                        labelText: existing == null ? 'Password' : 'Password (Kosongkan jika tetap)',
+                        floatingLabelBehavior: FloatingLabelBehavior.auto,
                       ),
                     ),
                     const SizedBox(height: 12),
