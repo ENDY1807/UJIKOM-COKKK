@@ -143,7 +143,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
           controller: noteCtrl,
           autofocus: true,
           decoration: const InputDecoration(
-            hintText: 'Contoh: Pedas sedang, tanpa es, pisah kuah...',
+            hintText: 'Masukan Keterangan Pesanan',
             labelText: 'Keterangan Pesanan',
           ),
         ),
