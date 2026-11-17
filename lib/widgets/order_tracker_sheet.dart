@@ -345,10 +345,8 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                       color: Color(0xFFEA580C),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: Icon(
-                                      widget.order.noMeja.toString().toLowerCase().contains('take away')
-                                          ? Icons.delivery_dining_rounded
-                                          : Icons.table_restaurant_rounded,
+                                    child: const Icon(
+                                      Icons.table_restaurant_rounded,
                                       color: Colors.white,
                                       size: 16,
                                     ),
@@ -779,15 +777,9 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                         ),
                         _buildTimelineStep(
                           stepNumber: 3,
-                          title: widget.order.noMeja.toString().toLowerCase().contains('take away')
-                              ? 'Sedang Diantar Kurir'
-                              : 'Sedang Diantar ke Meja',
-                          subtitle: widget.order.noMeja.toString().toLowerCase().contains('take away')
-                              ? 'Pesanan dalam perjalanan pengantaran menuju lokasi Anda.'
-                              : 'Pelayan sedang membawakan hidangan langsung ke meja Anda.',
-                          icon: widget.order.noMeja.toString().toLowerCase().contains('take away')
-                              ? Icons.delivery_dining_rounded
-                              : Icons.room_service_rounded,
+                          title: 'Sedang Diantar ke Meja',
+                          subtitle: 'Pelayan sedang membawakan hidangan langsung ke meja Anda.',
+                          icon: Icons.room_service_rounded,
                           isCompleted: currentStep > 3,
                           isActive: currentStep == 3,
                           isLast: false,
@@ -808,7 +800,7 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
 
                         const SizedBox(height: 16),
 
-                        // ── Status Table Service / Take Away ──
+                        // ── Status Layanan Meja (Table Service) ──
                         Container(
                           margin: const EdgeInsets.only(bottom: 14),
                           padding: const EdgeInsets.all(12),

@@ -6,7 +6,7 @@ import '../../models/table_model.dart';
 import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/qris_payment_dialog.dart';
+import '../../widgets/table_qr_scanner_dialog.dart';
 
 class OrderEntryScreen extends StatefulWidget {
   final DatabaseService db;
@@ -16,6 +16,7 @@ class OrderEntryScreen extends StatefulWidget {
   final String? initialCoupon;
   final void Function(int tabIndex)? onNavigateToTab;
   final VoidCallback? onOrderSubmitted;
+  final VoidCallback? onRequestRescanTable;
 
   const OrderEntryScreen({
     super.key,
@@ -26,6 +27,7 @@ class OrderEntryScreen extends StatefulWidget {
     this.initialCoupon,
     this.onNavigateToTab,
     this.onOrderSubmitted,
+    this.onRequestRescanTable,
   });
 
   @override
@@ -166,7 +168,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     );
   }
 
-  void _submitOrder({bool payWithQris = false}) {
+  void _submitOrder() {
     if (_cart.isEmpty) {
       return;
     }
@@ -176,15 +178,14 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         : 'Pelanggan $_selectedTableNo';
     final orderNotes = 'Layanan Meja $_selectedTableNo';
     final effDiskonMember = _diskonMemberAmount;
-    final totalAmountToPay = _grandTotal;
 
-    final createdOrder = widget.db.createOrder(
+    widget.db.createOrder(
       noMeja: _selectedTableNo,
       namaPelanggan: custName,
       keterangan: orderNotes,
       items: _cart.values.toList(),
       diskonMember: effDiskonMember,
-      metodePembayaran: payWithQris ? 'QRIS' : 'Tunai',
+      metodePembayaran: 'Menunggu Pembayaran di Kasir',
     );
 
     widget.db.updateTableStatus(_selectedTableNo, TableStatus.terisi);
@@ -193,24 +194,26 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       _cart.clear();
     });
 
-    if (payWithQris) {
-      // Menampilkan dialog QRIS untuk pelanggan scan
-      QrisPaymentDialog.show(
-        context,
-        order: createdOrder,
-        totalAmount: totalAmountToPay,
-        db: widget.db,
-        onPaymentSuccess: () {
-          widget.onOrderSubmitted?.call();
-        },
-      ).then((_) {
-        if (mounted) {
-          widget.onOrderSubmitted?.call();
-        }
-      });
-    } else {
-      widget.onOrderSubmitted?.call();
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Pesanan $_selectedTableNo berhasil dikirim ke Dapur & Kasir!',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF16A34A),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    widget.onOrderSubmitted?.call();
   }
 
   @override
@@ -297,333 +300,308 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     );
   }
 
-  // ── TOP TABLE BAR (QUICK TABLE SELECTOR) ──
+  // ── TOP TABLE BAR (QUICK TABLE SELECTOR / QR SCANNER) ──
   Widget _buildTopTableBar() {
     final tables = widget.db.tables;
+    final currentUser = widget.db.currentUser;
+    final role = currentUser?.role ?? UserRole.waiter;
+    final isWaiter = role == UserRole.waiter;
+    final isPelanggan = role == UserRole.pelanggan;
 
-    return Container(
-      color: context.surfaceCard,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.table_restaurant_rounded, size: 16, color: AppTheme.orangePrimary),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Pilih Meja:',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                      color: context.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: _showVisualTablePickerModal,
-                    borderRadius: BorderRadius.circular(6),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppTheme.orangeLight,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppTheme.orangeBorder),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.grid_view_rounded, size: 12, color: AppTheme.orangePrimary),
-                          SizedBox(width: 4),
-                          Text(
-                            'Denah Visual',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.orangePrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppTheme.orangePrimary,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _selectedTableNo,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: tables.map((tbl) {
-                final isSelected = tbl.nomorMeja == _selectedTableNo;
-                final isOccupied = tbl.status == TableStatus.terisi;
+    // Untuk Waiter: Pilihan meja HANYA meja yang kosong (tidak diisi orang) menggunakan Select Dropdown
+    if (isWaiter) {
+      final emptyTables = tables.where((t) => t.status == TableStatus.kosong).toList();
+      // Pastikan _selectedTableNo valid atau otomatis pilih meja kosong pertama
+      if (!emptyTables.any((t) => t.nomorMeja == _selectedTableNo)) {
+        if (emptyTables.isNotEmpty) {
+          _selectedTableNo = emptyTables.first.nomorMeja;
+        }
+      }
 
-                Color bg = context.surfaceBg;
-                Color border = context.borderSubtle;
-                Color textCol = context.textPrimary;
-
-                if (isSelected) {
-                  bg = AppTheme.orangePrimary;
-                  border = AppTheme.orangePrimary;
-                  textCol = Colors.white;
-                } else if (isOccupied) {
-                  bg = const Color(0xFFFEF3C7);
-                  border = const Color(0xFFFDE68A);
-                  textCol = const Color(0xFF92400E);
-                }
-
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        _selectedTableNo = tbl.nomorMeja;
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: bg,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: border),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            tbl.nomorMeja,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              color: textCol,
-                            ),
-                          ),
-                          if (isOccupied && !isSelected) ...[
-                            const SizedBox(width: 4),
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFD97706),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showVisualTablePickerModal() {
-    final tables = widget.db.tables;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Material(
-          color: Colors.transparent,
-          child: Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.75,
-            ),
-            decoration: BoxDecoration(
-              color: context.surfaceCard,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      return Container(
+        color: context.surfaceCard,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
+                Container(
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: context.borderSubtle,
-                    borderRadius: BorderRadius.circular(2),
+                    color: AppTheme.orangeLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.table_restaurant_rounded, size: 16, color: AppTheme.orangePrimary),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Entri Order Meja Pelanggan (Waiter)',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Pilih meja kosong untuk melayani pesanan tamu',
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: emptyTables.isNotEmpty ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: emptyTables.isNotEmpty ? const Color(0xFFBBF7D0) : const Color(0xFFFECACA),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        emptyTables.isNotEmpty ? Icons.check_circle_rounded : Icons.warning_rounded,
+                        size: 13,
+                        color: emptyTables.isNotEmpty ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${emptyTables.length} Meja Kosong',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: emptyTables.isNotEmpty ? const Color(0xFF15803D) : const Color(0xFFDC2626),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (emptyTables.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFECACA)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: Color(0xFFDC2626), size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Semua meja restoran saat ini sedang terisi/penuh oleh tamu.',
+                        style: TextStyle(fontSize: 12, color: Color(0xFFB91C1C), fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              DropdownButtonFormField<String>(
+                isExpanded: true,
+                initialValue: emptyTables.any((t) => t.nomorMeja == _selectedTableNo)
+                    ? _selectedTableNo
+                    : emptyTables.first.nomorMeja,
+                decoration: InputDecoration(
+                  labelText: 'Pilih Meja Tamu (Hanya Meja Kosong)',
+                  prefixIcon: const Icon(Icons.table_restaurant_rounded, color: AppTheme.orangePrimary),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  filled: true,
+                  fillColor: context.surfaceBg,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                items: emptyTables.map((tbl) {
+                  return DropdownMenuItem<String>(
+                    value: tbl.nomorMeja,
                     child: Row(
                       children: [
-                        const Icon(Icons.table_restaurant_rounded, size: 20, color: AppTheme.orangePrimary),
-                        const SizedBox(width: 8),
-                        Flexible(
+                        Expanded(
                           child: Text(
-                            'Pilih Meja Pesanan',
+                            '${tbl.nomorMeja} (${tbl.kapasitas} Kursi)',
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: context.textPrimary,
                             ),
-                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDCFCE7),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'Tersedia',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
                           ),
                         ),
                       ],
                     ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _selectedTableNo = val);
+                  }
+                },
+              ),
+          ],
+        ),
+      );
+    }
+
+    // Untuk Pelanggan: Pemesanan Meja Terhubung dengan QR Meja
+    if (isPelanggan) {
+      return Container(
+        color: context.surfaceCard,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00F2FE).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.qr_code_scanner_rounded, size: 22, color: Color(0xFF0284C7)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        _selectedTableNo,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Tersambung QR',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+                        ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.pop(ctx),
+                  Text(
+                    'Pesanan terhubung otomatis ke meja Anda',
+                    style: TextStyle(fontSize: 11, color: context.textSecondary),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 1.0,
-                  ),
-                  itemCount: tables.length,
-                  itemBuilder: (context, index) {
-                    final tbl = tables[index];
-                    final isSelected = tbl.nomorMeja == _selectedTableNo;
-                    final isOccupied = tbl.status == TableStatus.terisi;
-                    final numStr = tbl.nomorMeja.replaceAll(RegExp(r'[^0-9]'), '');
-
-                    Color bg = isSelected
-                        ? AppTheme.orangePrimary
-                        : (isOccupied
-                            ? (context.isDarkMode ? const Color(0xFF431407).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
-                            : context.surfaceCard);
-                    Color border = isSelected
-                        ? AppTheme.orangePrimary
-                        : (isOccupied ? const Color(0xFFEA580C) : context.borderSubtle);
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedTableNo = tbl.nomorMeja;
-                        });
-                        Navigator.pop(ctx);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: bg,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: border,
-                            width: (isSelected || isOccupied) ? 1.6 : 1.0,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  context.t('MEJA', 'TABLE'),
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold,
-                                    color: isSelected
-                                        ? Colors.white.withValues(alpha: 0.8)
-                                        : (isOccupied ? const Color(0xFFEA580C) : context.textSecondary),
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? Colors.white.withValues(alpha: 0.25)
-                                        : (isOccupied
-                                            ? const Color(0xFFEA580C).withValues(alpha: 0.15)
-                                            : const Color(0xFF16A34A).withValues(alpha: 0.15)),
-                                    borderRadius: BorderRadius.circular(3),
-                                  ),
-                                  child: Text(
-                                    isOccupied ? context.t('TERISI', 'OCCUPIED') : context.t('KOSONG', 'EMPTY'),
-                                    style: TextStyle(
-                                      fontSize: 7.5,
-                                      fontWeight: FontWeight.w800,
-                                      color: isSelected
-                                          ? Colors.white
-                                          : (isOccupied ? const Color(0xFFEA580C) : const Color(0xFF16A34A)),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                numStr.isNotEmpty ? numStr : tbl.nomorMeja,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w900,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : (isOccupied ? const Color(0xFFEA580C) : context.textPrimary),
-                                ),
-                              ),
-                            ),
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                '${tbl.kapasitas} ${context.t('Kursi', 'Seats')}',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w600,
-                                  color: isSelected
-                                      ? Colors.white.withValues(alpha: 0.85)
-                                      : context.textSecondary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+            ),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF0284C7),
+                side: const BorderSide(color: Color(0xFF38BDF8)),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-            ],
-          ),
+              onPressed: () {
+                if (widget.onRequestRescanTable != null) {
+                  widget.onRequestRescanTable!();
+                  return;
+                }
+                TableQrScannerDialog.show(
+                  context,
+                  db: widget.db,
+                  onTableScanned: (newTable) {
+                    setState(() => _selectedTableNo = newTable);
+                  },
+                );
+              },
+              icon: const Icon(Icons.qr_code_scanner_rounded, size: 14),
+              label: const Text('Ganti / Scan Meja', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+          ],
         ),
       );
-    },
-  );
+    }
+
+    // Default / Admin: Dropdown Meja Kosong dengan Akses Lengkap & QR Generator
+    final availableTables = tables.where((t) => t.status == TableStatus.kosong || t.nomorMeja == _selectedTableNo).toList();
+
+    return Container(
+      color: context.surfaceCard,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              initialValue: availableTables.any((t) => t.nomorMeja == _selectedTableNo)
+                  ? _selectedTableNo
+                  : (availableTables.isNotEmpty ? availableTables.first.nomorMeja : _selectedTableNo),
+              decoration: InputDecoration(
+                labelText: 'Pilih Meja Pesanan',
+                prefixIcon: const Icon(Icons.table_restaurant_rounded, color: AppTheme.orangePrimary),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                filled: true,
+                fillColor: context.surfaceBg,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              items: tables.map((tbl) {
+                final isOccupied = tbl.status == TableStatus.terisi;
+                return DropdownMenuItem<String>(
+                  value: tbl.nomorMeja,
+                  child: Text(
+                    '${tbl.nomorMeja} (${tbl.kapasitas} Tamu) - ${tbl.status.label}',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: isOccupied ? const Color(0xFFD97706) : context.textPrimary,
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedTableNo = val);
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            style: IconButton.styleFrom(
+              backgroundColor: AppTheme.orangeLight,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            tooltip: 'Tampilkan QR Code Meja',
+            icon: const Icon(Icons.qr_code_2_rounded, color: AppTheme.orangePrimary, size: 20),
+            onPressed: () {
+              TableQrViewerDialog.show(
+                context,
+                db: widget.db,
+                initialTableNo: _selectedTableNo,
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   // ── CATEGORY & SEARCH BAR ──
@@ -1709,55 +1687,37 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              // Tombol Bayar QRIS
+              // Tombol Kirim Pesanan ke Kasir & Dapur (Pembayaran Tunai / QRIS Di Kasir)
               SizedBox(
                 width: double.infinity,
-                height: 44,
+                height: 48,
                 child: ElevatedButton.icon(
                   onPressed: _cart.isNotEmpty
                       ? () {
                           onActionBeforeSubmit?.call();
-                          _submitOrder(payWithQris: true);
+                          _submitOrder();
                         }
                       : null,
-                  icon: const Icon(Icons.qr_code_2_rounded, size: 20, color: Colors.white),
+                  icon: const Icon(Icons.send_rounded, size: 18, color: Colors.white),
                   label: const FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      'Bayar QRIS',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                      'Kirim Pesanan ke Kasir & Dapur',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF16A34A),
+                    backgroundColor: AppTheme.orangePrimary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              // Tombol Kirim Pesanan (Bayar Nanti di Kasir)
-              SizedBox(
-                width: double.infinity,
-                height: 42,
-                child: OutlinedButton.icon(
-                  onPressed: _cart.isNotEmpty
-                      ? () {
-                          onActionBeforeSubmit?.call();
-                          _submitOrder(payWithQris: false);
-                        }
-                      : null,
-                  icon: const Icon(Icons.send_rounded, size: 16, color: AppTheme.orangePrimary),
-                  label: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'Kirim Pesanan (Bayar di Kasir)',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppTheme.orangePrimary),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+              const SizedBox(height: 6),
+              const Center(
+                child: Text(
+                  'Pembayaran (Tunai atau QRIS) diselesaikan langsung di meja kasir',
+                  style: TextStyle(fontSize: 10.5, color: AppTheme.textMuted),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],

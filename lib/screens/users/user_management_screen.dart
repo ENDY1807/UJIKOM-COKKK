@@ -20,9 +20,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final phoneController = TextEditingController(text: existing?.phoneNumber ?? '');
     final passwordController = TextEditingController(text: existing?.password ?? '');
     
-    // Non-admin can register Pelanggan
+    // Hanya Administrator yang dapat mendaftarkan akun
     final isAdmin = widget.db.currentUser?.role == UserRole.administrator;
-    var selectedRole = existing?.role ?? (isAdmin ? UserRole.waiter : UserRole.pelanggan);
+    var selectedRole = existing?.role ?? UserRole.waiter;
     bool isSubscribed = existing?.isSubscribed ?? (selectedRole == UserRole.pelanggan);
 
     showDialog(
@@ -222,8 +222,32 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final users = widget.db.users;
     final isAdmin = widget.db.currentUser?.role == UserRole.administrator;
+    if (!isAdmin) {
+      return Scaffold(
+        backgroundColor: context.surfaceBg,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.lock_rounded, size: 48, color: Color(0xFFDC2626)),
+              const SizedBox(height: 12),
+              Text(
+                'Akses Ditolak',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Menu Registrasi Pengguna hanya dapat diakses oleh Administrator.',
+                style: TextStyle(fontSize: 13, color: context.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final users = widget.db.users;
 
     return Scaffold(
       backgroundColor: context.surfaceBg,

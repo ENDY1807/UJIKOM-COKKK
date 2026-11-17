@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../models/menu_model.dart';
 import '../../models/table_model.dart';
 import '../../services/database_service.dart';
+import '../../services/export_report_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/status_badge.dart';
 
@@ -213,6 +216,36 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                       },
                     ),
                   ],
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFFEDD5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.qr_code_2_rounded, color: Color(0xFFEA580C), size: 22),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'QR Code Meja Otomatis Dihasilkan',
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFFC2410C)),
+                              ),
+                              Text(
+                                'Sistem secara otomatis menyimpan data meja beserta link QR Code untuk pelanggan.',
+                                style: TextStyle(fontSize: 10.5, color: context.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               actions: [
@@ -254,6 +287,440 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
           },
         );
       },
+    );
+  }
+
+  void _showTableQrDialog(TableModel table) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: context.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 340,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFFEA580C), size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Stiker QR ${table.nomorMeja}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        Text('Dikelola oleh Administrator', style: TextStyle(fontSize: 11, color: context.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Kartu Stiker Meja Siap Cetak
+              Center(
+                child: Container(
+                  width: 240,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x0C000000), blurRadius: 10, offset: Offset(0, 4)),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Image.asset(
+                              'assets/images/Rasantara Cloche App Icon.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (c, e, s) => const Icon(Icons.restaurant, color: Color(0xFFEA580C), size: 16),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'RASANTARA',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      QrImageView(
+                        data: table.qrPayload,
+                        version: QrVersions.auto,
+                        size: 160,
+                        backgroundColor: Colors.white,
+                        eyeStyle: const QrEyeStyle(
+                          eyeShape: QrEyeShape.square,
+                          color: Color(0xFF0F172A),
+                        ),
+                        dataModuleStyle: const QrDataModuleStyle(
+                          dataModuleShape: QrDataModuleShape.square,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        table.nomorMeja,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Kapasitas ${table.kapasitas} Kursi • Pindai untuk Pesan Menu',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Info Payload
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: context.fillSubtle,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: context.borderSubtle),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.link_rounded, size: 15, color: Color(0xFF64748B)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        table.qrPayload,
+                        style: const TextStyle(fontSize: 10.5, fontFamily: 'monospace'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy_rounded, size: 15),
+                      tooltip: 'Salin Link QR',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: table.qrPayload));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Link QR ${table.nomorMeja} disalin ke clipboard'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Tombol aksi
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: const Icon(Icons.image_outlined, size: 15),
+                      label: const Text('Unduh PNG'),
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        try {
+                          final path = await ExportReportService.downloadTableQrImagePng(table);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(path != null
+                                          ? 'Gambar QR ${table.nomorMeja}.png disimpan di folder Downloads!'
+                                          : 'Gambar QR ${table.nomorMeja}.png berhasil diunduh!'),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: const Color(0xFF16A34A),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Gagal mengunduh gambar: $e'),
+                                backgroundColor: const Color(0xFFDC2626),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEA580C),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 15),
+                      label: const Text('Cetak / PDF'),
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                ),
+                                const SizedBox(width: 8),
+                                Text('Menyiapkan stiker PDF ${table.nomorMeja}...'),
+                              ],
+                            ),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                        try {
+                          final path = await ExportReportService.downloadTableQrStickerPdf(table);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(path != null
+                                          ? 'Stiker PDF ${table.nomorMeja} disimpan di folder Downloads!'
+                                          : 'Stiker PDF ${table.nomorMeja} siap dicetak!'),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: const Color(0xFF16A34A),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Gagal membuat stiker PDF: $e'),
+                                backgroundColor: const Color(0xFFDC2626),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAllTablesQrDialog() {
+    final tables = widget.db.tables;
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: context.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 600,
+          height: 520,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C)),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Semua Stiker QR Meja Restoran',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 180,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 0.8,
+                  ),
+                  itemCount: tables.length,
+                  itemBuilder: (c, i) {
+                    final t = tables[i];
+                    return Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          QrImageView(
+                            data: t.qrPayload,
+                            version: QrVersions.auto,
+                            size: 96,
+                            backgroundColor: Colors.white,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            t.nomorMeja,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            '${t.kapasitas} Kursi',
+                            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Tutup'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEA580C),
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: const Icon(Icons.print_rounded, size: 16),
+                    label: const Text('Cetak Semua Lembar Stiker'),
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Row(
+                            children: [
+                              SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              ),
+                              SizedBox(width: 8),
+                              Text('Menyiapkan lembar PDF semua QR meja...'),
+                            ],
+                          ),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                      try {
+                        final path = await ExportReportService.downloadAllTablesQrPdf(tables);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(path != null
+                                        ? 'Semua stiker QR meja disimpan di folder Downloads!'
+                                        : 'Semua stiker QR meja siap dicetak!'),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: const Color(0xFF16A34A),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Gagal membuat lembar QR: $e'),
+                              backgroundColor: const Color(0xFFDC2626),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -467,132 +934,221 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
   Widget _buildTableTab() {
     final tables = widget.db.tables;
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 240,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 1.1,
-      ),
-      itemCount: tables.length,
-      itemBuilder: (context, index) {
-        final table = tables[index];
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
+    return Column(
+      children: [
+        // Banner Pengelolaan QR Meja Admin
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: context.surfaceCard,
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppTheme.borderSubtle),
+            border: Border.all(color: context.borderSubtle),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      table.nomorMeja,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.textPrimary),
+                      'Kelola Data Meja & QR Code Pelanggan (${tables.length} Meja)',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.textPrimary),
                     ),
-                    StatusBadge.fromStatus(table.status.label),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.people_outline, size: 16, color: AppTheme.textMuted),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${table.kapasitas} Orang',
-                          style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textMuted),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          tooltip: 'Edit Meja',
-                          onPressed: () => _showAddEditTableDialog(table),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.statusRed),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          tooltip: 'Hapus Meja',
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (delCtx) => AlertDialog(
-                                backgroundColor: AppTheme.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                title: const Text('Hapus Meja', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                content: Text('Yakin ingin menghapus ${table.nomorMeja}?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(delCtx).pop(),
-                                    child: const Text('Batal'),
-                                  ),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.statusRed),
-                                    onPressed: () {
-                                      widget.db.deleteTable(table.idMeja);
-                                      Navigator.of(delCtx).pop();
-                                      setState(() {});
-                                    },
-                                    child: const Text('Hapus'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                    Text(
+                      'Admin menyimpan data meja dan dapat melihat/mencetak stiker QR code untuk ditempel di meja tamu.',
+                      style: TextStyle(fontSize: 11, color: context.textSecondary),
                     ),
                   ],
                 ),
-                // Quick status toggle
-                PopupMenuButton<TableStatus>(
-                  initialValue: table.status,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.orangeLight,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.orangeBorder),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Ubah Status Meja',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
-                      ),
-                    ),
-                  ),
-                  onSelected: (st) {
-                    widget.db.updateTableStatus(table.nomorMeja, st);
-                    setState(() {});
-                  },
-                  itemBuilder: (ctx) => TableStatus.values.map((st) {
-                    return PopupMenuItem(
-                      value: st,
-                      child: Text(st.label),
-                    );
-                  }).toList(),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFEA580C),
+                  side: const BorderSide(color: Color(0xFFFDBA74)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-              ],
-            ),
+                icon: const Icon(Icons.print_outlined, size: 15),
+                label: const Text('Cetak Semua QR', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                onPressed: _showAllTablesQrDialog,
+              ),
+            ],
           ),
-        );
-      },
+        ),
+
+        // Grid Meja
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 260,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.88,
+            ),
+            itemCount: tables.length,
+            itemBuilder: (context, index) {
+              final table = tables[index];
+              return Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppTheme.borderSubtle),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            table.nomorMeja,
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.textPrimary),
+                          ),
+                          StatusBadge.fromStatus(table.status.label),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.people_outline, size: 15, color: AppTheme.textMuted),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${table.kapasitas} Kursi',
+                                style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 17, color: AppTheme.textMuted),
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                                tooltip: 'Edit Meja',
+                                onPressed: () => _showAddEditTableDialog(table),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 17, color: AppTheme.statusRed),
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                                tooltip: 'Hapus Meja',
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (delCtx) => AlertDialog(
+                                      backgroundColor: AppTheme.white,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      title: const Text('Hapus Meja', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                      content: Text('Yakin ingin menghapus ${table.nomorMeja}?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(delCtx).pop(),
+                                          child: const Text('Batal'),
+                                        ),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.statusRed),
+                                          onPressed: () {
+                                            widget.db.deleteTable(table.idMeja);
+                                            Navigator.of(delCtx).pop();
+                                            setState(() {});
+                                          },
+                                          child: const Text('Hapus'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      // Tombol Lihat & Cetak QR Meja
+                      InkWell(
+                        onTap: () => _showTableQrDialog(table),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          decoration: BoxDecoration(
+                            color: context.fillSubtle,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: context.borderSubtle),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.qr_code_2_rounded, size: 16, color: Color(0xFFEA580C)),
+                              const SizedBox(width: 6),
+                              Text(
+                                'QR Stiker Meja',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Quick status toggle
+                      PopupMenuButton<TableStatus>(
+                        initialValue: table.status,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.orangeLight,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppTheme.orangeBorder),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Ubah Status Meja',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
+                            ),
+                          ),
+                        ),
+                        onSelected: (st) {
+                          widget.db.updateTableStatus(table.nomorMeja, st);
+                          setState(() {});
+                        },
+                        itemBuilder: (ctx) => TableStatus.values.map((st) {
+                          return PopupMenuItem(
+                            value: st,
+                            child: Text(st.label),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

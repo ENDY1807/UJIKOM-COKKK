@@ -1,10 +1,16 @@
 import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart'
+    show Color, FontWeight, Offset, Paint, PaintingStyle, Radius, RRect, Rect, Size, TextPainter, TextSpan, TextStyle;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../models/order_model.dart';
+import '../models/table_model.dart';
 import '../models/transaction_model.dart';
 import 'file_downloader.dart';
 import 'payment_gateway_service.dart';
@@ -721,5 +727,354 @@ class ExportReportService {
       name: filename,
       format: qrisFormat,
     );
+  }
+
+  /// Download Stiker QR Meja Satuan dalam format PDF Siap Cetak (Desain Kartu Meja)
+  static Future<String?> downloadTableQrStickerPdf(TableModel table) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: const PdfPageFormat(
+          100 * PdfPageFormat.mm,
+          130 * PdfPageFormat.mm,
+          marginAll: 6 * PdfPageFormat.mm,
+        ),
+        build: (pw.Context context) {
+          return pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.white,
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(14)),
+              border: pw.Border.all(color: _cBorder, width: 1.5),
+            ),
+            child: pw.Column(
+              mainAxisAlignment: pw.MainAxisAlignment.center,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                // Header Brand
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    pw.Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const pw.BoxDecoration(
+                        color: _cOrange,
+                        borderRadius: pw.BorderRadius.all(pw.Radius.circular(5)),
+                      ),
+                      child: pw.Center(
+                        child: pw.Text(
+                          'R',
+                          style: pw.TextStyle(
+                            color: PdfColors.white,
+                            fontSize: 12,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    pw.SizedBox(width: 8),
+                    pw.Text(
+                      'RASANTARA',
+                      style: pw.TextStyle(
+                        fontSize: 13,
+                        fontWeight: pw.FontWeight.bold,
+                        letterSpacing: 1.5,
+                        color: _cDark,
+                      ),
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 14),
+
+                // QR Code
+                pw.BarcodeWidget(
+                  data: table.qrPayload,
+                  barcode: pw.Barcode.qrCode(),
+                  width: 140,
+                  height: 140,
+                ),
+                pw.SizedBox(height: 12),
+
+                // Nomor Meja
+                pw.Text(
+                  table.nomorMeja,
+                  style: pw.TextStyle(
+                    fontSize: 19,
+                    fontWeight: pw.FontWeight.bold,
+                    color: _cDark,
+                  ),
+                ),
+                pw.SizedBox(height: 3),
+
+                // Subtitle
+                pw.Text(
+                  'Kapasitas ${table.kapasitas} Kursi • Pindai untuk Pesan Menu',
+                  style: const pw.TextStyle(fontSize: 8.5, color: _cGrey),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    final filename = 'Stiker_QR_${table.nomorMeja.replaceAll(' ', '_')}.pdf';
+    final bytes = await pdf.save();
+
+    final savedPath = await saveFileToDevice(bytes: bytes, filename: filename);
+
+    if (!kIsWeb) {
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat _) async => bytes,
+        name: filename,
+      );
+    }
+
+    return savedPath;
+  }
+
+  /// Download Gambar Stiker QR Meja Lengkap dalam format PNG Card (Desain Stiker Meja Rasantara)
+  static Future<String?> downloadTableQrImagePng(TableModel table) async {
+    const cardWidth = 520.0;
+    const cardHeight = 630.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder);
+
+    // 1. Gambar Background Kartu Putih & Border Halus
+    final cardRect = RRect.fromRectAndRadius(
+      const Rect.fromLTWH(0, 0, cardWidth, cardHeight),
+      const Radius.circular(26),
+    );
+    final fillPaint = Paint()..color = const Color(0xFFFFFFFF);
+    canvas.drawRRect(cardRect, fillPaint);
+
+    final borderPaint = Paint()
+      ..color = const Color(0xFFE2E8F0)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+    canvas.drawRRect(cardRect, borderPaint);
+
+    // 2. Load Logo Asset Rasantara
+    ui.Image? logoImg;
+    try {
+      final data = await rootBundle.load('assets/images/Rasantara Cloche App Icon.png');
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      logoImg = frame.image;
+    } catch (_) {}
+
+    // 3. Header: Logo + Teks "RASANTARA"
+    final brandText = TextPainter(
+      text: const TextSpan(
+        text: 'RASANTARA',
+        style: TextStyle(
+          color: Color(0xFF0F172A),
+          fontSize: 21,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 2.0,
+        ),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+
+    const logoSize = 36.0;
+    const gap = 10.0;
+    final totalHeaderWidth = logoSize + gap + brandText.width;
+    final headerX = (cardWidth - totalHeaderWidth) / 2;
+    const headerY = 32.0;
+
+    if (logoImg != null) {
+      final logoRect = Rect.fromLTWH(headerX, headerY, logoSize, logoSize);
+      canvas.save();
+      canvas.clipRRect(RRect.fromRectAndRadius(logoRect, const Radius.circular(8)));
+      canvas.drawImageRect(
+        logoImg,
+        Rect.fromLTWH(0, 0, logoImg.width.toDouble(), logoImg.height.toDouble()),
+        logoRect,
+        Paint(),
+      );
+      canvas.restore();
+    } else {
+      final logoRect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(headerX, headerY, logoSize, logoSize),
+        const Radius.circular(8),
+      );
+      canvas.drawRRect(logoRect, Paint()..color = const Color(0xFFEA580C));
+      final rPainter = TextPainter(
+        text: const TextSpan(
+          text: 'R',
+          style: TextStyle(color: Color(0xFFFFFFFF), fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        textDirection: ui.TextDirection.ltr,
+      )..layout();
+      rPainter.paint(
+        canvas,
+        Offset(headerX + (logoSize - rPainter.width) / 2, headerY + (logoSize - rPainter.height) / 2),
+      );
+    }
+
+    final brandY = headerY + (logoSize - brandText.height) / 2;
+    brandText.paint(canvas, Offset(headerX + logoSize + gap, brandY));
+
+    // 4. QR Code di Tengah
+    const qrSize = 360.0;
+    final qrX = (cardWidth - qrSize) / 2;
+    const qrY = 92.0;
+
+    final painter = QrPainter(
+      data: table.qrPayload,
+      version: QrVersions.auto,
+      gapless: true,
+      eyeStyle: const QrEyeStyle(
+        eyeShape: QrEyeShape.square,
+        color: Color(0xFF0F172A),
+      ),
+      dataModuleStyle: const QrDataModuleStyle(
+        dataModuleShape: QrDataModuleShape.square,
+        color: Color(0xFF0F172A),
+      ),
+    );
+
+    canvas.save();
+    canvas.translate(qrX, qrY);
+    painter.paint(canvas, const Size(qrSize, qrSize));
+    canvas.restore();
+
+    // 5. Teks Nomor Meja
+    final titleText = TextPainter(
+      text: TextSpan(
+        text: table.nomorMeja,
+        style: const TextStyle(
+          color: Color(0xFF0F172A),
+          fontSize: 34,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+
+    const titleY = 485.0;
+    titleText.paint(canvas, Offset((cardWidth - titleText.width) / 2, titleY));
+
+    // 6. Teks Subtitle Kapasitas & Petunjuk
+    final subtitleText = TextPainter(
+      text: TextSpan(
+        text: 'Kapasitas ${table.kapasitas} Kursi • Pindai untuk Pesan Menu',
+        style: const TextStyle(
+          color: Color(0xFF64748B),
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+
+    const subtitleY = 542.0;
+    subtitleText.paint(canvas, Offset((cardWidth - subtitleText.width) / 2, subtitleY));
+
+    // 7. Render ke PNG Uint8List
+    final picture = recorder.endRecording();
+    final renderedImg = await picture.toImage(cardWidth.toInt(), cardHeight.toInt());
+    final byteData = await renderedImg.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData == null) return null;
+
+    final bytes = byteData.buffer.asUint8List();
+    final filename = 'Stiker_QR_${table.nomorMeja.replaceAll(' ', '_')}.png';
+
+    return await saveFileToDevice(bytes: bytes, filename: filename);
+  }
+
+  /// Download Semua Stiker QR Meja Restoran Sekaligus (A4 Sheet PDF)
+  static Future<String?> downloadAllTablesQrPdf(List<TableModel> tables) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(20),
+        header: (pw.Context context) {
+          return pw.Container(
+            margin: const pw.EdgeInsets.only(bottom: 12),
+            padding: const pw.EdgeInsets.only(bottom: 6),
+            decoration: const pw.BoxDecoration(
+              border: pw.Border(bottom: pw.BorderSide(color: _cBorder, width: 1)),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'RASANTARA RESTORAN • LEMBAR STIKER QR MEJA',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11, color: _cOrange),
+                ),
+                pw.Text(
+                  'Total: ${tables.length} Meja',
+                  style: const pw.TextStyle(fontSize: 10, color: _cGrey),
+                ),
+              ],
+            ),
+          );
+        },
+        build: (pw.Context context) {
+          return [
+            pw.Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: tables.map((t) {
+                return pw.Container(
+                  width: 165,
+                  padding: const pw.EdgeInsets.all(8),
+                  decoration: pw.BoxDecoration(
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                    border: pw.Border.all(color: _cOrange, width: 1.5),
+                  ),
+                  child: pw.Column(
+                    mainAxisSize: pw.MainAxisSize.min,
+                    children: [
+                      pw.Text(
+                        'RASANTARA',
+                        style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _cOrange),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.BarcodeWidget(
+                        data: t.qrPayload,
+                        barcode: pw.Barcode.qrCode(),
+                        width: 80,
+                        height: 80,
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        t.nomorMeja,
+                        style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _cDark),
+                      ),
+                      pw.Text(
+                        'Kapasitas ${t.kapasitas} Kursi',
+                        style: const pw.TextStyle(fontSize: 7.5, color: _cGrey),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ];
+        },
+      ),
+    );
+
+    final filename = 'Semua_Stiker_QR_Meja_Rasantara.pdf';
+    final bytes = await pdf.save();
+
+    final savedPath = await saveFileToDevice(bytes: bytes, filename: filename);
+
+    if (!kIsWeb) {
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat _) async => bytes,
+        name: filename,
+      );
+    }
+
+    return savedPath;
   }
 }

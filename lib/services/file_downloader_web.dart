@@ -26,3 +26,18 @@ void downloadFileWeb({
     web.URL.revokeObjectURL(url);
   });
 }
+
+Future<String?> saveFileToDevice({
+  required Uint8List bytes,
+  required String filename,
+}) async {
+  final mimeType = filename.toLowerCase().endsWith('.png')
+      ? 'image/png'
+      : (filename.toLowerCase().endsWith('.csv') ? 'text/csv' : 'application/pdf');
+  downloadFileWeb(
+    bytes: bytes,
+    filename: filename,
+    mimeType: mimeType,
+  );
+  return filename;
+}

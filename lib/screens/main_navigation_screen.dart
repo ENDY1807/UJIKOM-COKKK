@@ -3,9 +3,8 @@ import '../models/user_model.dart';
 import '../models/menu_model.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
-import 'dashboard/dashboard_screen.dart';
 import 'order/order_entry_screen.dart';
-import 'order/order_history_screen.dart';
+import 'order/customer_order_flow_screen.dart';
 import 'cashier/cashier_screen.dart';
 import 'cashier/cashier_order_history_screen.dart';
 import 'reference/menu_management_screen.dart';
@@ -43,6 +42,7 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
+  UserRole? _lastRole;
   bool _isDesktopSidebarVisible = true;
   String? _selectedTableForOrder;
   MenuCategory? _selectedCategoryForOrder;
@@ -62,18 +62,54 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   List<NavDestinationItem> _getDestinationsForRole(UserRole role) {
     final list = <NavDestinationItem>[];
 
-    // 1. Dashboard Denah Meja: Seluruh role
-    list.add(NavDestinationItem(
-      label: context.t('Beranda', 'Home'),
-      icon: Icons.table_restaurant_rounded,
-      screen: DashboardScreen(
-        db: widget.db,
-        onNavigateToTab: _navigateToTab,
-      ),
-    ));
+    // ── KHUSUS ROLE PELANGGAN ──
+    // Pelanggan HANYA bisa mengakses Entri Order saja!
+    // Tampilan awal mewajibkan Scan QR Meja terlebih dahulu baru bisa memesan hidangan.
+    if (role == UserRole.pelanggan) {
+      list.add(NavDestinationItem(
+        label: context.t('Entri Order', 'Order Entry'),
+        icon: Icons.restaurant_menu_rounded,
+        screen: CustomerOrderFlowScreen(
+          db: widget.db,
+          initialTableNo: _selectedTableForOrder,
+          onLogout: widget.onLogout,
+        ),
+      ));
+      return list;
+    }
 
-    // 2. Entri Order: Admin, Waiter, Pelanggan
-    if (role.canCreateOrder) {
+    // ── ROLE KASIR ──
+    // Saat membuka aplikasi, Kasir LANGSUNG terbuka menu Entri Transaksi!
+    if (role == UserRole.kasir) {
+      list.add(NavDestinationItem(
+        label: context.t('Entri Transaksi', 'Transactions'),
+        icon: Icons.point_of_sale_rounded,
+        screen: CashierScreen(db: widget.db),
+      ));
+      list.add(NavDestinationItem(
+        label: context.t('Riwayat Pesanan', 'Order History'),
+        icon: Icons.history_rounded,
+        screen: CashierOrderHistoryScreen(db: widget.db),
+      ));
+      list.add(NavDestinationItem(
+        label: context.t('Laporan', 'Reports'),
+        icon: Icons.analytics_outlined,
+        screen: ReportScreen(db: widget.db),
+      ));
+      list.add(NavDestinationItem(
+        label: context.t('Profil', 'Profile'),
+        icon: Icons.person_outline_rounded,
+        screen: ProfileScreen(
+          db: widget.db,
+          onLogout: widget.onLogout,
+        ),
+      ));
+      return list;
+    }
+
+    // ── ROLE WAITER ──
+    // Saat membuka aplikasi, Waiter LANGSUNG terbuka menu Entri Order!
+    if (role == UserRole.waiter) {
       list.add(NavDestinationItem(
         label: context.t('Entri Order', 'Order Entry'),
         icon: Icons.restaurant_menu_rounded,
@@ -92,76 +128,120 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               _searchQueryForOrder = null;
               _autoApplyCouponForOrder = null;
             });
-            _navigateToTab(0);
           },
         ),
       ));
-    }
-
-    // 2b. Riwayat Pesanan: Khusus Pelanggan
-    if (role == UserRole.pelanggan) {
-      list.add(NavDestinationItem(
-        label: context.t('Riwayat', 'History'),
-        icon: Icons.receipt_long_rounded,
-        screen: CustomerOrderHistoryScreen(db: widget.db),
-      ));
-    }
-
-    // 3. Entri Transaksi: Admin, Kasir
-    if (role.canProcessTransactions) {
-      list.add(NavDestinationItem(
-        label: context.t('Entri Transaksi', 'Transactions'),
-        icon: Icons.point_of_sale_rounded,
-        screen: CashierScreen(db: widget.db),
-      ));
-    }
-
-    // 4. Riwayat Pesanan Restoran: Admin, Waiter, Kasir, Owner
-    if (role.canViewOrderHistory) {
       list.add(NavDestinationItem(
         label: context.t('Riwayat Pesanan', 'Order History'),
         icon: Icons.history_rounded,
         screen: CashierOrderHistoryScreen(db: widget.db),
       ));
-    }
-
-    // 4. Entri Referensi: Admin only
-    if (role.canManageReferences) {
-      list.add(NavDestinationItem(
-        label: context.t('Entri Referensi', 'References'),
-        icon: Icons.inventory_2_outlined,
-        screen: MenuManagementScreen(db: widget.db),
-      ));
-    }
-
-    // 5. Generate Laporan: Admin, Waiter, Kasir, Owner
-    if (role.canViewReports) {
       list.add(NavDestinationItem(
         label: context.t('Laporan', 'Reports'),
         icon: Icons.analytics_outlined,
         screen: ReportScreen(db: widget.db),
       ));
-    }
-
-    // 6. Registrasi User: Admin, Waiter, Kasir
-    if (role.canRegisterUsers) {
       list.add(NavDestinationItem(
-        label: context.t('Registrasi User', 'Registration'),
-        icon: Icons.people_outline,
-        screen: UserManagementScreen(db: widget.db),
+        label: context.t('Profil', 'Profile'),
+        icon: Icons.person_outline_rounded,
+        screen: ProfileScreen(
+          db: widget.db,
+          onLogout: widget.onLogout,
+        ),
       ));
+      return list;
     }
 
-    // 7. Menu Berlangganan: Admin, Waiter, Owner
-    if (role.canManageSubscriptions) {
+    // ── ROLE OWNER ──
+    // Saat membuka aplikasi, Owner LANGSUNG terbuka menu Laporan!
+    if (role == UserRole.owner) {
+      list.add(NavDestinationItem(
+        label: context.t('Laporan', 'Reports'),
+        icon: Icons.analytics_outlined,
+        screen: ReportScreen(db: widget.db),
+      ));
+      list.add(NavDestinationItem(
+        label: context.t('Riwayat Pesanan', 'Order History'),
+        icon: Icons.history_rounded,
+        screen: CashierOrderHistoryScreen(db: widget.db),
+      ));
       list.add(NavDestinationItem(
         label: context.t('Berlangganan', 'Subscriptions'),
         icon: Icons.card_membership_rounded,
         screen: SubscriptionScreen(db: widget.db),
       ));
+      list.add(NavDestinationItem(
+        label: context.t('Profil', 'Profile'),
+        icon: Icons.person_outline_rounded,
+        screen: ProfileScreen(
+          db: widget.db,
+          onLogout: widget.onLogout,
+        ),
+      ));
+      return list;
     }
 
-    // Profil & Pengaturan Akun: Semua Role
+    // ── ROLE ADMINISTRATOR (Level 1 UKK 2134) ──
+    // Admin mengelola referensi menu masakan, order, transaksi, laporan, registrasi user, dst.
+    // Tanpa Beranda, Admin langsung terbuka menu Entri Referensi (Kelola Menu).
+    list.add(NavDestinationItem(
+      label: context.t('Entri Referensi', 'References'),
+      icon: Icons.inventory_2_outlined,
+      screen: MenuManagementScreen(db: widget.db),
+    ));
+
+    list.add(NavDestinationItem(
+      label: context.t('Entri Order', 'Order Entry'),
+      icon: Icons.restaurant_menu_rounded,
+      screen: OrderEntryScreen(
+        key: ValueKey('order-$_selectedTableForOrder-${_selectedCategoryForOrder?.name}-$_searchQueryForOrder-$_autoApplyCouponForOrder'),
+        db: widget.db,
+        initialTableNo: _selectedTableForOrder,
+        initialCategory: _selectedCategoryForOrder,
+        initialSearch: _searchQueryForOrder,
+        initialCoupon: _autoApplyCouponForOrder,
+        onNavigateToTab: _navigateToTab,
+        onOrderSubmitted: () {
+          setState(() {
+            _selectedTableForOrder = null;
+            _selectedCategoryForOrder = null;
+            _searchQueryForOrder = null;
+            _autoApplyCouponForOrder = null;
+          });
+        },
+      ),
+    ));
+
+    list.add(NavDestinationItem(
+      label: context.t('Entri Transaksi', 'Transactions'),
+      icon: Icons.point_of_sale_rounded,
+      screen: CashierScreen(db: widget.db),
+    ));
+
+    list.add(NavDestinationItem(
+      label: context.t('Riwayat Pesanan', 'Order History'),
+      icon: Icons.history_rounded,
+      screen: CashierOrderHistoryScreen(db: widget.db),
+    ));
+
+    list.add(NavDestinationItem(
+      label: context.t('Laporan', 'Reports'),
+      icon: Icons.analytics_outlined,
+      screen: ReportScreen(db: widget.db),
+    ));
+
+    list.add(NavDestinationItem(
+      label: context.t('Registrasi User', 'Registration'),
+      icon: Icons.people_outline,
+      screen: UserManagementScreen(db: widget.db),
+    ));
+
+    list.add(NavDestinationItem(
+      label: context.t('Berlangganan', 'Subscriptions'),
+      icon: Icons.card_membership_rounded,
+      screen: SubscriptionScreen(db: widget.db),
+    ));
+
     list.add(NavDestinationItem(
       label: context.t('Profil', 'Profile'),
       icon: Icons.person_outline_rounded,
@@ -178,6 +258,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     final currentUser = widget.db.currentUser;
     final role = currentUser?.role ?? UserRole.pelanggan;
+
+    // Reset currentIndex ke 0 saat role berganti agar screen utama role langsung aktif
+    if (_lastRole != role) {
+      _lastRole = role;
+      _currentIndex = 0;
+    }
+
     final destinations = _getDestinationsForRole(role);
 
     // Guard index bounds
@@ -204,28 +291,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           },
           child: Scaffold(
             key: _scaffoldKey,
-          drawer: _buildDrawer(currentUser, role, destinations),
+          drawer: role == UserRole.pelanggan ? null : _buildDrawer(currentUser, role, destinations),
           appBar: AppBar(
             backgroundColor: context.surfaceCard,
             elevation: 0.5,
-            titleSpacing: 0,
-            leading: IconButton(
-              icon: Icon(Icons.menu_rounded, color: context.textPrimary, size: 24),
-              tooltip: 'Menu Sidebar',
-              onPressed: () {
-                if (!isDesktop) {
-                  if (_scaffoldKey.currentState?.isDrawerOpen == true) {
-                    _scaffoldKey.currentState?.closeDrawer();
-                  } else {
-                    _scaffoldKey.currentState?.openDrawer();
-                  }
-                } else {
-                  setState(() {
-                    _isDesktopSidebarVisible = !_isDesktopSidebarVisible;
-                  });
-                }
-              },
-            ),
+            titleSpacing: role == UserRole.pelanggan ? 16 : 0,
+            leading: role == UserRole.pelanggan
+                ? null
+                : IconButton(
+                    icon: Icon(Icons.menu_rounded, color: context.textPrimary, size: 24),
+                    tooltip: 'Menu Sidebar',
+                    onPressed: () {
+                      if (!isDesktop) {
+                        if (_scaffoldKey.currentState?.isDrawerOpen == true) {
+                          _scaffoldKey.currentState?.closeDrawer();
+                        } else {
+                          _scaffoldKey.currentState?.openDrawer();
+                        }
+                      } else {
+                        setState(() {
+                          _isDesktopSidebarVisible = !_isDesktopSidebarVisible;
+                        });
+                      }
+                    },
+                  ),
             title: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -251,7 +340,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    'Rasantara',
+                    role == UserRole.pelanggan ? 'Rasantara • Pesan Mandiri Meja' : 'Rasantara',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: -0.3, color: context.textPrimary),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -259,16 +348,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ],
             ),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.settings_outlined, color: AppTheme.textMuted, size: 20),
-                tooltip: 'Pengaturan Aplikasi',
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => SettingsScreen(db: widget.db)),
-                  );
-                },
-              ),
+              if (role != UserRole.pelanggan)
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined, color: AppTheme.textMuted, size: 20),
+                  tooltip: 'Pengaturan Aplikasi',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => SettingsScreen(db: widget.db)),
+                    );
+                  },
+                ),
               IconButton(
                 icon: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 18),
                 tooltip: 'Keluar dari Akun',
@@ -277,7 +367,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               const SizedBox(width: 4),
             ],
           ),
-          body: isDesktop
+          body: (isDesktop && role != UserRole.pelanggan)
               ? Row(
                   children: [
                     // Desktop Sidebar Navigation
@@ -346,8 +436,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 )
               : destinations[_currentIndex].screen,
 
-          // ─── BOTTOM NAVBAR TAMPILAN MOBILE: CRAFTED ANTI-SLOP ───
-          bottomNavigationBar: !isDesktop
+          // ─── BOTTOM NAVBAR TAMPILAN MOBILE: KHUSUS STAFF ───
+          bottomNavigationBar: (role != UserRole.pelanggan && !isDesktop)
               ? Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [

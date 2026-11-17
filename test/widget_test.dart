@@ -41,7 +41,7 @@ void main() {
     expect(find.text('Masuk'), findsWidgets);
   });
 
-  testWidgets('MainNavigationScreen renders bottom navbar on mobile',
+  testWidgets('MainNavigationScreen renders bottom navbar on mobile for Staff',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(400, 800);
     tester.view.devicePixelRatio = 1.0;
@@ -50,9 +50,37 @@ void main() {
 
     final db = DatabaseService();
     addTearDown(db.dispose);
-    // Simulate user login
+    // Simulate staff user login (Waiter has 5 destinations on mobile including Profil)
+    db.switchRole(UserRole.waiter);
+
+    await tester.pumpWidget(MaterialApp(
+      home: MainNavigationScreen(
+        db: db,
+        onLogout: () {},
+      ),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Verify Mobile Navigation Tabs for Staff (starts directly on Entri Order, Beranda removed)
+    expect(find.text('Beranda'), findsNothing);
+    expect(find.text('Entri Order'), findsOneWidget);
+    expect(find.text('Profil'), findsOneWidget);
+    db.stopFastOrderSync();
+    db.stopBackgroundFullSync();
+  });
+
+  testWidgets('Pelanggan is restricted to Entri Order with Initial Table QR Scan view',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final db = DatabaseService();
+    addTearDown(db.dispose);
     db.loginWithGoogle(
-      googleUid: 'test_uid',
+      googleUid: 'pelanggan_uid',
       googleEmail: 'pelanggan@test.com',
       displayName: 'Tamu Restoran',
     );
@@ -66,10 +94,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify Mobile Navigation Tabs for Pelanggan
-    expect(find.text('Beranda'), findsOneWidget);
-    expect(find.text('Entri Order'), findsOneWidget);
-    expect(find.text('Profil'), findsOneWidget);
+    // Verify Pelanggan has NO other tabs and starts on Table QR Scan view
+    expect(find.text('Beranda'), findsNothing);
+    expect(find.text('Riwayat'), findsNothing);
+    expect(find.text('Profil'), findsNothing);
+    expect(find.text('Pindai QR Code Meja Anda'), findsOneWidget);
     db.stopFastOrderSync();
     db.stopBackgroundFullSync();
   });
@@ -83,12 +112,8 @@ void main() {
 
     final db = DatabaseService();
     addTearDown(db.dispose);
-    // Simulate user
-    db.loginWithGoogle(
-      googleUid: 'google_user_123',
-      googleEmail: 'pengguna.google@gmail.com',
-      displayName: 'Akun Pengguna Google',
-    );
+    // Simulate staff user
+    db.switchRole(UserRole.administrator);
 
     await tester.pumpWidget(MaterialApp(
       home: MainNavigationScreen(
@@ -98,7 +123,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Verify Beranda
+    // Verify initial render (without Beranda, Admin starts on Entri Referensi)
     expect(tester.takeException(), isNull);
 
     // Switch to Entri Order

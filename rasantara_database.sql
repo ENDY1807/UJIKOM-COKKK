@@ -237,7 +237,7 @@ CREATE TABLE IF NOT EXISTS tb_payment_mutasi (
 SELECT setval(pg_get_serial_sequence('tb_payment_mutasi', 'id_mutasi'), COALESCE(MAX(id_mutasi), 1)) FROM tb_payment_mutasi;
 
 -- ============================================================
--- 10. TABEL ALAMAT PENGGUNA (TAKE AWAY / DELIVERY MULTI-ALAMAT)
+-- 10. TABEL ALAMAT PENGGUNA (PROFIL PENGGUNA & DATA LOKASI)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS tb_user_address (
     id_alamat SERIAL PRIMARY KEY,
@@ -304,15 +304,15 @@ VALUES (
 )
 ON CONFLICT (id_transaksi) DO NOTHING;
 
--- Order 2: 5 Hari lalu (GoFood Delivery Rumah) - Pelanggan Reguler (Diskon 0)
+-- Order 2: 5 Hari lalu (Dine In Meja 01) - Pelanggan Reguler (Diskon 0)
 -- Subtotal: Rp 152.000 | Diskon: Rp 0 | Total Bayar: Rp 152.000 | Bayar QRIS: Rp 152.000
 INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, diskon_member, created_at)
 VALUES (
     102, 
-    'Delivery (Rumah)', 
+    'Meja 01', 
     CURRENT_DATE - INTERVAL '5 day', 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'pelanggan_reguler' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
-    'GoFood Delivery: Jl. Kaliurang KM 5 No. 12 | Jarak: 3.2km | Ongkir: Rp 10500', 
+    'Dine-In (2 Orang) Meja 01', 
     'Selesai', 
     0,
     CURRENT_TIMESTAMP - INTERVAL '5 day'
@@ -375,15 +375,15 @@ VALUES (
 )
 ON CONFLICT (id_transaksi) DO NOTHING;
 
--- Order 4: 3 Hari lalu (Take Away Counter) - Pelanggan Reguler (Diskon 0)
+-- Order 4: 3 Hari lalu (Dine In Meja 04) - Pelanggan Reguler (Diskon 0)
 -- Subtotal: Rp 136.000 | Diskon: Rp 0 | Total Bayar: Rp 136.000 | Bayar Tunai: Rp 150.000 | Kembalian: Rp 14.000
 INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, diskon_member, created_at)
 VALUES (
     104, 
-    'Take Away (Pick-up)', 
+    'Meja 04', 
     CURRENT_DATE - INTERVAL '3 day', 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'pelanggan_reguler' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
-    'Take Away di Counter | Ambil jam 12:30', 
+    'Dine In Meja 04 (Layanan Meja)', 
     'Selesai', 
     0,
     CURRENT_TIMESTAMP - INTERVAL '3 day'
@@ -446,15 +446,15 @@ VALUES (
 )
 ON CONFLICT (id_transaksi) DO NOTHING;
 
--- Order 6: Kemarin (GoFood Delivery Rumah) - Pelanggan Reguler (Diskon 0)
+-- Order 6: Kemarin (Dine In Meja 06) - Pelanggan Reguler (Diskon 0)
 -- Subtotal: Rp 165.000 | Diskon: Rp 0 | Total Bayar: Rp 165.000 | Bayar QRIS: Rp 165.000
 INSERT INTO tb_order (id_order, no_meja, tanggal, id_user, keterangan, status_order, diskon_member, created_at)
 VALUES (
     106, 
-    'Delivery (Rumah)', 
+    'Meja 06', 
     CURRENT_DATE - INTERVAL '1 day', 
     COALESCE((SELECT id_user FROM tb_user WHERE username = 'pelanggan_reguler' LIMIT 1), (SELECT id_user FROM tb_user WHERE id_level = 5 LIMIT 1), (SELECT id_user FROM tb_user LIMIT 1)), 
-    'GoFood Delivery: Perumahan Asri Blok C-4 | Ongkir: Rp 8000', 
+    'Dine-In (4 Orang) Meja 06', 
     'Selesai', 
     0,
     CURRENT_TIMESTAMP - INTERVAL '1 day'

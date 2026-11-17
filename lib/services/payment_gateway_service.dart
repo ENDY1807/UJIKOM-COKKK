@@ -329,29 +329,47 @@ class PaymentGatewayService {
       return '$tag$len$value';
     }
 
+    // 00: Payload Format Indicator (01)
     final tag00 = formatTag('00', '01');
-    final tag01 = formatTag('01', '12');
+    // 01: Point of Initiation Method -> 11 (Static QR, didukung oleh semua aplikasi perbankan & e-wallet)
+    final tag01 = formatTag('01', '11');
 
+    // 26: Merchant Account Information (Standar ASPI QRIS Nasional)
+    // Acquirer ID: 93600911 (PT Espay Debit Indonesia Koe / DANA National Switch ID)
     final subTag00 = formatTag('00', 'ID.CO.QRIS.WWW');
-    final subTag01 = formatTag('01', nmid);
-    final subTag02 = formatTag('02', '000000000000000');
+    final effectiveNmid = nmid.isNotEmpty ? nmid : 'ID1020260081928';
+    final subTag01 = formatTag('01', effectiveNmid);
+    final subTag02 = formatTag('02', '936009110000000000');
     final subTag03 = formatTag('03', 'UMI');
     final merchantAccountInfo = '$subTag00$subTag01$subTag02$subTag03';
     final tag26 = formatTag('26', merchantAccountInfo);
 
-    final tag51Sub00 = formatTag('00', 'ID.DANA.WWW');
-    final tag51Sub01 = formatTag('01', PaymentGatewayConfig.danaMerchantId);
-    final tag51Sub02 = formatTag('02', '081099999999');
+    // 51: Domestic Payment Operator / National Central Repository (DANA Espay)
+    final tag51Sub00 = formatTag('00', 'IDS.CO.QRIS.WWW');
+    final tag51Sub01 = formatTag('01', '93600911');
+    final tag51Sub02 = formatTag('02', effectiveNmid);
     final tag51 = formatTag('51', '$tag51Sub00$tag51Sub01$tag51Sub02');
 
+    // 52: Merchant Category Code (5812 = Restoran / Rumah Makan)
     final tag52 = formatTag('52', '5812');
+    // 53: Transaction Currency (360 = IDR Rupiah Indonesia)
     final tag53 = formatTag('53', '360');
-    final tag54 = formatTag('54', '$amount.00');
+
+    // 54: Transaction Amount (Mata uang IDR tidak memiliki sen, format angka bulat murni)
+    final tag54 = amount > 0 ? formatTag('54', amount.toString()) : '';
+
+    // 58: Country Code (ID)
     final tag58 = formatTag('58', 'ID');
-    final tag59 = formatTag('59', merchantName.length > 25 ? merchantName.substring(0, 25) : merchantName);
-    final tag60 = formatTag('60', city.length > 15 ? city.substring(0, 15) : city);
+    // 59: Merchant Name (maksimal 25 karakter)
+    final cleanMerchant = merchantName.length > 25 ? merchantName.substring(0, 25) : merchantName;
+    final tag59 = formatTag('59', cleanMerchant);
+    // 60: Merchant City (maksimal 15 karakter)
+    final cleanCity = city.length > 15 ? city.substring(0, 15) : city;
+    final tag60 = formatTag('60', cleanCity);
+    // 61: Postal Code
     final tag61 = formatTag('61', postalCode);
 
+    // 62: Additional Data Field (Nomor Order / Referensi Tagihan)
     final subTag01Bill = formatTag('01', orderId);
     final tag62 = formatTag('62', subTag01Bill);
 

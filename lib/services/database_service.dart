@@ -127,14 +127,6 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  // Alamat Take Away Tersimpan Persisten (Tidak akan reset)
-  String _savedTakeAwayAddress = '';
-  String get savedTakeAwayAddress => _savedTakeAwayAddress;
-  double? _savedTakeAwayLat;
-  double? get savedTakeAwayLat => _savedTakeAwayLat;
-  double? _savedTakeAwayLng;
-  double? get savedTakeAwayLng => _savedTakeAwayLng;
-
   // Preferensi & Pengaturan Aplikasi
   bool _appSoundFx = true;
   bool get appSoundFx => _appSoundFx;
@@ -487,12 +479,7 @@ class DatabaseService extends ChangeNotifier {
         _refundMethods.addAll(list);
       }
 
-      // 5. Restore Saved Take Away Address
-      _savedTakeAwayAddress = prefs.getString('saved_takeaway_address') ?? '';
-      _savedTakeAwayLat = prefs.getDouble('saved_takeaway_lat');
-      _savedTakeAwayLng = prefs.getDouble('saved_takeaway_lng');
-
-      // 6. Restore User Addresses from local cache
+      // 5. Restore User Addresses from local cache
       final addrJson = prefs.getString('saved_user_addresses');
       if (addrJson != null && addrJson.isNotEmpty) {
         final list = (jsonDecode(addrJson) as List)
@@ -650,25 +637,6 @@ class DatabaseService extends ChangeNotifier {
     }
 
     return true;
-  }
-
-  Future<void> saveTakeAwayAddress(
-    String address, {
-    double? lat,
-    double? lng,
-  }) async {
-    _savedTakeAwayAddress = address;
-    _savedTakeAwayLat = lat;
-    _savedTakeAwayLng = lng;
-    notifyListeners();
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('saved_takeaway_address', address);
-      if (lat != null) await prefs.setDouble('saved_takeaway_lat', lat);
-      if (lng != null) await prefs.setDouble('saved_takeaway_lng', lng);
-    } catch (e) {
-      debugPrint('[DatabaseService] saveTakeAwayAddress error: $e');
-    }
   }
 
   Future<void> _saveUsersLocal() async {
@@ -1350,7 +1318,7 @@ class DatabaseService extends ChangeNotifier {
   }
 
   // --- ENTRI REFERENSI MEJA ---
-  void addTable(String nomorMeja, int kapasitas) {
+  void addTable(String nomorMeja, int kapasitas, [String? qrCode]) {
     final newId =
         (_tables
             .map((t) => t.idMeja)
@@ -1361,6 +1329,7 @@ class DatabaseService extends ChangeNotifier {
       nomorMeja: nomorMeja,
       kapasitas: kapasitas,
       status: TableStatus.kosong,
+      qrCode: qrCode,
     );
     _tables.add(newTable);
     notifyListeners();
@@ -1375,6 +1344,7 @@ class DatabaseService extends ChangeNotifier {
     required String nomorMeja,
     required int kapasitas,
     required TableStatus status,
+    String? qrCode,
   }) {
     final index = _tables.indexWhere((t) => t.idMeja == idMeja);
     if (index != -1) {
@@ -1382,6 +1352,7 @@ class DatabaseService extends ChangeNotifier {
         nomorMeja: nomorMeja,
         kapasitas: kapasitas,
         status: status,
+        qrCode: qrCode ?? _tables[index].qrCode,
       );
       _tables[index] = updated;
       notifyListeners();
@@ -1464,11 +1435,8 @@ class DatabaseService extends ChangeNotifier {
     );
     _orders.insert(0, order);
 
-    // Tandai status meja terisi jika pesanan adalah dine in
-    if (!noMeja.toLowerCase().contains('take away') &&
-        !noMeja.toLowerCase().contains('delivery')) {
-      updateTableStatus(noMeja, TableStatus.terisi);
-    }
+    // Tandai status meja terisi
+    updateTableStatus(noMeja, TableStatus.terisi);
     notifyListeners();
 
     // Simpan ke Supabase
@@ -1938,7 +1906,7 @@ class DatabaseService extends ChangeNotifier {
   }
 
   // ============================================================
-  // MANAJEMEN ALAMAT PENGGUNA (TAKE AWAY / DELIVERY)
+  // MANAJEMEN ALAMAT PENGGUNA (PROFIL PENGGUNA & DATA LOKASI)
   // ============================================================
 
   Future<void> syncUserAddresses() async {
@@ -1988,14 +1956,6 @@ class DatabaseService extends ChangeNotifier {
     _userAddresses.insert(0, finalModel);
     _saveUserAddressesLocal();
 
-    if (finalModel.isPrimary || _savedTakeAwayAddress.isEmpty) {
-      saveTakeAwayAddress(
-        finalModel.formattedFullAddress,
-        lat: finalModel.latitude,
-        lng: finalModel.longitude,
-      );
-    }
-
     notifyListeners();
     return finalModel;
   }
@@ -2016,14 +1976,6 @@ class DatabaseService extends ChangeNotifier {
 
     _userAddresses[idx] = address;
     _saveUserAddressesLocal();
-
-    if (address.isPrimary) {
-      saveTakeAwayAddress(
-        address.formattedFullAddress,
-        lat: address.latitude,
-        lng: address.longitude,
-      );
-    }
 
     notifyListeners();
 
@@ -2053,13 +2005,6 @@ class DatabaseService extends ChangeNotifier {
     for (int i = 0; i < _userAddresses.length; i++) {
       final isTarget = _userAddresses[i].idAlamat == idAlamat;
       _userAddresses[i] = _userAddresses[i].copyWith(isPrimary: isTarget);
-      if (isTarget) {
-        saveTakeAwayAddress(
-          _userAddresses[i].formattedFullAddress,
-          lat: _userAddresses[i].latitude,
-          lng: _userAddresses[i].longitude,
-        );
-      }
     }
     _saveUserAddressesLocal();
     notifyListeners();

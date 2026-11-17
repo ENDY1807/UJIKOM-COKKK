@@ -271,7 +271,6 @@ void main() {
       expect(added, isNotNull);
       expect(db.userAddresses.length, 1);
       expect(db.primaryAddress?.label, 'Kantor');
-      expect(db.savedTakeAwayAddress.contains('Jl. Senopati No. 88'), isTrue);
 
       // 2. Add Second Address (Kirim ke Teman)
       final friendAddr = UserAddressModel(
@@ -295,7 +294,6 @@ void main() {
       // 3. Switch primary to friend address
       await db.setPrimaryAddress(addedFriend!.idAlamat);
       expect(db.primaryAddress?.label, 'Teman');
-      expect(db.savedTakeAwayAddress.contains('Jl. Teuku Umar No. 12'), isTrue);
 
       // 4. Remove address
       await db.removeUserAddress(added!.idAlamat);

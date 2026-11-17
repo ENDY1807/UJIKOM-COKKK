@@ -21,9 +21,21 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
+  bool _isRegisterMode = false;
+
+  // Controllers Login
   final _loginUsernameController = TextEditingController();
   final _loginPasswordController = TextEditingController();
   bool _loginObscure = true;
+
+  // Controllers Register Pelanggan
+  final _regNameController = TextEditingController();
+  final _regUsernameController = TextEditingController();
+  final _regEmailController = TextEditingController();
+  final _regPhoneController = TextEditingController();
+  final _regPasswordController = TextEditingController();
+  bool _regObscure = true;
+  final bool _regIsSubscribed = true; // Default mendaftar sebagai Member Berlangganan VIP
 
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -50,6 +62,11 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _loginUsernameController.dispose();
     _loginPasswordController.dispose();
+    _regNameController.dispose();
+    _regUsernameController.dispose();
+    _regEmailController.dispose();
+    _regPhoneController.dispose();
+    _regPasswordController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -87,6 +104,65 @@ class _LoginScreenState extends State<LoginScreen>
               context.t('Username / Email atau password salah', 'Incorrect Username / Email or password');
         });
       }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  Future<void> _handleRegister() async {
+    setState(() {
+      _errorMessage = null;
+      _successMessage = null;
+    });
+
+    final name = _regNameController.text.trim();
+    final username = _regUsernameController.text.trim();
+    final email = _regEmailController.text.trim();
+    final phone = _regPhoneController.text.trim();
+    final password = _regPasswordController.text;
+
+    if (name.isEmpty || username.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Nama, Username, dan Password wajib diisi.');
+      return;
+    }
+
+    if (password.length < 3) {
+      setState(() => _errorMessage = 'Password minimal 3 karakter.');
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final newUser = await widget.db.registerUser(
+        username: username,
+        password: password,
+        namaUser: name,
+        email: email.isNotEmpty ? email : null,
+        isSubscribed: _regIsSubscribed,
+      );
+
+      // Update nomor telepon jika diisi
+      if (phone.isNotEmpty) {
+        widget.db.updateUser(
+          newUser.idUser,
+          newUser.namaUser,
+          newUser.password,
+          newUser.role,
+          email: newUser.googleEmail,
+          phoneNumber: phone,
+          isSubscribed: newUser.isSubscribed,
+        );
+      }
+
+      if (!mounted) return;
+      widget.onLoginSuccess();
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
+      });
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -382,47 +458,192 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  // ─── LOGIN FORM ────────────────────────────────────────────────────────────
+  // ─── LOGIN / REGISTER FORM ────────────────────────────────────────────────
   Widget _buildLoginForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Tab Switcher Masuk vs Daftar Pelanggan
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: context.fillSubtle,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.borderSubtle),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isRegisterMode = false;
+                      _errorMessage = null;
+                      _successMessage = null;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: !_isRegisterMode ? context.surfaceCard : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: !_isRegisterMode
+                          ? const [BoxShadow(color: Color(0x10000000), blurRadius: 4, offset: Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        context.t('Masuk', 'Sign In'),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: !_isRegisterMode ? AppTheme.orangePrimary : context.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isRegisterMode = true;
+                      _errorMessage = null;
+                      _successMessage = null;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: _isRegisterMode ? context.surfaceCard : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: _isRegisterMode
+                          ? const [BoxShadow(color: Color(0x10000000), blurRadius: 4, offset: Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Daftar Pelanggan',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: _isRegisterMode ? AppTheme.orangePrimary : context.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
         Text(
-          context.t('Masuk', 'Sign In'),
+          _isRegisterMode ? 'Registrasi Pelanggan' : context.t('Masuk', 'Sign In'),
           style: TextStyle(
-            fontSize: 25,
+            fontSize: 23,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.5,
             color: context.textPrimary,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 4),
+        Text(
+          _isRegisterMode
+              ? 'Daftar mandiri untuk memesan menu & berlangganan diskon VIP'
+              : 'Silakan masuk ke sistem restoran Rasantara',
+          style: TextStyle(fontSize: 12, color: context.textSecondary),
+        ),
+        const SizedBox(height: 16),
 
         if (_successMessage != null) _feedbackBanner(_successMessage!, true),
         if (_errorMessage != null) _feedbackBanner(_errorMessage!, false),
 
-        _inputField(
-          controller: _loginUsernameController,
-          label: context.t('Username atau Email', 'Username or Email'),
-          icon: Icons.person_outline_rounded,
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 16),
-        _inputField(
-          controller: _loginPasswordController,
-          label: context.t('Password', 'Password'),
-          icon: Icons.lock_outline_rounded,
-          isPassword: true,
-          obscure: _loginObscure,
-          onToggle: () => setState(() => _loginObscure = !_loginObscure),
-          onSubmit: (_) => _handleLogin(),
-        ),
+        if (!_isRegisterMode) ...[
+          _inputField(
+            controller: _loginUsernameController,
+            label: context.t('Username atau Email', 'Username or Email'),
+            icon: Icons.person_outline_rounded,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 14),
+          _inputField(
+            controller: _loginPasswordController,
+            label: context.t('Password', 'Password'),
+            icon: Icons.lock_outline_rounded,
+            isPassword: true,
+            obscure: _loginObscure,
+            onToggle: () => setState(() => _loginObscure = !_loginObscure),
+            onSubmit: (_) => _handleLogin(),
+          ),
+          const SizedBox(height: 20),
+          _primaryButton(context.t('Masuk', 'Sign In'), Icons.arrow_forward_rounded, _handleLogin),
+          const SizedBox(height: 12),
+          Center(
+            child: TextButton(
+              onPressed: () => setState(() => _isRegisterMode = true),
+              child: const Text(
+                'Belum punya akun? Daftar sebagai Pelanggan di sini',
+                style: TextStyle(fontSize: 12, color: AppTheme.orangePrimary, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ] else ...[
+          _inputField(
+            controller: _regNameController,
+            label: 'Nama Lengkap',
+            icon: Icons.badge_outlined,
+          ),
+          const SizedBox(height: 12),
+          _inputField(
+            controller: _regUsernameController,
+            label: 'Username',
+            icon: Icons.alternate_email_rounded,
+          ),
+          const SizedBox(height: 12),
+          _inputField(
+            controller: _regEmailController,
+            label: 'Email',
+            icon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 12),
+          _inputField(
+            controller: _regPhoneController,
+            label: 'No Telepon',
+            icon: Icons.phone_outlined,
+            keyboardType: TextInputType.phone,
+          ),
+          const SizedBox(height: 12),
+          _inputField(
+            controller: _regPasswordController,
+            label: 'Password',
+            icon: Icons.lock_outline_rounded,
+            isPassword: true,
+            obscure: _regObscure,
+            onToggle: () => setState(() => _regObscure = !_regObscure),
+            onSubmit: (_) => _handleRegister(),
+          ),
+          const SizedBox(height: 14),
 
-        const SizedBox(height: 22),
-
-        // Primary Login Button (Warm Gradient & Raised Depth)
-        _primaryButton(context.t('Masuk', 'Sign In'), Icons.arrow_forward_rounded, _handleLogin),
+          _primaryButton('Daftar & Mulai Memesan', Icons.check_circle_outline, _handleRegister),
+          const SizedBox(height: 12),
+          Center(
+            child: TextButton(
+              onPressed: () => setState(() => _isRegisterMode = false),
+              child: const Text(
+                'Sudah memiliki akun? Masuk di sini',
+                style: TextStyle(fontSize: 12, color: AppTheme.orangePrimary, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -182,13 +182,8 @@ class _ReportScreenState extends State<ReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final transactions = widget.db.transactions;
-    final topSelling = widget.db.topSellingMenus;
     final currentUser = widget.db.currentUser;
     final role = currentUser?.role ?? UserRole.owner;
-    final canViewSummary = role == UserRole.owner ||
-        role == UserRole.kasir ||
-        role == UserRole.administrator;
 
     return Scaffold(
       backgroundColor: context.surfaceBg,
@@ -198,551 +193,888 @@ class _ReportScreenState extends State<ReportScreen> {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + MediaQuery.of(context).padding.bottom),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Action Header
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isCompact = constraints.maxWidth < 750;
-                  final actionButtons = Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF2563EB),
-                          side: const BorderSide(color: Color(0xFF2563EB)),
-                        ),
-                        onPressed: _isSyncingCloud ? null : _refreshFromSupabase,
-                        icon: _isSyncingCloud
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2563EB)),
-                              )
-                            : const Icon(Icons.sync_rounded, size: 18),
-                        label: Text(_isSyncingCloud ? 'Menyinkronkan...' : 'Segarkan Data'),
-                      ),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.orangePrimary,
-                          side: const BorderSide(color: AppTheme.orangePrimary),
-                        ),
-                        onPressed: _showPrintReportPreview,
-                        icon: const Icon(Icons.preview_rounded, size: 18),
-                        label: const Text('Pratinjau'),
-                      ),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF16A34A),
-                          side: const BorderSide(color: Color(0xFF16A34A)),
-                        ),
-                        onPressed: () async {
-                          await ExportReportService.exportTransactionsExcelCsv(
-                            transactions: widget.db.transactions,
-                          );
-                        },
-                        icon: const Icon(Icons.file_download_outlined, size: 18),
-                        label: const Text('Ekspor Excel'),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          await ExportReportService.exportTransactionsPdf(
-                            transactions: widget.db.transactions,
-                            totalOmzet: widget.db.totalOmzet,
-                            restaurantName: 'Rasantara Restoran (Table Service)',
-                            address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
-                          );
-                        },
-                        icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
-                        label: const Text('Cetak PDF'),
-                      ),
-                    ],
-                  );
+          child: _buildRoleSpecificReport(role),
+        ),
+      ),
+    );
+  }
 
-                if (isCompact) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            role == UserRole.waiter ? 'Laporan Menu & Penghasilan' : 'Laporan Penjualan & Keuangan',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: context.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            role == UserRole.waiter
-                                ? 'Menu terlaris dan penghasilan operasional restoran'
-                                : 'Rekapitulasi omzet dan riwayat pembayaran table service',
-                            style: TextStyle(fontSize: 12, color: context.textSecondary),
-                          ),
-                        ],
-                      ),
-                      if (role != UserRole.waiter) ...[
-                        const SizedBox(height: 10),
-                        actionButtons,
-                      ],
-                    ],
-                  );
-                }
+  Widget _buildRoleSpecificReport(UserRole role) {
+    switch (role) {
+      case UserRole.waiter:
+        return _buildWaiterBestSellerReport();
+      case UserRole.kasir:
+        return _buildKasirSalesReport();
+      case UserRole.owner:
+        return _buildOwnerRevenueReport();
+      case UserRole.administrator:
+      default:
+        return _buildAdminFullReport();
+    }
+  }
 
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            role == UserRole.waiter ? 'Laporan Menu & Penghasilan' : 'Laporan Penjualan & Keuangan',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: context.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            role == UserRole.waiter
-                                ? 'Menu terlaris dan penghasilan operasional restoran'
-                                : 'Rekapitulasi omzet dan riwayat pembayaran table service',
-                            style: TextStyle(fontSize: 12, color: context.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (role != UserRole.waiter) ...[
-                      const SizedBox(width: 12),
-                      actionButtons,
-                    ],
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 16),
+  // ══════════════════════════════════════════════════════════════════════════════
+  // 1. LAPORAN KHUSUS WAITER: LAPORAN MAKANAN BEST SELLER
+  // ══════════════════════════════════════════════════════════════════════════════
+  Widget _buildWaiterBestSellerReport() {
+    final topSelling = widget.db.topSellingMenus;
+    final totalPortions = topSelling.fold<int>(0, (sum, e) => sum + e.value);
+    final topOne = topSelling.isNotEmpty ? topSelling.first.key : 'Belum Ada';
+    final topOneQty = topSelling.isNotEmpty ? topSelling.first.value : 0;
+    final menus = widget.db.menus;
 
-            // 3 Summary Cards (Hanya muncul untuk Owner, Kasir, Admin)
-            if (canViewSummary) ...[
-              LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 700;
-                final cards = [
-                  _summaryCard(
-                    title: 'Total Pendapatan',
-                    value: _currencyFormat.format(widget.db.totalOmzet),
-                    subtitle: 'Semua transaksi selesai',
-                    icon: Icons.account_balance_wallet,
-                    isPrimary: true,
-                  ),
-                  _summaryCard(
-                    title: 'Jumlah Transaksi',
-                    value: '${widget.db.totalTransaksiCount} Order',
-                    subtitle: 'Lunas & terlayani',
-                    icon: Icons.receipt_long,
-                  ),
-                  _summaryCard(
-                    title: 'Rata-Rata Bill',
-                    value: _currencyFormat.format(widget.db.rataRataTransaksi),
-                    subtitle: 'Rata-rata per meja',
-                    icon: Icons.trending_up,
-                  ),
-                ];
-
-                if (isWide) {
-                  return Row(
-                    children: cards
-                        .map(
-                          (c) => Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              child: c,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  );
-                } else {
-                  return Column(
-                    children: cards
-                        .map(
-                          (c) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: c,
-                          ),
-                        )
-                        .toList(),
-                  );
-                }
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
-
-            // Tab Switcher: Diagram & Grafik Analitik vs Daftar Transaksi
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: context.fillSubtle,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.borderSubtle),
-              ),
-              child: Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header Waiter
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => setState(() => _showDiagrams = true),
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: _showDiagrams
-                              ? context.surfaceCard
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                          border: _showDiagrams
-                              ? Border.all(color: context.borderSubtle)
-                              : null,
-                          boxShadow: _showDiagrams
-                              ? const [
-                                  BoxShadow(
-                                    color: Color(0x10000000),
-                                    blurRadius: 6,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.analytics_rounded,
-                              size: 16,
-                              color: _showDiagrams
-                                  ? const Color(0xFFEA580C)
-                                  : context.textSecondary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Diagram & Grafik',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: _showDiagrams
-                                  ? const Color(0xFFEA580C)
-                                  : context.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
+                        child: const Icon(Icons.military_tech_rounded, color: Color(0xFFD97706), size: 20),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Laporan Makanan Best Seller',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => setState(() => _showDiagrams = false),
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: !_showDiagrams
-                              ? context.surfaceCard
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                          border: !_showDiagrams
-                              ? Border.all(color: context.borderSubtle)
-                              : null,
-                          boxShadow: !_showDiagrams
-                              ? const [
-                                  BoxShadow(
-                                    color: Color(0x10000000),
-                                    blurRadius: 6,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.receipt_long_rounded,
-                              size: 16,
-                              color: !_showDiagrams
-                                  ? const Color(0xFFEA580C)
-                                  : context.textSecondary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Daftar Transaksi (${transactions.length})',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: !_showDiagrams
-                                  ? const Color(0xFFEA580C)
-                                  : context.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Peringkat menu masakan & minuman terfavorit tamu untuk panduan table service',
+                    style: TextStyle(fontSize: 12, color: context.textSecondary),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF2563EB),
+                side: const BorderSide(color: Color(0xFF2563EB)),
+              ),
+              onPressed: _isSyncingCloud ? null : _refreshFromSupabase,
+              icon: _isSyncingCloud
+                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.sync_rounded, size: 16),
+              label: const Text('Segarkan'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
 
-            if (_showDiagrams)
-              AnalyticsChartsWidget(db: widget.db)
-            else ...[
-              // Top Selling Menu Items
-              Card(
-                elevation: 0,
-                color: context.surfaceCard,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: context.borderSubtle),
+        // 3 Metrik Waiter
+        Row(
+          children: [
+            Expanded(
+              child: _summaryCard(
+                title: 'Total Porsi Terjual',
+                value: '$totalPortions Porsi',
+                subtitle: 'Dipesan oleh tamu',
+                icon: Icons.restaurant_rounded,
+                isPrimary: true,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _summaryCard(
+                title: 'Menu Terlaris #1',
+                value: topOne,
+                subtitle: '$topOneQty porsi terjual',
+                icon: Icons.star_rounded,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _summaryCard(
+                title: 'Total Hidangan',
+                value: '${menus.length} Menu',
+                subtitle: 'Katalog aktif restoran',
+                icon: Icons.inventory_2_outlined,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Kartu Panduan Rekomendasi Table Service
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFBEB),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFFDE68A)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFEF3C7),
+                  shape: BoxShape.circle,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                child: const Icon(Icons.lightbulb_rounded, color: Color(0xFFD97706), size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Tips Pelayanan Waiter (Table Service)',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Color(0xFF92400E)),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Rekomendasikan menu peringkat 1 s/d 3 di bawah saat tamu menanyakan hidangan unggulan khas Rasantara.',
+                      style: TextStyle(fontSize: 12, color: Colors.brown.shade700, height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Daftar Peringkat Menu Terlaris (Best Seller Table)
+        Card(
+          elevation: 0,
+          color: context.surfaceCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: context.borderSubtle),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Peringkat Menu Terlaris (Best Seller)',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.orangeLight,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${topSelling.length} Menu Terjual',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                if (topSelling.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        'Belum ada data pesanan menu yang tercatat.',
+                        style: TextStyle(color: context.textSecondary),
+                      ),
+                    ),
+                  )
+                else ...[
+                  ...topSelling.asMap().entries.map((entry) {
+                    final rank = entry.key + 1;
+                    final item = entry.value;
+                    final maxSold = topSelling.first.value;
+                    final ratio = maxSold > 0 ? (item.value / maxSold) : 0.0;
+
+                    Color rankColor = const Color(0xFF64748B);
+                    Color rankBg = const Color(0xFFF1F5F9);
+                    if (rank == 1) {
+                      rankColor = const Color(0xFFD97706);
+                      rankBg = const Color(0xFFFEF3C7);
+                    } else if (rank == 2) {
+                      rankColor = const Color(0xFF475569);
+                      rankBg = const Color(0xFFE2E8F0);
+                    } else if (rank == 3) {
+                      rankColor = const Color(0xFFB45309);
+                      rankBg = const Color(0xFFFFEDD5);
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Row(
                         children: [
-                          const Icon(
-                            Icons.star_outline,
-                            color: AppTheme.orangePrimary,
-                            size: 20,
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: rankBg,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '#$rank',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: rankColor,
+                              ),
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Menu Terlaris (Favorit Pelanggan)',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: context.textPrimary,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.key,
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: context.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Container(
+                                    height: 6,
+                                    color: context.borderSubtle,
+                                    child: FractionallySizedBox(
+                                      alignment: Alignment.centerLeft,
+                                      widthFactor: ratio.clamp(0.0, 1.0),
+                                      child: Container(color: AppTheme.orangePrimary),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: rank == 1 ? const Color(0xFFDCFCE7) : context.surfaceBg,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: rank == 1 ? const Color(0xFFBBF7D0) : context.borderSubtle,
+                              ),
+                            ),
+                            child: Text(
+                              '${item.value} Porsi',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: rank == 1 ? const Color(0xFF15803D) : context.textPrimary,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      if (topSelling.isEmpty)
-                        Text(
-                          'Belum ada data penjualan menu',
-                          style: TextStyle(color: context.textSecondary),
-                        )
-                      else
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: topSelling.take(6).map((entry) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
+                    );
+                  }),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // 2. LAPORAN KHUSUS KASIR: DAFTAR PENJUALAN
+  // ══════════════════════════════════════════════════════════════════════════════
+  Widget _buildKasirSalesReport() {
+    final transactions = widget.db.transactions;
+    int totalCash = 0;
+    int totalQris = 0;
+    for (final t in transactions) {
+      final method = t.metodePembayaran.trim().toLowerCase();
+      if (method.contains('qris')) {
+        totalQris += t.totalBayar;
+      } else {
+        totalCash += t.totalBayar;
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header Kasir
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF16A34A), size: 20),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Laporan Daftar Penjualan Kasir',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Rekapitulasi penjualan selesai, setoran uang tunai kasir, dan pembayaran QRIS',
+                    style: TextStyle(fontSize: 12, color: context.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF16A34A),
+                    side: const BorderSide(color: Color(0xFF16A34A)),
+                  ),
+                  onPressed: () async {
+                    await ExportReportService.exportTransactionsExcelCsv(
+                      transactions: widget.db.transactions,
+                    );
+                  },
+                  icon: const Icon(Icons.file_download_outlined, size: 16),
+                  label: const Text('Ekspor Excel'),
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.orangePrimary,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    await ExportReportService.exportTransactionsPdf(
+                      transactions: widget.db.transactions,
+                      totalOmzet: widget.db.totalOmzet,
+                      restaurantName: 'Rasantara Restoran (Table Service)',
+                      address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
+                    );
+                  },
+                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+                  label: const Text('Cetak PDF'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // Summary Kasir (Total Penjualan, Total Tunai Kasir, Total QRIS)
+        Row(
+          children: [
+            Expanded(
+              child: _summaryCard(
+                title: 'Total Penjualan Selesai',
+                value: _currencyFormat.format(widget.db.totalOmzet),
+                subtitle: '${transactions.length} Transaksi Terlayani',
+                icon: Icons.payments_rounded,
+                isPrimary: true,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _summaryCard(
+                title: 'Total Uang Tunai (Cash)',
+                value: _currencyFormat.format(totalCash),
+                subtitle: 'Uang fisik di laci kasir',
+                icon: Icons.attach_money_rounded,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _summaryCard(
+                title: 'Total QRIS (Nirsentuh)',
+                value: _currencyFormat.format(totalQris),
+                subtitle: 'Masuk langsung rekening bank',
+                icon: Icons.qr_code_2_rounded,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Daftar Transaksi Penjualan Kasir
+        Card(
+          elevation: 0,
+          color: context.surfaceCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: context.borderSubtle),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Daftar Transaksi Kasir',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary),
+                    ),
+                    Text(
+                      '${transactions.length} Transaksi Selesai',
+                      style: TextStyle(fontSize: 12, color: context.textSecondary, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                if (transactions.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        'Belum ada transaksi kasir yang selesai tercatat.',
+                        style: TextStyle(color: context.textSecondary),
+                      ),
+                    ),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: transactions.length,
+                    separatorBuilder: (context, index) => Divider(height: 1, color: context.borderSubtle),
+                    itemBuilder: (context, index) {
+                      final trx = transactions[index];
+                      final isQris = trx.metodePembayaran.toUpperCase().contains('QRIS');
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: context.isDarkMode
-                                    ? const Color(0xFF7C2D12).withValues(alpha: 0.35)
-                                    : AppTheme.orangeLight,
+                                color: isQris ? const Color(0xFFFFF7ED) : const Color(0xFFF0FDF4),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: context.isDarkMode
-                                      ? const Color(0xFF7C2D12)
-                                      : AppTheme.orangeBorder,
-                                ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                              child: Icon(
+                                isQris ? Icons.qr_code_2_rounded : Icons.payments_rounded,
+                                color: isQris ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    entry.key,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                      color: context.textPrimary,
-                                    ),
+                                    '#TRX-${trx.idTransaksi.toString().padLeft(4, '0')} • ${trx.order.noMeja}',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: context.textPrimary),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.orangePrimary,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '${entry.value} Terjual',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                  Text(
+                                    'Kasir: ${trx.namaKasir} • ${_dateFormat.format(trx.tanggal)}',
+                                    style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                                   ),
                                 ],
                               ),
-                            );
-                          }).toList(),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  _currencyFormat.format(trx.totalBayar),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.orangePrimary),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isQris ? const Color(0xFFFFF7ED) : const Color(0xFFF0FDF4),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: isQris ? const Color(0xFFFFEDD5) : const Color(0xFFBBF7D0),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    trx.metodePembayaran,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: isQris ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.print_outlined, size: 20, color: AppTheme.textMuted),
+                              tooltip: 'Lihat & Cetak Struk',
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => ReceiptDialog(transaction: trx, allowPrint: true),
+                                );
+                              },
+                            ),
+                          ],
                         ),
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // 3. LAPORAN KHUSUS OWNER: PENGHASILAN, DLL & DIAGRAM ANALITIK
+  // ══════════════════════════════════════════════════════════════════════════════
+  Widget _buildOwnerRevenueReport() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header Owner
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.insights_rounded, color: Color(0xFF2563EB), size: 20),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Laporan Penghasilan & Keuangan (Owner)',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+                      ),
                     ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Analisis omzet restoran, tren pendapatan table service, dan performa finansial',
+                    style: TextStyle(fontSize: 12, color: context.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF16A34A),
+                    side: const BorderSide(color: Color(0xFF16A34A)),
+                  ),
+                  onPressed: () async {
+                    await ExportReportService.exportTransactionsExcelCsv(
+                      transactions: widget.db.transactions,
+                    );
+                  },
+                  icon: const Icon(Icons.file_download_outlined, size: 16),
+                  label: const Text('Ekspor Excel'),
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.orangePrimary,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    await ExportReportService.exportTransactionsPdf(
+                      transactions: widget.db.transactions,
+                      totalOmzet: widget.db.totalOmzet,
+                      restaurantName: 'Rasantara Restoran (Table Service)',
+                      address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
+                    );
+                  },
+                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+                  label: const Text('Cetak Laporan'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // Metric Cards Owner
+        Row(
+          children: [
+            Expanded(
+              child: _summaryCard(
+                title: 'Total Omzet Restoran',
+                value: _currencyFormat.format(widget.db.totalOmzet),
+                subtitle: 'Seluruh pesanan selesai',
+                icon: Icons.account_balance_wallet_rounded,
+                isPrimary: true,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _summaryCard(
+                title: 'Total Transaksi Selesai',
+                value: '${widget.db.totalTransaksiCount} Order',
+                subtitle: 'Lunas & terlayani',
+                icon: Icons.receipt_long_rounded,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _summaryCard(
+                title: 'Rata-Rata Bill Meja',
+                value: _currencyFormat.format(widget.db.rataRataTransaksi),
+                subtitle: 'Average order value',
+                icon: Icons.trending_up_rounded,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Visual Diagram Charts Simple Oren-Putih
+        AnalyticsChartsWidget(db: widget.db),
+      ],
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // 4. LAPORAN ADMINISTRATOR: TERPADU (LENGKAP SEMUA MODUL)
+  // ══════════════════════════════════════════════════════════════════════════════
+  Widget _buildAdminFullReport() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Top Action Header Admin
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Laporan Terpadu Restoran (Admin)',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+                  ),
+                  Text(
+                    'Rekapitulasi lengkap omzet penghasilan, penjualan kasir, dan menu best seller',
+                    style: TextStyle(fontSize: 12, color: context.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2563EB),
+                    side: const BorderSide(color: Color(0xFF2563EB)),
+                  ),
+                  onPressed: _isSyncingCloud ? null : _refreshFromSupabase,
+                  icon: _isSyncingCloud
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.sync_rounded, size: 16),
+                  label: const Text('Segarkan'),
+                ),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.orangePrimary,
+                    side: const BorderSide(color: AppTheme.orangePrimary),
+                  ),
+                  onPressed: _showPrintReportPreview,
+                  icon: const Icon(Icons.preview_rounded, size: 16),
+                  label: const Text('Pratinjau'),
+                ),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF16A34A),
+                    side: const BorderSide(color: Color(0xFF16A34A)),
+                  ),
+                  onPressed: () async {
+                    await ExportReportService.exportTransactionsExcelCsv(
+                      transactions: widget.db.transactions,
+                    );
+                  },
+                  icon: const Icon(Icons.file_download_outlined, size: 16),
+                  label: const Text('Excel'),
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.orangePrimary,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    await ExportReportService.exportTransactionsPdf(
+                      transactions: widget.db.transactions,
+                      totalOmzet: widget.db.totalOmzet,
+                      restaurantName: 'Rasantara Restoran (Table Service)',
+                      address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
+                    );
+                  },
+                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+                  label: const Text('Cetak PDF'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // Summary Cards
+        Row(
+          children: [
+            Expanded(
+              child: _summaryCard(
+                title: 'Total Pendapatan',
+                value: _currencyFormat.format(widget.db.totalOmzet),
+                subtitle: 'Semua transaksi selesai',
+                icon: Icons.account_balance_wallet_rounded,
+                isPrimary: true,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _summaryCard(
+                title: 'Jumlah Transaksi',
+                value: '${widget.db.totalTransaksiCount} Order',
+                subtitle: 'Lunas & terlayani',
+                icon: Icons.receipt_long_rounded,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _summaryCard(
+                title: 'Rata-Rata Bill',
+                value: _currencyFormat.format(widget.db.rataRataTransaksi),
+                subtitle: 'Rata-rata per meja',
+                icon: Icons.trending_up_rounded,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // Tab Switcher Admin: Diagram & Penghasilan vs Daftar Transaksi Kasir
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: context.fillSubtle,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.borderSubtle),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () => setState(() => _showDiagrams = true),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _showDiagrams ? context.surfaceCard : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: _showDiagrams
+                          ? const [BoxShadow(color: Color(0x10000000), blurRadius: 6, offset: Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.insights_rounded,
+                          size: 16,
+                          color: _showDiagrams ? const Color(0xFFEA580C) : context.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Grafik Analitik Restoran',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: _showDiagrams ? const Color(0xFFEA580C) : context.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // Transaction History Table
-              Card(
-                elevation: 0,
-                color: context.surfaceCard,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: context.borderSubtle),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Riwayat Transaksi Kasir',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: context.textPrimary,
+              const SizedBox(width: 4),
+              Expanded(
+                child: InkWell(
+                  onTap: () => setState(() => _showDiagrams = false),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: !_showDiagrams ? context.surfaceCard : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: !_showDiagrams
+                          ? const [BoxShadow(color: Color(0x10000000), blurRadius: 6, offset: Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.receipt_long_rounded,
+                          size: 16,
+                          color: !_showDiagrams ? const Color(0xFFEA580C) : context.textSecondary,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (transactions.isEmpty)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Text(
-                              'Belum ada transaksi tercatat',
-                              style: TextStyle(color: context.textSecondary),
-                            ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Daftar Penjualan Kasir (${widget.db.transactions.length})',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: !_showDiagrams ? const Color(0xFFEA580C) : context.textSecondary,
                           ),
-                        )
-                      else
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: transactions.length,
-                          separatorBuilder: (context, index) => Divider(
-                            height: 1,
-                            color: context.borderSubtle,
-                          ),
-                          itemBuilder: (context, index) {
-                            final trx = transactions[index];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: context.isDarkMode
-                                          ? const Color(0xFF7C2D12).withValues(alpha: 0.35)
-                                          : AppTheme.orangeLight,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                      Icons.receipt,
-                                      color: AppTheme.orangePrimary,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '#TRX-${trx.idTransaksi.toString().padLeft(4, '0')} • ${trx.order.noMeja}',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                            color: context.textPrimary,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Kasir: ${trx.namaKasir} • ${_dateFormat.format(trx.tanggal)}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: context.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        _currencyFormat.format(trx.totalBayar),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: AppTheme.orangePrimary,
-                                        ),
-                                      ),
-                                      Text(
-                                        trx.metodePembayaran,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppTheme.textMuted,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 8),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.visibility_outlined,
-                                      size: 20,
-                                      color: AppTheme.textMuted,
-                                    ),
-                                    tooltip: 'Lihat Struk',
-                                    onPressed: () {
-                                      final canPrint = widget.db.currentUser?.role.canProcessTransactions ?? false;
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) =>
-                                            ReceiptDialog(
-                                              transaction: trx,
-                                              allowPrint: canPrint,
-                                            ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
                         ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ],
-          ],
+          ),
         ),
-      ),
-      ),
+        const SizedBox(height: 18),
+
+        if (_showDiagrams)
+          AnalyticsChartsWidget(db: widget.db)
+        else
+          _buildKasirSalesReport(),
+      ],
     );
   }
 

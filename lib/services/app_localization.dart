@@ -51,8 +51,6 @@ class AppLocalization {
 
       // Entri Order / Pemesanan Table Service
       'order_title': 'Entri Order (Table Service)',
-      'delivery_label': 'Take Away (Pengantaran)',
-      'pickup_label': 'Self Pick-Up (Ambil Sendiri)',
       'dinein_label': 'Makan di Tempat (Dine In)',
       'flash_sale_title': 'Flash Sale Rasantara',
       'flash_sale_desc': 'Diskonnya s.d. 40%, serbu hidangan lezat sekarang!',
@@ -134,8 +132,6 @@ class AppLocalization {
 
       // Order Entry
       'order_title': 'Table Service Order Entry',
-      'delivery_label': 'Take Away (Delivery)',
-      'pickup_label': 'Self Pick-Up',
       'dinein_label': 'Dine In (Table)',
       'flash_sale_title': 'Rasantara Flash Sale',
       'flash_sale_desc': 'Up to 40% OFF, feast on signature recipes today!',
