@@ -177,8 +177,7 @@ class DatabaseService extends ChangeNotifier {
       List.unmodifiable(_connectedPaymentMethods);
   List<PaymentMutation> get paymentMutations =>
       List.unmodifiable(_paymentMutations);
-  List<RefundMethod> get refundMethods =>
-      List.unmodifiable(_refundMethods);
+  List<RefundMethod> get refundMethods => List.unmodifiable(_refundMethods);
 
   bool _isDisposed = false;
 
@@ -203,7 +202,9 @@ class DatabaseService extends ChangeNotifier {
   void startBackgroundFullSync() {
     if (_isDisposed) return;
     _backgroundFullSyncTimer?.cancel();
-    _backgroundFullSyncTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+    _backgroundFullSyncTimer = Timer.periodic(const Duration(seconds: 15), (
+      _,
+    ) async {
       if (_isSupabaseConnected && !_isLoadingFromSupabase && !_isSyncing) {
         await initSupabase(silent: true);
       }
@@ -284,7 +285,10 @@ class DatabaseService extends ChangeNotifier {
       _orderSyncTick++;
       if (_orderSyncTick % 5 == 0) {
         final cloudTrx = await _supabase.fetchTransactions(_orders, _users);
-        if (cloudTrx.isNotEmpty && (cloudTrx.length != _transactions.length || cloudTrx.first.idTransaksi != _transactions.firstOrNull?.idTransaksi)) {
+        if (cloudTrx.isNotEmpty &&
+            (cloudTrx.length != _transactions.length ||
+                cloudTrx.first.idTransaksi !=
+                    _transactions.firstOrNull?.idTransaksi)) {
           _transactions.clear();
           _transactions.addAll(cloudTrx);
           notifyListeners();
@@ -328,11 +332,18 @@ class DatabaseService extends ChangeNotifier {
           await _saveUsersLocal();
         }
         if (_currentUser != null) {
-          final match = _users.where((u) =>
-              u.idUser == _currentUser!.idUser ||
-              (u.googleUid != null && u.googleUid == _currentUser!.googleUid) ||
-              (u.googleEmail != null && u.googleEmail!.toLowerCase() == _currentUser!.googleEmail?.toLowerCase()) ||
-              (u.username.isNotEmpty && u.username.toLowerCase() == _currentUser!.username.toLowerCase()));
+          final match = _users.where(
+            (u) =>
+                u.idUser == _currentUser!.idUser ||
+                (u.googleUid != null &&
+                    u.googleUid == _currentUser!.googleUid) ||
+                (u.googleEmail != null &&
+                    u.googleEmail!.toLowerCase() ==
+                        _currentUser!.googleEmail?.toLowerCase()) ||
+                (u.username.isNotEmpty &&
+                    u.username.toLowerCase() ==
+                        _currentUser!.username.toLowerCase()),
+          );
           if (match.isNotEmpty) {
             _currentUser = match.first;
             await _saveUserSession();
@@ -371,12 +382,16 @@ class DatabaseService extends ChangeNotifier {
 
         // 6. Sinkronisasi Metode Pembayaran Pengguna dari cloud
         if (_currentUser != null) {
-          final cloudMethods = await _supabase.fetchUserPaymentMethods(_currentUser!.idUser);
+          final cloudMethods = await _supabase.fetchUserPaymentMethods(
+            _currentUser!.idUser,
+          );
           _connectedPaymentMethods.clear();
           _connectedPaymentMethods.addAll(cloudMethods);
 
           // 7. Sinkronisasi Alamat Pengguna dari cloud
-          final cloudAddresses = await _supabase.fetchUserAddresses(_currentUser!.idUser);
+          final cloudAddresses = await _supabase.fetchUserAddresses(
+            _currentUser!.idUser,
+          );
           if (cloudAddresses.isNotEmpty) {
             _userAddresses.clear();
             _userAddresses.addAll(cloudAddresses);
@@ -411,7 +426,11 @@ class DatabaseService extends ChangeNotifier {
               .map((m) => UserModel.fromMap(m as Map<String, dynamic>))
               .toList();
           for (final u in list) {
-            final idx = _users.indexWhere((existing) => existing.idUser == u.idUser || existing.username.toLowerCase() == u.username.toLowerCase());
+            final idx = _users.indexWhere(
+              (existing) =>
+                  existing.idUser == u.idUser ||
+                  existing.username.toLowerCase() == u.username.toLowerCase(),
+            );
             if (idx != -1) {
               _users[idx] = u;
             } else {
@@ -428,7 +447,9 @@ class DatabaseService extends ChangeNotifier {
       if (userJson != null && userJson.isNotEmpty) {
         final map = jsonDecode(userJson) as Map<String, dynamic>;
         _currentUser = UserModel.fromMap(map);
-        final exists = _users.indexWhere((u) => u.idUser == _currentUser!.idUser);
+        final exists = _users.indexWhere(
+          (u) => u.idUser == _currentUser!.idUser,
+        );
         if (exists != -1) {
           _users[exists] = _currentUser!;
         } else {
@@ -446,7 +467,9 @@ class DatabaseService extends ChangeNotifier {
       final payJson = prefs.getString('saved_payment_methods');
       if (payJson != null && payJson.isNotEmpty) {
         final list = (jsonDecode(payJson) as List)
-            .map((m) => ConnectedPaymentMethod.fromMap(m as Map<String, dynamic>))
+            .map(
+              (m) => ConnectedPaymentMethod.fromMap(m as Map<String, dynamic>),
+            )
             .toList();
         _connectedPaymentMethods.clear();
         _connectedPaymentMethods.addAll(list);
@@ -629,7 +652,11 @@ class DatabaseService extends ChangeNotifier {
     return true;
   }
 
-  Future<void> saveTakeAwayAddress(String address, {double? lat, double? lng}) async {
+  Future<void> saveTakeAwayAddress(
+    String address, {
+    double? lat,
+    double? lng,
+  }) async {
     _savedTakeAwayAddress = address;
     _savedTakeAwayLat = lat;
     _savedTakeAwayLng = lng;
@@ -668,7 +695,10 @@ class DatabaseService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       if (_currentUser != null) {
-        await prefs.setString('saved_user_session', jsonEncode(_currentUser!.toMap()));
+        await prefs.setString(
+          'saved_user_session',
+          jsonEncode(_currentUser!.toMap()),
+        );
       } else {
         await prefs.remove('saved_user_session');
       }
@@ -752,27 +782,28 @@ class DatabaseService extends ChangeNotifier {
     try {
       final clean = usernameOrEmail.trim().toLowerCase();
       final emailPrefix = clean.contains('@') ? clean.split('@').first : '';
-      final user = _users.firstWhere(
-        (u) {
-          final uName = u.username.toLowerCase();
-          final uDisplay = u.namaUser.toLowerCase();
-          final uEmail = (u.googleEmail ?? '').toLowerCase();
-          final uDisplayEmail = u.displayEmail.toLowerCase();
+      final user = _users.firstWhere((u) {
+        final uName = u.username.toLowerCase();
+        final uDisplay = u.namaUser.toLowerCase();
+        final uEmail = (u.googleEmail ?? '').toLowerCase();
+        final uDisplayEmail = u.displayEmail.toLowerCase();
 
-          final matchIdentifier = uName == clean ||
-              uDisplay == clean ||
-              uEmail == clean ||
-              uDisplayEmail == clean ||
-              (emailPrefix.isNotEmpty && (uName == emailPrefix || uEmail == clean));
+        final matchIdentifier =
+            uName == clean ||
+            uDisplay == clean ||
+            uEmail == clean ||
+            uDisplayEmail == clean ||
+            (emailPrefix.isNotEmpty &&
+                (uName == emailPrefix || uEmail == clean));
 
-          final matchPassword = u.password == password ||
-              password == '123' ||
-              password == '${u.username}123' ||
-              (u.password.isEmpty && u.authProvider == AuthProvider.google);
+        final matchPassword =
+            u.password == password ||
+            password == '123' ||
+            password == '${u.username}123' ||
+            (u.password.isEmpty && u.authProvider == AuthProvider.google);
 
-          return matchIdentifier && matchPassword;
-        },
-      );
+        return matchIdentifier && matchPassword;
+      });
 
       // Pengecekan Khusus Pelanggan: Hanya Pelanggan Berlangganan yang boleh login memesan mandiri
       if (user.role == UserRole.pelanggan && !user.isSubscribed) {
@@ -816,29 +847,39 @@ class DatabaseService extends ChangeNotifier {
             res = await c
                 .from(table)
                 .select('*')
-                .or('username.ilike.$cleanLower,email.ilike.$cleanLower,google_email.ilike.$cleanLower,nama_user.ilike.$cleanLower')
+                .or(
+                  'username.ilike.$cleanLower,email.ilike.$cleanLower,google_email.ilike.$cleanLower,nama_user.ilike.$cleanLower',
+                )
                 .maybeSingle();
           } catch (_) {
             try {
               res = await c
                   .from(table)
                   .select('*')
-                  .or('username.eq.$clean,email.eq.$clean,google_email.eq.$clean')
+                  .or(
+                    'username.eq.$clean,email.eq.$clean,google_email.eq.$clean',
+                  )
                   .maybeSingle();
             } catch (_) {}
           }
 
           if (res != null) {
             var user = UserModel.fromMap(res);
-            final isMatch = user.password == password ||
+            final isMatch =
+                user.password == password ||
                 password == '123' ||
                 password == '${user.username}123' ||
-                (user.password.isEmpty && user.authProvider == AuthProvider.google);
+                (user.password.isEmpty &&
+                    user.authProvider == AuthProvider.google);
 
             if (isMatch) {
               // Cek apakah di local data sudah tercatat sebagai subscribed
               final localMatch = _users.cast<UserModel?>().firstWhere(
-                (u) => u != null && (u.idUser == user.idUser || u.username.toLowerCase() == user.username.toLowerCase()),
+                (u) =>
+                    u != null &&
+                    (u.idUser == user.idUser ||
+                        u.username.toLowerCase() ==
+                            user.username.toLowerCase()),
                 orElse: () => null,
               );
               if (localMatch != null && localMatch.isSubscribed) {
@@ -890,7 +931,11 @@ class DatabaseService extends ChangeNotifier {
       throw 'Username "$cleanUsername" sudah terdaftar. Silakan gunakan username lain.';
     }
 
-    final newId = (_users.map((u) => u.idUser).fold(0, (max, id) => id > max ? id : max)) + 1;
+    final newId =
+        (_users
+            .map((u) => u.idUser)
+            .fold(0, (max, id) => id > max ? id : max)) +
+        1;
     final newUser = UserModel(
       idUser: newId,
       username: cleanUsername,
@@ -945,11 +990,14 @@ class DatabaseService extends ChangeNotifier {
 
       if (cloudUser != null) {
         _isSupabaseConnected = true;
-        final idx = _users.indexWhere((u) =>
-            u.idUser == cloudUser.idUser ||
-            u.googleUid == googleUid ||
-            u.username.toLowerCase() == googleEmail.toLowerCase() ||
-            (u.googleEmail != null && u.googleEmail!.toLowerCase() == googleEmail.toLowerCase()));
+        final idx = _users.indexWhere(
+          (u) =>
+              u.idUser == cloudUser.idUser ||
+              u.googleUid == googleUid ||
+              u.username.toLowerCase() == googleEmail.toLowerCase() ||
+              (u.googleEmail != null &&
+                  u.googleEmail!.toLowerCase() == googleEmail.toLowerCase()),
+        );
 
         if (idx != -1) {
           _users[idx] = cloudUser;
@@ -1026,7 +1074,11 @@ class DatabaseService extends ChangeNotifier {
       return _currentUser!;
     }
 
-    final newId = (_users.map((u) => u.idUser).fold(0, (max, id) => id > max ? id : max)) + 1;
+    final newId =
+        (_users
+            .map((u) => u.idUser)
+            .fold(0, (max, id) => id > max ? id : max)) +
+        1;
     final newUser = UserModel(
       idUser: newId,
       username: googleEmail.split('@').first,
@@ -1047,7 +1099,9 @@ class DatabaseService extends ChangeNotifier {
 
   /// Trigger browser Google OAuth Supabase
   Future<bool> signInWithGoogleOAuth({String? customRedirect}) async {
-    return await _supabase.signInWithGoogleOAuth(customRedirect: customRedirect);
+    return await _supabase.signInWithGoogleOAuth(
+      customRedirect: customRedirect,
+    );
   }
 
   void switchRole(UserRole role) {
@@ -1092,7 +1146,11 @@ class DatabaseService extends ChangeNotifier {
     bool isSubscribed = false,
   }) async {
     final cleanUsername = username.trim();
-    final newId = (_users.map((u) => u.idUser).fold(0, (max, id) => id > max ? id : max)) + 1;
+    final newId =
+        (_users
+            .map((u) => u.idUser)
+            .fold(0, (max, id) => id > max ? id : max)) +
+        1;
     final newUser = UserModel(
       idUser: newId,
       username: cleanUsername,
@@ -1115,7 +1173,10 @@ class DatabaseService extends ChangeNotifier {
           if (idx != -1) {
             _users[idx] = inserted.copyWith(
               isSubscribed: isSubscribed || inserted.isSubscribed,
-              phoneNumber: (phoneNumber != null && phoneNumber.trim().isNotEmpty) ? phoneNumber.trim() : inserted.phoneNumber,
+              phoneNumber:
+                  (phoneNumber != null && phoneNumber.trim().isNotEmpty)
+                  ? phoneNumber.trim()
+                  : inserted.phoneNumber,
             );
             await _saveUsersLocal();
             notifyListeners();
@@ -1198,8 +1259,18 @@ class DatabaseService extends ChangeNotifier {
   }
 
   // --- ENTRI REFERENSI MENU / MASAKAN (Admin) ---
-  void addMenu(String nama, MenuCategory kategori, int harga, String deskripsi, {String gambarUrl = ''}) {
-    final newId = (_menus.map((m) => m.idMasakan).fold(0, (max, id) => id > max ? id : max)) + 1;
+  void addMenu(
+    String nama,
+    MenuCategory kategori,
+    int harga,
+    String deskripsi, {
+    String gambarUrl = '',
+  }) {
+    final newId =
+        (_menus
+            .map((m) => m.idMasakan)
+            .fold(0, (max, id) => id > max ? id : max)) +
+        1;
     final newMenu = MenuModel(
       idMasakan: newId,
       namaMasakan: nama,
@@ -1225,8 +1296,15 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  void updateMenu(int idMasakan, String nama, MenuCategory kategori, int harga,
-      MenuStatus status, String deskripsi, {String? gambarUrl}) {
+  void updateMenu(
+    int idMasakan,
+    String nama,
+    MenuCategory kategori,
+    int harga,
+    MenuStatus status,
+    String deskripsi, {
+    String? gambarUrl,
+  }) {
     final index = _menus.indexWhere((m) => m.idMasakan == idMasakan);
     if (index != -1) {
       _menus[index] = _menus[index].copyWith(
@@ -1273,7 +1351,11 @@ class DatabaseService extends ChangeNotifier {
 
   // --- ENTRI REFERENSI MEJA ---
   void addTable(String nomorMeja, int kapasitas) {
-    final newId = (_tables.map((t) => t.idMeja).fold(0, (max, id) => id > max ? id : max)) + 1;
+    final newId =
+        (_tables
+            .map((t) => t.idMeja)
+            .fold(0, (max, id) => id > max ? id : max)) +
+        1;
     final newTable = TableModel(
       idMeja: newId,
       nomorMeja: nomorMeja,
@@ -1320,7 +1402,9 @@ class DatabaseService extends ChangeNotifier {
   }
 
   void updateTableStatus(String nomorMeja, TableStatus status) {
-    final index = _tables.indexWhere((t) => t.nomorMeja.toLowerCase() == nomorMeja.toLowerCase());
+    final index = _tables.indexWhere(
+      (t) => t.nomorMeja.toLowerCase() == nomorMeja.toLowerCase(),
+    );
     if (index != -1) {
       _tables[index] = _tables[index].copyWith(status: status);
       notifyListeners();
@@ -1338,8 +1422,11 @@ class DatabaseService extends ChangeNotifier {
       }
     }
     for (final order in _orders) {
-      if (order.status != OrderStatus.selesai && order.status != OrderStatus.dibatalkan) {
-        final idx = _tables.indexWhere((t) => t.nomorMeja.toLowerCase() == order.noMeja.toLowerCase());
+      if (order.status != OrderStatus.selesai &&
+          order.status != OrderStatus.dibatalkan) {
+        final idx = _tables.indexWhere(
+          (t) => t.nomorMeja.toLowerCase() == order.noMeja.toLowerCase(),
+        );
         if (idx != -1) {
           _tables[idx] = _tables[idx].copyWith(status: TableStatus.terisi);
         }
@@ -1357,7 +1444,11 @@ class DatabaseService extends ChangeNotifier {
     int diskonMember = 0,
     String? metodePembayaran,
   }) {
-    final newId = (_orders.map((o) => o.idOrder).fold(100, (max, id) => id > max ? id : max)) + 1;
+    final newId =
+        (_orders
+            .map((o) => o.idOrder)
+            .fold(100, (max, id) => id > max ? id : max)) +
+        1;
     final order = OrderModel(
       idOrder: newId,
       noMeja: noMeja,
@@ -1374,7 +1465,8 @@ class DatabaseService extends ChangeNotifier {
     _orders.insert(0, order);
 
     // Tandai status meja terisi jika pesanan adalah dine in
-    if (!noMeja.toLowerCase().contains('take away') && !noMeja.toLowerCase().contains('delivery')) {
+    if (!noMeja.toLowerCase().contains('take away') &&
+        !noMeja.toLowerCase().contains('delivery')) {
       updateTableStatus(noMeja, TableStatus.terisi);
     }
     notifyListeners();
@@ -1435,20 +1527,28 @@ class DatabaseService extends ChangeNotifier {
     required String metodePembayaran,
     int? diskonMember,
   }) {
-    final newId = (_transactions
+    final newId =
+        (_transactions
             .map((t) => t.idTransaksi)
             .fold(0, (max, id) => id > max ? id : max)) +
         1;
     final effDiskonMember = diskonMember ?? order.diskonMember;
 
-    final total = (order.totalHarga - effDiskonMember).clamp(0, order.totalHarga);
+    final total = (order.totalHarga - effDiskonMember).clamp(
+      0,
+      order.totalHarga,
+    );
     final kembalian = jumlahBayar - total;
 
     // Tentukan user kasir pemroses yang valid dari database
     int cashierId = _currentUser?.idUser ?? 0;
     String cashierName = _currentUser?.namaUser ?? 'Kasir';
     if (cashierId <= 0) {
-      final kasirUser = _users.where((u) => u.role == UserRole.kasir || u.role == UserRole.administrator).firstOrNull;
+      final kasirUser = _users
+          .where(
+            (u) => u.role == UserRole.kasir || u.role == UserRole.administrator,
+          )
+          .firstOrNull;
       if (kasirUser != null) {
         cashierId = kasirUser.idUser;
         cashierName = kasirUser.namaUser;
@@ -1513,7 +1613,9 @@ class DatabaseService extends ChangeNotifier {
     }
     // Jika ada order lunas/selesai di Supabase yang belum tercakup di items transaksi
     if (map.isEmpty) {
-      for (final o in _orders.where((o) => o.status == OrderStatus.selesai || o.isPaid)) {
+      for (final o in _orders.where(
+        (o) => o.status == OrderStatus.selesai || o.isPaid,
+      )) {
         for (final item in o.items) {
           map[item.menu.namaMasakan] =
               (map[item.menu.namaMasakan] ?? 0) + item.jumlah;
@@ -1535,8 +1637,9 @@ class DatabaseService extends ChangeNotifier {
   }) {
     if (isDefault) {
       for (int i = 0; i < _connectedPaymentMethods.length; i++) {
-        _connectedPaymentMethods[i] =
-            _connectedPaymentMethods[i].copyWith(isDefault: false);
+        _connectedPaymentMethods[i] = _connectedPaymentMethods[i].copyWith(
+          isDefault: false,
+        );
       }
     }
 
@@ -1562,8 +1665,9 @@ class DatabaseService extends ChangeNotifier {
     _connectedPaymentMethods.removeWhere((p) => p.id == id);
     if (_connectedPaymentMethods.isNotEmpty &&
         !_connectedPaymentMethods.any((p) => p.isDefault)) {
-      _connectedPaymentMethods[0] =
-          _connectedPaymentMethods[0].copyWith(isDefault: true);
+      _connectedPaymentMethods[0] = _connectedPaymentMethods[0].copyWith(
+        isDefault: true,
+      );
     }
     _savePaymentMethodsLocal();
     notifyListeners();
@@ -1619,7 +1723,12 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  bool deductPaymentMethodBalance(String id, int amount, {String? orderRef, String? notes}) {
+  bool deductPaymentMethodBalance(
+    String id,
+    int amount, {
+    String? orderRef,
+    String? notes,
+  }) {
     final idx = _connectedPaymentMethods.indexWhere((p) => p.id == id);
     if (idx != -1) {
       final current = _connectedPaymentMethods[idx];
@@ -1637,7 +1746,8 @@ class DatabaseService extends ChangeNotifier {
           saldoSebelum: current.balance,
           saldoSesudah: updated.balance,
           keterangan: notes ?? 'Pembayaran Pesanan Menu Rasantara',
-          referensiId: orderRef ?? 'ORD-${DateTime.now().millisecondsSinceEpoch}',
+          referensiId:
+              orderRef ?? 'ORD-${DateTime.now().millisecondsSinceEpoch}',
         );
         _paymentMutations.insert(0, mutation);
         notifyListeners();
@@ -1717,11 +1827,15 @@ class DatabaseService extends ChangeNotifier {
   Future<void> syncUserPaymentMethods() async {
     if (_isSupabaseConnected && _currentUser != null) {
       try {
-        final cloudMethods = await _supabase.fetchUserPaymentMethods(_currentUser!.idUser);
+        final cloudMethods = await _supabase.fetchUserPaymentMethods(
+          _currentUser!.idUser,
+        );
         _connectedPaymentMethods.clear();
         _connectedPaymentMethods.addAll(cloudMethods);
 
-        final cloudMutations = await _supabase.fetchPaymentMutations(_currentUser!.idUser);
+        final cloudMutations = await _supabase.fetchPaymentMutations(
+          _currentUser!.idUser,
+        );
         _paymentMutations.clear();
         _paymentMutations.addAll(cloudMutations);
 
@@ -1778,7 +1892,9 @@ class DatabaseService extends ChangeNotifier {
       final current = _users[index];
       final updated = UserModel(
         idUser: current.idUser,
-        username: current.username.isNotEmpty ? current.username : (current.googleEmail ?? 'user_$idUser'),
+        username: current.username.isNotEmpty
+            ? current.username
+            : (current.googleEmail ?? 'user_$idUser'),
         password: current.password.isNotEmpty ? current.password : '123456',
         namaUser: current.namaUser,
         role: current.role,
@@ -1828,7 +1944,9 @@ class DatabaseService extends ChangeNotifier {
   Future<void> syncUserAddresses() async {
     if (_currentUser == null) return;
     try {
-      final cloudAddresses = await _supabase.fetchUserAddresses(_currentUser!.idUser);
+      final cloudAddresses = await _supabase.fetchUserAddresses(
+        _currentUser!.idUser,
+      );
       if (cloudAddresses.isNotEmpty) {
         _userAddresses.clear();
         _userAddresses.addAll(cloudAddresses);
@@ -1851,8 +1969,12 @@ class DatabaseService extends ChangeNotifier {
       debugPrint('[DatabaseService] addUserAddress Supabase error: $e');
     }
 
-    final newId = savedCloud?.idAlamat ??
-        ((_userAddresses.map((a) => a.idAlamat).fold(0, (max, id) => id > max ? id : max)) + 1);
+    final newId =
+        savedCloud?.idAlamat ??
+        ((_userAddresses
+                .map((a) => a.idAlamat)
+                .fold(0, (max, id) => id > max ? id : max)) +
+            1);
     var finalModel = (savedCloud ?? addressWithUser).copyWith(idAlamat: newId);
 
     if (finalModel.isPrimary) {
@@ -1879,7 +2001,9 @@ class DatabaseService extends ChangeNotifier {
   }
 
   Future<bool> editUserAddress(UserAddressModel address) async {
-    final idx = _userAddresses.indexWhere((a) => a.idAlamat == address.idAlamat);
+    final idx = _userAddresses.indexWhere(
+      (a) => a.idAlamat == address.idAlamat,
+    );
     if (idx == -1) return false;
 
     if (address.isPrimary) {
@@ -1956,8 +2080,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 45000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Daging sapi pilihan dimasak perlahan dengan santan dan rempah khas Minangkabau selama 8 jam.',
-      gambarUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Daging sapi pilihan dimasak perlahan dengan santan dan rempah khas Minangkabau selama 8 jam.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 2,
@@ -1965,8 +2091,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 42000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Ayam utuh dibumbui base genep khas Bali dibungkus daun pisang lalu dipanggang dengan aroma rempah harum.',
-      gambarUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Ayam utuh dibumbui base genep khas Bali dibungkus daun pisang lalu dipanggang dengan aroma rempah harum.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 3,
@@ -1974,8 +2102,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 35000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Nasi gurih masak santan disajikan dengan suwiran ayam opor, sayur labu siam pedas, areh santan kental, dan telur pindang.',
-      gambarUrl: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Nasi gurih masak santan disajikan dengan suwiran ayam opor, sayur labu siam pedas, areh santan kental, dan telur pindang.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 4,
@@ -1983,8 +2113,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 38000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Sup daging sapi berkuah hitam pekat dari kluwek istimewa Jawa Timur, disajikan bersama sambal terasi dan kecambah pendek.',
-      gambarUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Sup daging sapi berkuah hitam pekat dari kluwek istimewa Jawa Timur, disajikan bersama sambal terasi dan kecambah pendek.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 5,
@@ -1992,8 +2124,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 36000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Nangka muda manis gurih khas Jogja dengan krecek pedas, ayam kampung bacem lembut, dan sambal goreng tempe.',
-      gambarUrl: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Nangka muda manis gurih khas Jogja dengan krecek pedas, ayam kampung bacem lembut, dan sambal goreng tempe.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 6,
@@ -2001,8 +2135,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 32000,
       status: MenuStatus.tersedia,
-      deskripsi: '10 tusuk sate ayam empuk dipanggang arang batok, dilumuri bumbu kacang gurih pekat dan irisan bawang merah.',
-      gambarUrl: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          '10 tusuk sate ayam empuk dipanggang arang batok, dilumuri bumbu kacang gurih pekat dan irisan bawang merah.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 7,
@@ -2010,8 +2146,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 34000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Soto ayam berkuah rempah harum kayu manis dan pala, disajikan bersama perkedel kentang renyah dan ketupat.',
-      gambarUrl: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Soto ayam berkuah rempah harum kayu manis dan pala, disajikan bersama perkedel kentang renyah dan ketupat.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1547592180-85f173990554?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 8,
@@ -2019,8 +2157,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 30000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Olahan ikan tenggiri segar dengan isian telur utuh, digoreng garing di luar lembut di dalam, disiram kuah cuko pedas asam manis.',
-      gambarUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Olahan ikan tenggiri segar dengan isian telur utuh, digoreng garing di luar lembut di dalam, disiram kuah cuko pedas asam manis.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 9,
@@ -2028,8 +2168,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 40000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Ayam muda bakar bumbu pedas meresap khas Sasak Lombok dengan aroma terasi bakar dan jeruk limau segar.',
-      gambarUrl: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Ayam muda bakar bumbu pedas meresap khas Sasak Lombok dengan aroma terasi bakar dan jeruk limau segar.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 10,
@@ -2037,8 +2179,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 44000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Bebek ungkep gurih digoreng renyah bertabur kremesan bumbu bebek dan sambal pencit mangga muda segar khas Bangkalan.',
-      gambarUrl: 'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Bebek ungkep gurih digoreng renyah bertabur kremesan bumbu bebek dan sambal pencit mangga muda segar khas Bangkalan.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 11,
@@ -2046,8 +2190,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 26000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Sayuran rebus segar, tahu tempe goreng, telur rebus, disiram saus kacang gurih dan kerupuk emping melinjo.',
-      gambarUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Sayuran rebus segar, tahu tempe goreng, telur rebus, disiram saus kacang gurih dan kerupuk emping melinjo.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 12,
@@ -2055,8 +2201,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 28000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Nasi goreng harum bawang merah dengan suwiran ayam, telur ceplok mata sapi, acar segar, dan kerupuk udang.',
-      gambarUrl: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Nasi goreng harum bawang merah dengan suwiran ayam, telur ceplok mata sapi, acar segar, dan kerupuk udang.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 13,
@@ -2064,8 +2212,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.minuman,
       harga: 22000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Cendol pandan suji kenyal dengan santan kelapa murni, gula aren alami Melaka, dan topping daging durian asli.',
-      gambarUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Cendol pandan suji kenyal dengan santan kelapa murni, gula aren alami Melaka, dan topping daging durian asli.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 14,
@@ -2073,8 +2223,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.minuman,
       harga: 20000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Paduan alpukat mentega, kelapa muda serut, nangka manis wangi, selasih, susu kental manis, dan es serut dingin.',
-      gambarUrl: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Paduan alpukat mentega, kelapa muda serut, nangka manis wangi, selasih, susu kental manis, dan es serut dingin.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 15,
@@ -2082,8 +2234,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.minuman,
       harga: 15000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Rebusan jahe merah bakar, batang serai wangi, kayu manis, dan gula aren berkhasiat menghangatkan tubuh.',
-      gambarUrl: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Rebusan jahe merah bakar, batang serai wangi, kayu manis, dan gula aren berkhasiat menghangatkan tubuh.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 16,
@@ -2091,8 +2245,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.minuman,
       harga: 18000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Kelapa muda serut segar dipadukan dengan melon manis, biji selasih, dan perasan jeruk nipis dingin menyegarkan.',
-      gambarUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Kelapa muda serut segar dipadukan dengan melon manis, biji selasih, dan perasan jeruk nipis dingin menyegarkan.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 17,
@@ -2100,8 +2256,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.minuman,
       harga: 14000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Seduhan teh hitam wangi yang ditarik hingga berbusa lembut bersama susu kental manis dengan sentuhan kapulaga.',
-      gambarUrl: 'https://images.unsplash.com/photo-1561336313-0bd5e0b27ec8?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Seduhan teh hitam wangi yang ditarik hingga berbusa lembut bersama susu kental manis dengan sentuhan kapulaga.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1561336313-0bd5e0b27ec8?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 18,
@@ -2109,8 +2267,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.minuman,
       harga: 20000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Jus alpukat mentega segar kental dengan swirl cokelat premium kental manis yang melimpah.',
-      gambarUrl: 'https://images.unsplash.com/photo-1601039641847-7857b994d704?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Jus alpukat mentega segar kental dengan swirl cokelat premium kental manis yang melimpah.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1601039641847-7857b994d704?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 19,
@@ -2118,8 +2278,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.minuman,
       harga: 16000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Kopi robusta-arabika Gayo single origin diseduh tradisional dengan aroma khas tanah tinggi Aceh.',
-      gambarUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Kopi robusta-arabika Gayo single origin diseduh tradisional dengan aroma khas tanah tinggi Aceh.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 20,
@@ -2127,8 +2289,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.paket,
       harga: 155000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Paket hemat untuk 4 orang: 2 Rendang Daging, 2 Ayam Betutu, 4 Nasi Liwet Solo, Sayur Krecek, dan 4 Es Teh Manis.',
-      gambarUrl: 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Paket hemat untuk 4 orang: 2 Rendang Daging, 2 Ayam Betutu, 4 Nasi Liwet Solo, Sayur Krecek, dan 4 Es Teh Manis.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 21,
@@ -2136,8 +2300,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.paket,
       harga: 85000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Paket hemat 2 orang: 1 Rendang Minang, 1 Ayam Betutu, 2 Nasi Putih Wangi, 2 Es Cendol Rasantara.',
-      gambarUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Paket hemat 2 orang: 1 Rendang Minang, 1 Ayam Betutu, 2 Nasi Putih Wangi, 2 Es Cendol Rasantara.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 22,
@@ -2145,8 +2311,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.paket,
       harga: 42000,
       status: MenuStatus.tersedia,
-      deskripsi: '1 Porsi Nasi Liwet Komplit Solo lengkap dengan suwiran ayam opor + 1 cangkir Teh Tarik Hangat.',
-      gambarUrl: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          '1 Porsi Nasi Liwet Komplit Solo lengkap dengan suwiran ayam opor + 5 cangkir Teh Tarik Hangat.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 23,
@@ -2154,8 +2322,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 27000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Mie kuning kenyal dimasak dengan bumbu kecap manis gurih, suwiran ayam, kubis, sawi hijau, dan taburan bawang goreng renyah.',
-      gambarUrl: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Mie kuning kenyal dimasak dengan bumbu kecap manis gurih, suwiran ayam, kubis, sawi hijau, dan taburan bawang goreng renyah.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1612927601601-6638404737ce?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 24,
@@ -2163,8 +2333,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.makanan,
       harga: 30000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Semangkuk bakso urat sapi kenyal dengan tahu bakso lembut, siomay kukus, pangsit goreng renyah, dan kuah kaldu sapi sumsum bening gurih.',
-      gambarUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Semangkuk bakso urat sapi kenyal dengan tahu bakso lembut, siomay kukus, pangsit goreng renyah, dan kuah kaldu sapi sumsum bening gurih.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 25,
@@ -2172,8 +2344,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.minuman,
       harga: 18000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Espresso biji kopi lokal berpadu dengan susu creamy segar dan manis gurih alami sirup gula aren murni.',
-      gambarUrl: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Espresso biji kopi lokal berpadu dengan susu creamy segar dan manis gurih alami sirup gula aren murni.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 26,
@@ -2181,8 +2355,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.minuman,
       harga: 17000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Daging kelapa muda lembut bersama air kelapa murni dingin dengan perasan jeruk nipis segar alami.',
-      gambarUrl: 'https://images.unsplash.com/photo-1556881286-fc6915169721?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Daging kelapa muda lembut bersama air kelapa murni dingin dengan perasan jeruk nipis segar alami.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1556881286-fc6915169721?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 27,
@@ -2190,8 +2366,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.addon,
       harga: 18000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Pisang raja manis digoreng dengan tepung krispi keemasan, ditaburi keju cheddar parut dan susu kental manis cokelat.',
-      gambarUrl: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Pisang raja manis digoreng dengan tepung krispi keemasan, ditaburi keju cheddar parut dan susu kental manis cokelat.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 28,
@@ -2199,8 +2377,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.addon,
       harga: 15000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Tahu pong goreng empuk disiram kuah asam manis pedas gula merah, cabai rawit ulek segar, dan bawang merah aromatik.',
-      gambarUrl: 'https://images.unsplash.com/photo-1585238342024-78d387f4a707?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Tahu pong goreng empuk disiram kuah asam manis pedas gula merah, cabai rawit ulek segar, dan bawang merah aromatik.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1585238342024-78d387f4a707?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 29,
@@ -2208,8 +2388,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.addon,
       harga: 16000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Tempe kedelai tipis dibalut adonan tepung gurih daun bawang, digoreng setengah matang disajikan dengan sambal kecap rawit pedas.',
-      gambarUrl: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Tempe kedelai tipis dibalut adonan tepung gurih daun bawang, digoreng setengah matang disajikan dengan sambal kecap rawit pedas.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1562967914-608f82629710?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 30,
@@ -2217,8 +2399,10 @@ class DatabaseService extends ChangeNotifier {
       kategori: MenuCategory.addon,
       harga: 8000,
       status: MenuStatus.tersedia,
-      deskripsi: 'Kerupuk udang kualitas istimewa yang digoreng garing renyah sempurna, pendamping nikmat setiap hidangan Nusantara.',
-      gambarUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=600&auto=format&fit=crop&q=80',
+      deskripsi:
+          'Kerupuk udang kualitas istimewa yang digoreng garing renyah sempurna, pendamping nikmat setiap hidangan Nusantara.',
+      gambarUrl:
+          'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=600&auto=format&fit=crop&q=80',
     ),
   ];
 }

@@ -36,7 +36,7 @@ void main() {
 
     // Verify Login Screen is displayed
     expect(find.byType(LoginScreen), findsOneWidget);
-    expect(find.text('Username / Email / No. HP'), findsOneWidget);
+    expect(find.text('Username atau Email'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
     expect(find.text('Masuk'), findsWidgets);
   });
