@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kasir_restoran/services/database_service.dart';
 import 'package:kasir_restoran/models/user_model.dart';
-import 'package:kasir_restoran/screens/profile/settings_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

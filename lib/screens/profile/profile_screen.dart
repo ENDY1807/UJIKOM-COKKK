@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
 import 'settings_screen.dart';
@@ -273,7 +272,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = widget.db.currentUser;
-    final role = user?.role ?? UserRole.pelanggan;
 
     final photoUrl = user?.displayPhoto ?? '';
     final initial = (user != null && user.namaUser.isNotEmpty)
@@ -359,18 +357,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEA580C).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              role.label,
-                              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
-                            ),
                           ),
                         ],
                       ),
