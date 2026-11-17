@@ -111,10 +111,12 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
       periodSubtitle = '7 Hari Terakhir';
       for (int i = 6; i >= 0; i--) {
         final targetDate = today.subtract(Duration(days: i));
-        final nextDate = targetDate.add(const Duration(days: 1));
 
         final total = transactions.where((t) {
-          return !t.tanggal.isBefore(targetDate) && t.tanggal.isBefore(nextDate);
+          final tl = t.tanggal.toLocal();
+          return tl.year == targetDate.year &&
+              tl.month == targetDate.month &&
+              tl.day == targetDate.day;
         }).fold<int>(0, (sum, t) => sum + t.totalBayar);
 
         revenueList.add(_PeriodRevenue(
@@ -127,10 +129,12 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
       periodSubtitle = '4 Minggu Terakhir';
       for (int w = 3; w >= 0; w--) {
         final startWeek = today.subtract(Duration(days: (w + 1) * 7 - 1));
-        final endWeek = today.subtract(Duration(days: w * 7)).add(const Duration(days: 1));
+        final endWeek = today.subtract(Duration(days: w * 7));
 
         final total = transactions.where((t) {
-          return !t.tanggal.isBefore(startWeek) && t.tanggal.isBefore(endWeek);
+          final tl = t.tanggal.toLocal();
+          final tDate = DateTime(tl.year, tl.month, tl.day);
+          return !tDate.isBefore(startWeek) && !tDate.isAfter(endWeek);
         }).fold<int>(0, (sum, t) => sum + t.totalBayar);
 
         revenueList.add(_PeriodRevenue(
@@ -143,10 +147,10 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
       periodSubtitle = '12 Bulan Terakhir';
       for (int m = 11; m >= 0; m--) {
         final monthDate = DateTime(now.year, now.month - m, 1);
-        final nextMonthDate = DateTime(now.year, now.month - m + 1, 1);
 
         final total = transactions.where((t) {
-          return !t.tanggal.isBefore(monthDate) && t.tanggal.isBefore(nextMonthDate);
+          final tl = t.tanggal.toLocal();
+          return tl.year == monthDate.year && tl.month == monthDate.month;
         }).fold<int>(0, (sum, t) => sum + t.totalBayar);
 
         revenueList.add(_PeriodRevenue(

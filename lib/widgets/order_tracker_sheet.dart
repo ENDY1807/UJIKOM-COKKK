@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../models/menu_model.dart';
 import '../models/order_model.dart';
 import '../models/transaction_model.dart';
 import '../services/database_service.dart';
@@ -533,12 +534,20 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                             width: 48,
                                             height: 48,
                                             fit: BoxFit.cover,
-                                            errorBuilder: (ctx, err, stack) => const Center(
-                                              child: Icon(Icons.restaurant_rounded, color: Color(0xFFEA580C), size: 22),
+                                            errorBuilder: (ctx, err, stack) => Image.network(
+                                              MenuModel.defaultImageForMenu(item.menu.namaMasakan, item.menu.kategori),
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (c, e, s) => const Center(
+                                                child: Icon(Icons.restaurant_rounded, color: Color(0xFFEA580C), size: 22),
+                                              ),
                                             ),
                                           )
-                                        : const Center(
-                                            child: Icon(Icons.restaurant_rounded, color: Color(0xFFEA580C), size: 22),
+                                        : Image.network(
+                                            MenuModel.defaultImageForMenu(item.menu.namaMasakan, item.menu.kategori),
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (c, e, s) => const Center(
+                                              child: Icon(Icons.restaurant_rounded, color: Color(0xFFEA580C), size: 22),
+                                            ),
                                           ),
                                   ),
                                 ),

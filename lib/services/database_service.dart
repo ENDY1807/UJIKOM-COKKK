@@ -225,7 +225,30 @@ class DatabaseService extends ChangeNotifier {
     _fastOrderSyncTimer = null;
   }
 
+  int _orderSyncTick = 0;
+
+  /// Sinkronisasi khusus data Laporan & Transaksi langsung dari Supabase
+  Future<void> syncReportDataFromCloud() async {
+    if (!_isSupabaseConnected) return;
+    try {
+      final cloudOrders = await _supabase.fetchOrders(_menus, _users);
+      if (cloudOrders.isNotEmpty) {
+        _orders.clear();
+        _orders.addAll(cloudOrders);
+      }
+      final cloudTrx = await _supabase.fetchTransactions(_orders, _users);
+      if (cloudTrx.isNotEmpty) {
+        _transactions.clear();
+        _transactions.addAll(cloudTrx);
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[DatabaseService] syncReportDataFromCloud error: $e');
+    }
+  }
+
   Future<void> _syncOrdersOnly() async {
+    if (_isSyncing) return;
     try {
       final cloudOrders = await _supabase.fetchOrders(_menus, _users);
       if (cloudOrders.isNotEmpty) {
@@ -247,6 +270,17 @@ class DatabaseService extends ChangeNotifier {
           _orders.clear();
           _orders.addAll(cloudOrders);
           syncTableStatusWithOrders();
+          notifyListeners();
+        }
+      }
+
+      // Setiap 5 tick (~10 detik) sinkronkan transaksi agar laporan kasir & analitik selalu sesuai dengan Supabase
+      _orderSyncTick++;
+      if (_orderSyncTick % 5 == 0) {
+        final cloudTrx = await _supabase.fetchTransactions(_orders, _users);
+        if (cloudTrx.isNotEmpty && (cloudTrx.length != _transactions.length || cloudTrx.first.idTransaksi != _transactions.firstOrNull?.idTransaksi)) {
+          _transactions.clear();
+          _transactions.addAll(cloudTrx);
           notifyListeners();
         }
       }
@@ -1474,6 +1508,15 @@ class DatabaseService extends ChangeNotifier {
             (map[item.menu.namaMasakan] ?? 0) + item.jumlah;
       }
     }
+    // Jika ada order lunas/selesai di Supabase yang belum tercakup di items transaksi
+    if (map.isEmpty) {
+      for (final o in _orders.where((o) => o.status == OrderStatus.selesai || o.isPaid)) {
+        for (final item in o.items) {
+          map[item.menu.namaMasakan] =
+              (map[item.menu.namaMasakan] ?? 0) + item.jumlah;
+        }
+      }
+    }
     final list = map.entries.toList();
     list.sort((a, b) => b.value.compareTo(a.value));
     return list;
@@ -1992,7 +2035,7 @@ class DatabaseService extends ChangeNotifier {
       harga: 44000,
       status: MenuStatus.tersedia,
       deskripsi: 'Bebek ungkep gurih digoreng renyah bertabur kremesan bumbu bebek dan sambal pencit mangga muda segar khas Bangkalan.',
-      gambarUrl: 'https://images.unsplash.com/photo-1514944298352-77742110c71e?w=600&auto=format&fit=crop&q=80',
+      gambarUrl: 'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 11,
@@ -2064,7 +2107,7 @@ class DatabaseService extends ChangeNotifier {
       harga: 20000,
       status: MenuStatus.tersedia,
       deskripsi: 'Jus alpukat mentega segar kental dengan swirl cokelat premium kental manis yang melimpah.',
-      gambarUrl: 'https://images.unsplash.com/photo-1638176066666-ffb2f83b27bb?w=600&auto=format&fit=crop&q=80',
+      gambarUrl: 'https://images.unsplash.com/photo-1601039641847-7857b994d704?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 19,
@@ -2136,7 +2179,7 @@ class DatabaseService extends ChangeNotifier {
       harga: 17000,
       status: MenuStatus.tersedia,
       deskripsi: 'Daging kelapa muda lembut bersama air kelapa murni dingin dengan perasan jeruk nipis segar alami.',
-      gambarUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80',
+      gambarUrl: 'https://images.unsplash.com/photo-1556881286-fc6915169721?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 27,
@@ -2154,7 +2197,7 @@ class DatabaseService extends ChangeNotifier {
       harga: 15000,
       status: MenuStatus.tersedia,
       deskripsi: 'Tahu pong goreng empuk disiram kuah asam manis pedas gula merah, cabai rawit ulek segar, dan bawang merah aromatik.',
-      gambarUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+      gambarUrl: 'https://images.unsplash.com/photo-1585238342024-78d387f4a707?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 29,
@@ -2163,7 +2206,7 @@ class DatabaseService extends ChangeNotifier {
       harga: 16000,
       status: MenuStatus.tersedia,
       deskripsi: 'Tempe kedelai tipis dibalut adonan tepung gurih daun bawang, digoreng setengah matang disajikan dengan sambal kecap rawit pedas.',
-      gambarUrl: 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&auto=format&fit=crop&q=80',
+      gambarUrl: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=600&auto=format&fit=crop&q=80',
     ),
     MenuModel(
       idMasakan: 30,
@@ -2172,7 +2215,7 @@ class DatabaseService extends ChangeNotifier {
       harga: 8000,
       status: MenuStatus.tersedia,
       deskripsi: 'Kerupuk udang kualitas istimewa yang digoreng garing renyah sempurna, pendamping nikmat setiap hidangan Nusantara.',
-      gambarUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80',
+      gambarUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=600&auto=format&fit=crop&q=80',
     ),
   ];
 }

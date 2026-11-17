@@ -35,6 +35,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
     final nameController = TextEditingController(text: existing?.namaMasakan ?? '');
     final priceController = TextEditingController(text: existing != null ? '${existing.harga}' : '');
     final descController = TextEditingController(text: existing?.deskripsi ?? '');
+    final imageController = TextEditingController(text: existing?.gambarUrl ?? '');
     var selectedCat = existing?.kategori ?? MenuCategory.makanan;
     var selectedStatus = existing?.status ?? MenuStatus.tersedia;
 
@@ -65,7 +66,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                     DropdownButtonFormField<MenuCategory>(
                       initialValue: selectedCat,
                       decoration: const InputDecoration(labelText: 'Kategori'),
-                      items: [MenuCategory.makanan, MenuCategory.minuman, MenuCategory.paket].map((cat) {
+                      items: [MenuCategory.makanan, MenuCategory.minuman, MenuCategory.paket, MenuCategory.addon].map((cat) {
                         return DropdownMenuItem(value: cat, child: Text(cat.label));
                       }).toList(),
                       onChanged: (val) {
@@ -80,6 +81,15 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                         labelText: 'Harga (Rp)',
                         hintText: 'Masukkan Harga',
                         prefixText: 'Rp ',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: imageController,
+                      decoration: const InputDecoration(
+                        labelText: 'URL Foto Hidangan (Opsional)',
+                        hintText: 'https://images.unsplash.com/...',
+                        prefixIcon: Icon(Icons.image_outlined, size: 20),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -120,8 +130,12 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                       return;
                     }
 
+                    final imgUrl = imageController.text.trim().isNotEmpty
+                        ? imageController.text.trim()
+                        : MenuModel.defaultImageForMenu(name, selectedCat);
+
                     if (existing == null) {
-                      widget.db.addMenu(name, selectedCat, price, descController.text.trim());
+                      widget.db.addMenu(name, selectedCat, price, descController.text.trim(), gambarUrl: imgUrl);
                     } else {
                       widget.db.updateMenu(
                         existing.idMasakan,
@@ -130,6 +144,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                         price,
                         selectedStatus,
                         descController.text.trim(),
+                        gambarUrl: imgUrl,
                       );
                     }
                     Navigator.of(ctx).pop();
@@ -305,6 +320,43 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
             padding: const EdgeInsets.all(14),
             child: Row(
               children: [
+                // Foto Hidangan
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    color: context.fillSubtle,
+                    child: (menu.gambarUrl.isNotEmpty)
+                        ? Image.network(
+                            menu.gambarUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => Image.network(
+                              MenuModel.defaultImageForMenu(menu.namaMasakan, menu.kategori),
+                              fit: BoxFit.cover,
+                              errorBuilder: (c2, e2, s2) => Icon(
+                                menu.kategori == MenuCategory.minuman
+                                    ? Icons.local_cafe_rounded
+                                    : Icons.restaurant_rounded,
+                                color: AppTheme.orangePrimary,
+                                size: 28,
+                              ),
+                            ),
+                          )
+                        : Image.network(
+                            MenuModel.defaultImageForMenu(menu.namaMasakan, menu.kategori),
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => Icon(
+                              menu.kategori == MenuCategory.minuman
+                                  ? Icons.local_cafe_rounded
+                                  : Icons.restaurant_rounded,
+                              color: AppTheme.orangePrimary,
+                              size: 28,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

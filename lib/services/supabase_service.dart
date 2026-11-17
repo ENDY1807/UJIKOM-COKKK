@@ -577,25 +577,43 @@ class SupabaseService {
           .select('*')
           .order('id_order', ascending: false);
 
+      // Ambil seluruh detail order dalam 1 batch query cepat (menghilangkan latensi N+1)
+      List detailsRes = [];
+      try {
+        detailsRes = await client
+            .from(_detailOrderTable)
+            .select('*');
+      } catch (de) {
+        debugPrint('[SupabaseService] fetch detail_order batch error: $de');
+      }
+
+      final Map<int, List<dynamic>> detailsByOrder = {};
+      for (final d in detailsRes) {
+        final oId = d['id_order'] is int
+            ? d['id_order'] as int
+            : int.tryParse('${d['id_order']}') ?? 0;
+        detailsByOrder.putIfAbsent(oId, () => []).add(d);
+      }
+
       final List<OrderModel> result = [];
       for (final oMap in ordersRes as List) {
         final orderId = oMap['id_order'] is int
             ? oMap['id_order'] as int
             : int.tryParse('${oMap['id_order']}') ?? 0;
 
-        // Fetch detail order items
-        List detailsRes = [];
-        try {
-          detailsRes = await client
-              .from(_detailOrderTable)
-              .select('*')
-              .eq('id_order', orderId);
-        } catch (de) {
-          debugPrint('[SupabaseService] fetch detail_order error: $de');
+        List orderDetails = detailsByOrder[orderId] ?? [];
+        if (orderDetails.isEmpty && detailsRes.isEmpty) {
+          // Fallback jika batch query diblokir RLS atau gagal
+          try {
+            orderDetails = await client
+                .from(_detailOrderTable)
+                .select('*')
+                .eq('id_order', orderId);
+          } catch (_) {}
         }
 
         final items = <OrderItemModel>[];
-        for (final dMap in detailsRes) {
+        for (final dMap in orderDetails) {
           final idMasakan = dMap['id_masakan'] is int
               ? dMap['id_masakan'] as int
               : int.tryParse('${dMap['id_masakan']}') ?? 0;
@@ -739,10 +757,20 @@ class SupabaseService {
     List<UserModel> users,
   ) async {
     try {
-      final res = await client
-          .from(_transaksiTable)
-          .select('*')
-          .order('id_transaksi', ascending: false);
+      dynamic res;
+      try {
+        res = await client
+            .from(_transaksiTable)
+            .select('*')
+            .order('id_transaksi', ascending: false);
+      } catch (e1) {
+        final fallbackTbl = _transaksiTable == 'tb_transaksi' ? 'transaksi' : 'tb_transaksi';
+        res = await client
+            .from(fallbackTbl)
+            .select('*')
+            .order('id_transaksi', ascending: false);
+        _transaksiTable = fallbackTbl;
+      }
 
       final List<TransactionModel> result = [];
       for (final tMap in res as List) {

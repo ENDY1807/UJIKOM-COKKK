@@ -24,6 +24,39 @@ class _ReportScreenState extends State<ReportScreen> {
   );
   final _dateFormat = DateFormat('dd/MM/yyyy HH:mm');
   bool _showDiagrams = true;
+  bool _isSyncingCloud = false;
+  DateTime? _lastSyncTime;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.db.addListener(_onDbChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshFromSupabase();
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.db.removeListener(_onDbChanged);
+    super.dispose();
+  }
+
+  void _onDbChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _refreshFromSupabase() async {
+    if (_isSyncingCloud) return;
+    setState(() => _isSyncingCloud = true);
+    await widget.db.syncReportDataFromCloud();
+    if (mounted) {
+      setState(() {
+        _isSyncingCloud = false;
+        _lastSyncTime = DateTime.now();
+      });
+    }
+  }
 
   void _showPrintReportPreview() {
     showDialog(
@@ -161,55 +194,74 @@ class _ReportScreenState extends State<ReportScreen> {
 
     return Scaffold(
       backgroundColor: context.surfaceBg,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + MediaQuery.of(context).padding.bottom),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Action Header
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 750;
-                final actionButtons = Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.orangePrimary,
-                        side: const BorderSide(color: AppTheme.orangePrimary),
+      body: RefreshIndicator(
+        onRefresh: _refreshFromSupabase,
+        color: AppTheme.orangePrimary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + MediaQuery.of(context).padding.bottom),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Action Header
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 750;
+                  final actionButtons = Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF2563EB),
+                          side: const BorderSide(color: Color(0xFF2563EB)),
+                        ),
+                        onPressed: _isSyncingCloud ? null : _refreshFromSupabase,
+                        icon: _isSyncingCloud
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2563EB)),
+                              )
+                            : const Icon(Icons.sync_rounded, size: 18),
+                        label: Text(_isSyncingCloud ? 'Menyinkronkan...' : 'Segarkan Data'),
                       ),
-                      onPressed: _showPrintReportPreview,
-                      icon: const Icon(Icons.preview_rounded, size: 18),
-                      label: const Text('Pratinjau'),
-                    ),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF16A34A),
-                        side: const BorderSide(color: Color(0xFF16A34A)),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.orangePrimary,
+                          side: const BorderSide(color: AppTheme.orangePrimary),
+                        ),
+                        onPressed: _showPrintReportPreview,
+                        icon: const Icon(Icons.preview_rounded, size: 18),
+                        label: const Text('Pratinjau'),
                       ),
-                      onPressed: () async {
-                        await ExportReportService.exportTransactionsExcelCsv(
-                          transactions: widget.db.transactions,
-                        );
-                      },
-                      icon: const Icon(Icons.file_download_outlined, size: 18),
-                      label: const Text('Ekspor Excel'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        await ExportReportService.exportTransactionsPdf(
-                          transactions: widget.db.transactions,
-                          totalOmzet: widget.db.totalOmzet,
-                          restaurantName: 'Rasantara Restoran (Table Service)',
-                          address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
-                        );
-                      },
-                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
-                      label: const Text('Cetak PDF'),
-                    ),
-                  ],
-                );
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF16A34A),
+                          side: const BorderSide(color: Color(0xFF16A34A)),
+                        ),
+                        onPressed: () async {
+                          await ExportReportService.exportTransactionsExcelCsv(
+                            transactions: widget.db.transactions,
+                          );
+                        },
+                        icon: const Icon(Icons.file_download_outlined, size: 18),
+                        label: const Text('Ekspor Excel'),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          await ExportReportService.exportTransactionsPdf(
+                            transactions: widget.db.transactions,
+                            totalOmzet: widget.db.totalOmzet,
+                            restaurantName: 'Rasantara Restoran (Table Service)',
+                            address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
+                          );
+                        },
+                        icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                        label: const Text('Cetak PDF'),
+                      ),
+                    ],
+                  );
 
                 if (isCompact) {
                   return Column(
@@ -273,6 +325,72 @@ class _ReportScreenState extends State<ReportScreen> {
                   ],
                 );
               },
+            ),
+            const SizedBox(height: 12),
+
+            // Banner Sinkronisasi Supabase Cloud
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: context.isDarkMode
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: context.isDarkMode
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFFBBF7D0),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF16A34A).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.cloud_done_rounded, size: 16, color: Color(0xFF16A34A)),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Data Laporan Live Supabase Cloud (${transactions.length} Transaksi)',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF16A34A),
+                          ),
+                        ),
+                        Text(
+                          _lastSyncTime != null
+                              ? 'Terakhir disinkronkan: ${_dateFormat.format(_lastSyncTime!)}'
+                              : 'Real-time sync aktif ke PostgreSQL Supabase',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_isSyncingCloud)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF16A34A)),
+                    )
+                  else
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded, size: 20, color: Color(0xFF16A34A)),
+                      tooltip: 'Sinkronkan Sekarang',
+                      onPressed: _refreshFromSupabase,
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -691,6 +809,7 @@ class _ReportScreenState extends State<ReportScreen> {
             ],
           ],
         ),
+      ),
       ),
     );
   }

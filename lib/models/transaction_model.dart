@@ -37,16 +37,21 @@ class TransactionModel {
     required OrderModel order,
     String? fallbackKasirName,
   }) {
-    final tglStr = map['tanggal']?.toString();
+    // Utamakan created_at untuk mendapatkan tanggal & jam lengkap (local time)
+    final tglStr = map['created_at']?.toString() ?? map['tanggal']?.toString();
     DateTime dt;
     try {
-      dt = tglStr != null ? DateTime.parse(tglStr) : DateTime.now();
+      if (tglStr != null && tglStr.isNotEmpty) {
+        dt = DateTime.parse(tglStr).toLocal();
+      } else {
+        dt = DateTime.now();
+      }
     } catch (_) {
       dt = DateTime.now();
     }
 
-    final total = _parseInt(map['total_bayar']);
-    final jBayar = _parseInt(map['jumlah_uang'] ?? map['jumlah_bayar']);
+    final total = _parseInt(map['total_bayar'] ?? map['total'] ?? map['total_harga']);
+    final jBayar = _parseInt(map['jumlah_bayar'] ?? map['jumlah_uang'] ?? map['bayar'], fallback: total);
     final kembali = _parseInt(map['kembalian']);
 
     return TransactionModel(
