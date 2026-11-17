@@ -690,12 +690,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   await widget.db.setMemberDiscountPercent(selectedPercent);
                   if (ctx.mounted) {
                     Navigator.pop(ctx);
                   }
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text('Besaran diskon member VIP berhasil diubah menjadi $selectedPercent%!'),
                       backgroundColor: const Color(0xFF1E293B),
