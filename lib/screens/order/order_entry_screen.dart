@@ -1108,58 +1108,94 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     }
   }
 
-  // ── KOMPOSISI & BAHAN UTAMA OTOMATIS ──
+  // ── KOMPOSISI & BAHAN UTAMA HIDANGAN ──
   String _getMenuKomposisi(MenuModel menu) {
     final lower = menu.namaMasakan.toLowerCase();
+
+    // 1. Makanan Utama Nusantara
     if (lower.contains('rendang')) {
-      return 'Daging sapi pilihan empuk, santan kelapa kental murni, cabai merah, serai, daun jeruk, lengkuas, kapulaga, dan rempah rendang asli Minang.';
+      return 'Daging sapi tenderloin/sandung lamur pilihan, santan kelapa murni kental, cabai merah keriting, bawang merah, bawang putih, lengkuas, jahe, serai, daun kunyit, daun jeruk purut, asam kandis, cengkih, kapulaga, dan pala.';
     } else if (lower.contains('betutu')) {
-      return 'Daging ayam segar pilihan, base genep rempah 15 bumbu khas Gilimanuk Bali, kunyit, kencur, jahe, terasi bakar, dan daun singkong.';
+      return 'Daging ayam segar utuh pilihan, base genep rempah 15 bumbu khas Bali (bawang merah, bawang putih, cabai rawit, kunyit bakar, kencur, jahe, lengkuas, kemiri, ketumbar, terasi bakar), serai wangi, daun salam, minyak kelapa murni, dan daun pisang pembungkus.';
     } else if (lower.contains('liwet')) {
-      return 'Beras pandan wangi pulen, santan segar gurih, serai, daun salam, suwiran ayam gurih, telur pindang, dan sambal goreng labu siam.';
-    } else if (lower.contains('bebek') || lower.contains('sinjay')) {
-      return 'Daging bebek empuk gurih, bumbu rempah marinasi lengkuas khas Madura, serundeng gurih, sambal pencit mangga muda, dan lalapan segar.';
-    } else if (lower.contains('sate')) {
-      return 'Potongan daging segar marinasi bumbu ketumbar, kecap manis kedelai hitam premium, saus kacang tanah gurih kental, dan irisan bawang cabai rawit.';
-    } else if (lower.contains('gado') || lower.contains('pecel')) {
-      return 'Sayuran segar rebus (kangkung, tauge, kacang panjang, kol), tahu tempe goreng renyah, lontong pulen, dan saus kacang tanah legit gurih.';
+      return 'Beras pandan wangi pulen, santan kelapa segar gurih, serai, daun salam, suwiran ayam kampung bumbu opor, areh santan kental gurih, telur pindang kecap, dan sayur sambal goreng labu siam.';
     } else if (lower.contains('rawon')) {
-      return 'Daging sapi sandung lamur empuk, kuah hitam rempah kluwek pekat khas Jawa Timur, tauge pendek segar, telur asin, dan sambal terasi.';
-    } else if (lower.contains('soto')) {
-      return 'Kuah kaldu gurih kaya rempah aromatik, suwiran ayam/daging empuk, soun, kol, koya gurih renyah, dan perasan jeruk nipis segar.';
+      return 'Daging sapi sandung lamur empuk, kluwek fermentasi matang pilihan, kaldu sapi pekat gurih, daun jeruk purut, serai wangi, bawang merah, bawang putih, ketumbar, kunyit, tauge pendek segar, telur asin, dan sambal terasi pedas.';
+    } else if (lower.contains('gudeg')) {
+      return 'Nangka muda (gori) pilihan, gula kelapa aren asli, santan kelapa murni gurih, daun jati, sambal goreng krecek pedas kacang tolo, ayam kampung bacem lembut, areh kelapa kental, dan telur bebek bacem.';
+    } else if (lower.contains('sate')) {
+      return 'Daging fillet dada dan paha ayam segar empuk, bumbu marinasi ketumbar dan bawang putih, saus kacang tanah sangrai giling halus, kecap manis kedelai hitam premium, bawang merah, dan cabai rawit segar.';
+    } else if (lower.contains('soto banjar') || (lower.contains('soto') && lower.contains('banjar'))) {
+      return 'Daging ayam suwir empuk, kaldu ayam gurih harum kayu manis, cengkih, kapulaga, biji pala, perkedel kentang renyah, soun beras, potongan telur rebus, seledri, dan perasan jeruk limau.';
+    } else if (lower.contains('pempek')) {
+      return 'Daging ikan tenggiri segar giling halus, tepung sagu tani kualitas super, telur ayam utuh, bawang putih, garam, kuah cuko hitam (gula aren batok Linggau, asam jawa, cabai rawit, bawang putih), dan irisan mentimun segar.';
+    } else if (lower.contains('taliwang')) {
+      return 'Daging ayam kampung muda, cabai merah kering, cabai rawit merah, bawang merah, bawang putih, tomat merah segar, terasi bakar khas Lombok, kencur, gula merah, dan perasan jeruk limau segar.';
+    } else if (lower.contains('bebek') || lower.contains('sinjay')) {
+      return 'Daging bebek muda segar empuk gurih, bumbu rempah ungkep lengkuas, ketumbar, kunyit, bawang putih, kremesan rempah renyah, sambal pencit mangga muda serut, cabai rawit pedas, dan lalapan timun kemangi.';
+    } else if (lower.contains('gado') || lower.contains('pecel')) {
+      return 'Kacang panjang rebus, tauge segar, kol, kentang kukus, tahu goreng, tempe goreng, telur ayam rebus, saus kacang tanah sangrai giling halus, gula merah aren, asam jawa, kerupuk bawang, dan emping melinjo.';
     } else if (lower.contains('nasi goreng')) {
-      return 'Beras pulen pilihan, telur ayam segar, bawang merah, bawang putih, kecap manis premium, bumbu terasi bakar, acar segar, dan kerupuk.';
-    } else if (lower.contains('cendol') || lower.contains('dawet')) {
-      return 'Cendol tepung beras aroma pandan suji asli, santan kelapa kental gurih, sirup gula aren murni, es serut dingin, dan potongan buah nangka.';
-    } else if (lower.contains('teh') || lower.contains('tea')) {
-      return 'Pucuk daun teh hitam pilihan perkebunan Nusantara, gula tebu alami, air mineral murni teruji, disajikan segar dengan es batu.';
+      return 'Beras pulen dingin berkualitas, telur ayam segar, suwiran daging ayam, bawang merah, bawang putih, cabai rawit, terasi bakar, kecap manis kedelai hitam, daun bawang, acar timun wortel, dan kerupuk udang.';
+    } else if (lower.contains('mie goreng') || lower.contains('bakmi')) {
+      return 'Mie telur kuning kenyal, telur ayam orak-arik, suwiran ayam gurih, kol, sawi hijau, daun bawang, bawang putih, kemiri, merica putih bubuk, kecap manis kedelai hitam premium, acar timun, dan bawang goreng renyah.';
+    } else if (lower.contains('bakso')) {
+      return 'Bakso daging dan urat sapi asli kenyal, tahu isi adonan bakso lembut, siomay kukus ikan, pangsit goreng renyah, mie kuning, soun, kuah kaldu rebusan tulang sumsum sapi harum bawang putih seledri, dan sambal rawit hijau.';
+    }
+
+    // 2. Minuman Nusantara
+    else if (lower.contains('cendol') || lower.contains('dawet')) {
+      return 'Butiran cendol tepung beras pandan suji hijau alami, santan kelapa murni segar gurih, sirup gula aren kental, es serut kristal, potongan buah nangka manis wangi, dan daging durian Medan asli berkualitas.';
+    } else if (lower.contains('teler')) {
+      return 'Daging alpukat mentega potong segar, kelapa muda serut asli, potongan buah nangka harum, biji selasih, susu kental manis premium, santan cair manis, sirup vanila pandan, dan es serut dingin.';
+    } else if (lower.contains('wedang') || lower.contains('jahe')) {
+      return 'Jahe merah segar dibakar dan digeprek, batang serai wangi memar, kayu manis batang, cengkih, daun pandan wangi, gula aren murni, dan air mineral murni teruji.';
+    } else if (lower.contains('kuwut')) {
+      return 'Serutan daging kelapa muda, air kelapa murni segar, serutan melon hijau manis, biji selasih mengembang, perasan jeruk nipis segar, sirup melon pandan, dan es batu kristal.';
+    } else if (lower.contains('teh tarik')) {
+      return 'Seduhan daun teh hitam pekat berkualitas (black tea), susu kental manis gurih, susu evaporasi creamy, kapulaga bubuk harum, dan air mineral murni.';
+    } else if (lower.contains('alpukat') || lower.contains('avocado')) {
+      return 'Buah alpukat mentega matang segar pilihan, susu cair segar, sirup gula tebu murni, saus cokelat pekat premium kental manis melimpah, dan es batu serut halus.';
+    } else if (lower.contains('kopi susu') || (lower.contains('kopi') && lower.contains('aren'))) {
+      return 'Double shot espresso biji kopi Nusantara (Arabika & Robusta blend), susu segar full cream, sirup gula aren organik murni cair, dan es batu kristal higienis.';
     } else if (lower.contains('kopi') || lower.contains('coffee')) {
-      return 'Biji kopi pilihan Nusantara (blend Robusta & Arabika), air mineral murni, dan pemanis alami gula aren organik pilihan.';
+      return 'Bubuk biji kopi murni Arabika Gayo Aceh giling medium-fine, air mineral mendidih suhu 93°C, dan gula tebu murni (opsional sesuai selera).';
+    } else if (lower.contains('kelapa') || lower.contains('coconut')) {
+      return 'Kerokan daging kelapa muda segar alami, air kelapa murni dingin, perasan sari jeruk peras manis segar, sirup gula tebu murni, dan es batu kristal.';
+    } else if (lower.contains('teh') || lower.contains('tea')) {
+      return 'Pucuk daun teh hitam pilihan perkebunan Nusantara, gula tebu alami, air mineral murni teruji, disajikan segar dengan es batu kristal.';
     }
 
-    switch (menu.kategori) {
-      case MenuCategory.minuman:
-        return 'Bahan minuman segar berkualitas, air mineral murni teruji, sari buah / ekstrak alami, disajikan higienis.';
-      case MenuCategory.paket:
-        return 'Kombinasi hidangan utama, lauk pendamping, sambal khas, dan minuman pelengkap dengan porsi lengkap memuaskan.';
-      case MenuCategory.addon:
-        return 'Bahan camilan renyah bermutu tinggi, racikan garam rempah gurih, digoreng dengan minyak nabati higienis.';
-      default:
-        return 'Bahan-bahan segar pilihan, racikan bumbu rempah autentik khas Nusantara, minyak nabati higienis, tanpa bahan pengawet sintetis.';
+    // 3. Camilan & Pelengkap (Add-On)
+    else if (lower.contains('pisang')) {
+      return 'Buah pisang raja matang manis pilihan, adonan tepung terigu dan tepung beras krispi renyah, taburan parutan keju cheddar gurih melimpah, susu kental manis cokelat, dan minyak goreng nabati higienis.';
+    } else if (lower.contains('tahu gejrot')) {
+      return 'Tahu pong kopong goreng gurih dipotong-potong, kuah gula merah aren rebusan asam jawa dan kecap manis, ulekan kasar cabai rawit hijau, bawang merah, dan bawang putih segar khas Cirebon.';
+    } else if (lower.contains('tempe') || lower.contains('mendoan')) {
+      return 'Tempe kedelai khusus mendoan tipis lebar, adonan tepung terigu dan tepung beras gurih rempah ketumbar kunyit, irisan daun bawang segar melimpah, dan cocolan sambal kecap manis cabai rawit pedas.';
+    } else if (lower.contains('kerupuk') || lower.contains('krupuk')) {
+      return 'Daging udang laut segar giling halus, tepung tapioka super halus, telur ayam, bawang putih, garam bumbu rempah, dan digoreng dengan minyak kelapa sawit nabati higienis hingga renyah mengembang sempurna.';
     }
-  }
 
-  // ── PORSI & SARAN PENYAJIAN ──
-  String _getMenuPorsiInfo(MenuModel menu) {
+    // 4. Paket Menu Komplit
+    else if (lower.contains('rantang berempat')) {
+      return '2 porsi Rendang Daging Sapi Minang, 2 porsi Ayam Betutu Gilimanuk, 4 porsi Nasi Liwet Gurih Solo, 1 mangkuk Sambal Goreng Krecek gurih pedas, kerupuk udang renyah, lalapan segar, dan 4 gelas Es Teh Manis Segar.';
+    } else if (lower.contains('kenyang berdua')) {
+      return '1 porsi Rendang Daging Sapi Minang, 1 porsi Ayam Betutu Bakar Bali, 2 porsi Nasi Putih Pandan Wangi pulen, sambal cabai hijau, lalapan segar, dan 2 gelas Es Cendol Gula Aren Rasantara.';
+    } else if (lower.contains('sarapan solo')) {
+      return '1 porsi Nasi Liwet Solo gurih santan, suwiran ayam opor lembut, telur pindang bacem, sayur labu siam areh kental gurih, dan 1 cangkir Teh Tarik Melayu Rempah Hangat.';
+    }
+
+    // Fallback Kategori
     switch (menu.kategori) {
       case MenuCategory.minuman:
-        return '1 Gelas (350 ml) • Disajikan dingin segar dengan es batu atau hangat sesuai permintaan meja.';
+        return 'Bahan minuman alami berkualitas, air mineral murni higienis, sari buah segar, pemanis alami pilihan, dan es batu kristal.';
       case MenuCategory.paket:
-        return '1 Porsi Komplit (1–2 Orang) • Disajikan hangat langsung dari dapur lengkap dengan lauk pauk.';
+        return 'Perpaduan menu utama Nusantara, lauk pendamping lezat, sambal khas tradisional, lalapan segar, dan minuman pelengkap.';
       case MenuCategory.addon:
-        return '1 Piring Saji Camilan • Sangat cocok dinikmati bersama teman atau pendamping hidangan utama.';
+        return 'Bahan makanan pilihan bermutu tinggi, racikan garam rempah tradisional gurih, dan digoreng dengan minyak nabati higienis.';
       default:
-        return '1 Porsi Utama (1 Orang) • Disajikan hangat langsung dari wajan/kukusan dengan taburan bawang goreng renyah.';
+        return 'Bahan baku segar pilihan, racikan bumbu rempah autentik khas Nusantara (bawang merah, bawang putih, rempah aromatik), dan minyak nabati berkualitas.';
     }
   }
 
@@ -1170,10 +1206,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
     final existingItem = _cart[menu.idMasakan];
     int quantity = existingItem != null ? existingItem.jumlah : 1;
-    final noteController = TextEditingController(text: existingItem?.catatan ?? '');
 
     final komposisi = _getMenuKomposisi(menu);
-    final porsiInfo = _getMenuPorsiInfo(menu);
 
     showModalBottomSheet(
       context: context,
@@ -1343,136 +1377,52 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             ],
                           ),
 
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
 
-                          // Deskripsi Hidangan
+                          // ── DESKRIPSI SINGKAT MAKANAN ──
+                          Text(
+                            context.t('Deskripsi Singkat', 'Brief Description'),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
                           Text(
                             menu.deskripsi.trim().isNotEmpty
                                 ? menu.deskripsi.trim()
                                 : _getDefaultDeskripsi(menu),
                             style: TextStyle(
-                              fontSize: 13.5,
+                              fontSize: 13,
                               color: context.textSecondary,
                               height: 1.5,
                             ),
                           ),
 
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
                           Divider(color: context.borderSubtle, height: 1),
                           const SizedBox(height: 14),
 
-                          // Komposisi & Bahan Utama
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(7),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.orangePrimary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(Icons.eco_rounded, size: 18, color: AppTheme.orangePrimary),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Komposisi & Bahan Utama',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        color: context.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      komposisi,
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        color: context.textSecondary,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 14),
-
-                          // Porsi & Saran Penyajian
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(7),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(Icons.room_service_rounded, size: 18, color: Colors.blue),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Porsi & Saran Penyajian',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        color: context.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      porsiInfo,
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        color: context.textSecondary,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Catatan Khusus Input
-                          TextField(
-                            controller: noteController,
-                            maxLength: 60,
-                            style: TextStyle(fontSize: 13, color: context.textPrimary),
-                            decoration: InputDecoration(
-                              hintText: 'Tambah catatan (misal: pedas sedang, es dipisah)...',
-                              hintStyle: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
-                              prefixIcon: const Icon(Icons.note_alt_outlined, size: 18, color: AppTheme.textMuted),
-                              counterText: '',
-                              filled: true,
-                              fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: context.borderSubtle),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: context.borderSubtle),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: AppTheme.orangePrimary),
-                              ),
+                          // ── KOMPOSISI HIDANGAN ──
+                          Text(
+                            context.t('Komposisi Hidangan', 'Dish Ingredients'),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: context.textPrimary,
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 5),
+                          Text(
+                            komposisi,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: context.textSecondary,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
@@ -1548,13 +1498,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                       setState(() {
                                         if (_cart.containsKey(menu.idMasakan)) {
                                           _cart[menu.idMasakan]!.jumlah = quantity;
-                                          _cart[menu.idMasakan]!.catatan = noteController.text.trim();
                                         } else {
                                           _cart[menu.idMasakan] = OrderItemModel(
                                             idDetailOrder: 0,
                                             menu: menu,
                                             jumlah: quantity,
-                                            catatan: noteController.text.trim(),
+                                            catatan: existingItem?.catatan ?? '',
                                           );
                                         }
                                       });
