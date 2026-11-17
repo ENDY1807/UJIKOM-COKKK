@@ -301,7 +301,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Nama Lengkap Pelanggan *',
+                    labelText: 'Nama Lengkap Pelanggan',
                     floatingLabelBehavior: FloatingLabelBehavior.auto,
                     labelStyle: TextStyle(
                       fontSize: 13.5,
@@ -331,7 +331,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: 'Alamat Email *',
+                    labelText: 'Alamat Email',
                     floatingLabelBehavior: FloatingLabelBehavior.auto,
                     labelStyle: TextStyle(
                       fontSize: 13.5,
@@ -364,7 +364,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   decoration: InputDecoration(
-                    labelText: 'Nomor Telepon / WhatsApp *',
+                    labelText: 'Nomor Telepon',
                     floatingLabelBehavior: FloatingLabelBehavior.auto,
                     labelStyle: TextStyle(
                       fontSize: 13.5,
@@ -398,7 +398,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'Password Akun Pelanggan *',
+                    labelText: 'Password',
                     floatingLabelBehavior: FloatingLabelBehavior.auto,
                     labelStyle: TextStyle(
                       fontSize: 13.5,
@@ -500,7 +500,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Apakah Anda yakin ingin menghapus status langganan VIP untuk ${member.namaUser} (@${member.username})?',
+              'Apakah Anda yakin ingin menghapus status member untuk ${member.namaUser} (@${member.username})?',
               style: const TextStyle(fontSize: 13.5),
             ),
             const SizedBox(height: 10),

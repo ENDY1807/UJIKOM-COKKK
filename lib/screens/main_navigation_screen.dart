@@ -336,36 +336,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                               },
                             ),
                           ),
-                          // Shortcut Scan QR Meja on Desktop
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: context.surfaceBg,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppTheme.borderSubtle),
-                              ),
-                              child: const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Rasantara',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFFEA580C),
-                                    ),
-                                  ),
-                                  SizedBox(height: 2),
-                                  Text(
-                                    'Autentik Cita Rasa Nusantara',
-                                    style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),
