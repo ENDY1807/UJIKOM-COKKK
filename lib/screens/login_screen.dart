@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen>
     final password = _loginPasswordController.text;
 
     if (usernameOrEmail.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Kolom wajib diisi');
+      setState(() => _errorMessage = context.t('Kolom wajib diisi', 'Please fill in all fields'));
       return;
     }
 
@@ -83,7 +83,8 @@ class _LoginScreenState extends State<LoginScreen>
         }
       } else {
         setState(() {
-          _errorMessage = widget.db.lastLoginError ?? 'Username / Email / No. HP atau password salah';
+          _errorMessage = widget.db.lastLoginError ??
+              context.t('Username / Email atau password salah', 'Incorrect Username / Email or password');
         });
       }
     } finally {
@@ -388,7 +389,7 @@ class _LoginScreenState extends State<LoginScreen>
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Masuk',
+          context.t('Masuk', 'Sign In'),
           style: TextStyle(
             fontSize: 25,
             fontWeight: FontWeight.w900,
@@ -403,13 +404,14 @@ class _LoginScreenState extends State<LoginScreen>
 
         _inputField(
           controller: _loginUsernameController,
-          label: 'Username / Email / No. HP',
+          label: context.t('Username atau Email', 'Username or Email'),
           icon: Icons.person_outline_rounded,
+          keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 16),
         _inputField(
           controller: _loginPasswordController,
-          label: 'Password',
+          label: context.t('Password', 'Password'),
           icon: Icons.lock_outline_rounded,
           isPassword: true,
           obscure: _loginObscure,
@@ -420,7 +422,7 @@ class _LoginScreenState extends State<LoginScreen>
         const SizedBox(height: 22),
 
         // Primary Login Button (Warm Gradient & Raised Depth)
-        _primaryButton('Masuk', Icons.arrow_forward_rounded, _handleLogin),
+        _primaryButton(context.t('Masuk', 'Sign In'), Icons.arrow_forward_rounded, _handleLogin),
       ],
     );
   }

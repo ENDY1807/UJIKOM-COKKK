@@ -46,6 +46,7 @@ class DatabaseService extends ChangeNotifier {
       password: '123',
       namaUser: 'Administrator',
       role: UserRole.administrator,
+      googleEmail: 'admin@rasantara.com',
       phoneNumber: '081234567890',
     ),
     UserModel(
@@ -54,6 +55,7 @@ class DatabaseService extends ChangeNotifier {
       password: '123',
       namaUser: 'Waiter',
       role: UserRole.waiter,
+      googleEmail: 'waiter@rasantara.com',
       phoneNumber: '081234567891',
     ),
     UserModel(
@@ -62,6 +64,7 @@ class DatabaseService extends ChangeNotifier {
       password: '123',
       namaUser: 'Kasir',
       role: UserRole.kasir,
+      googleEmail: 'kasir@rasantara.com',
       phoneNumber: '081234567892',
     ),
     UserModel(
@@ -70,6 +73,7 @@ class DatabaseService extends ChangeNotifier {
       password: '123',
       namaUser: 'Owner',
       role: UserRole.owner,
+      googleEmail: 'owner@rasantara.com',
       phoneNumber: '081234567893',
     ),
     UserModel(
@@ -78,6 +82,7 @@ class DatabaseService extends ChangeNotifier {
       password: '123',
       namaUser: 'Pelanggan VIP',
       role: UserRole.pelanggan,
+      googleEmail: 'pelanggan@rasantara.com',
       phoneNumber: '081234567894',
       isSubscribed: true,
     ),
@@ -87,6 +92,7 @@ class DatabaseService extends ChangeNotifier {
       password: '123',
       namaUser: 'Pelanggan Reguler',
       role: UserRole.pelanggan,
+      googleEmail: 'pelanggan_reguler@rasantara.com',
       phoneNumber: '081234567895',
       isSubscribed: false,
     ),
@@ -140,7 +146,7 @@ class DatabaseService extends ChangeNotifier {
   bool get appHaptic => _appHaptic;
   String _appMapStyle = 'osm';
   String get appMapStyle => _appMapStyle;
-  String _appThemeMode = 'light';
+  String _appThemeMode = 'system';
   String get appThemeMode => _appThemeMode;
   String _appLanguage = 'id';
   String get appLanguage => _appLanguage;
@@ -480,7 +486,7 @@ class DatabaseService extends ChangeNotifier {
       _appAutoPrintReceipt = prefs.getBool('app_auto_print_receipt') ?? false;
       _appHaptic = prefs.getBool('app_haptic') ?? true;
       _appMapStyle = prefs.getString('app_map_style') ?? 'osm';
-      _appThemeMode = prefs.getString('app_theme_mode') ?? 'light';
+      _appThemeMode = prefs.getString('app_theme_mode') ?? 'system';
       _appLanguage = prefs.getString('app_language') ?? 'id';
       AppLocalization.setLanguage(_appLanguage);
       _appFontSize = prefs.getString('app_font_size') ?? 'standard';
@@ -550,7 +556,7 @@ class DatabaseService extends ChangeNotifier {
     _appAutoPrintReceipt = false;
     _appHaptic = true;
     _appMapStyle = 'osm';
-    _appThemeMode = 'light';
+    _appThemeMode = 'system';
     _appLanguage = 'id';
     AppLocalization.setLanguage('id');
     _appFontSize = 'standard';
@@ -577,11 +583,12 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  /// Update data profil pengguna (Username, Nama, WhatsApp, Foto, 2FA, Password)
+  /// Update data profil pengguna (Username, Nama, Email, WhatsApp, Foto, 2FA, Password)
   Future<bool> updateUserProfile({
     required int idUser,
     String? namaUser,
     String? username,
+    String? email,
     String? password,
     String? phoneNumber,
     String? fotoProfil,
@@ -595,6 +602,7 @@ class DatabaseService extends ChangeNotifier {
     final updated = old.copyWith(
       namaUser: namaUser ?? old.namaUser,
       username: username ?? old.username,
+      googleEmail: email ?? old.googleEmail,
       password: password ?? old.password,
       phoneNumber: phoneNumber ?? old.phoneNumber,
       fotoProfil: fotoProfil ?? old.fotoProfil,
@@ -738,28 +746,24 @@ class DatabaseService extends ChangeNotifier {
   // --- AUTHENTICATION & LOGIN ---
   String? lastLoginError;
 
-  /// Login sinkron lokal (mendukung Username, Email, Nama Lengkap, atau No Telepon)
+  /// Login sinkron lokal (mendukung Username, Email, atau Nama Lengkap - login via telepon ditiadakan)
   bool login(String usernameOrEmail, String password) {
     lastLoginError = null;
     try {
       final clean = usernameOrEmail.trim().toLowerCase();
-      final cleanDigits = clean.replaceAll(RegExp(r'[^0-9]'), '');
+      final emailPrefix = clean.contains('@') ? clean.split('@').first : '';
       final user = _users.firstWhere(
         (u) {
           final uName = u.username.toLowerCase();
           final uDisplay = u.namaUser.toLowerCase();
           final uEmail = (u.googleEmail ?? '').toLowerCase();
           final uDisplayEmail = u.displayEmail.toLowerCase();
-          final uPhoneDigits = u.phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
 
           final matchIdentifier = uName == clean ||
               uDisplay == clean ||
               uEmail == clean ||
               uDisplayEmail == clean ||
-              (cleanDigits.length >= 8 &&
-                  (uPhoneDigits == cleanDigits ||
-                   (cleanDigits.length >= 8 && uPhoneDigits.endsWith(cleanDigits.substring(cleanDigits.length - 8))) ||
-                   (uPhoneDigits.length >= 8 && cleanDigits.endsWith(uPhoneDigits.substring(uPhoneDigits.length - 8)))));
+              (emailPrefix.isNotEmpty && (uName == emailPrefix || uEmail == clean));
 
           final matchPassword = u.password == password ||
               password == '123' ||
@@ -786,7 +790,7 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  /// Login asinkron dengan validasi langsung ke database Supabase (mendukung Username, Email, No HP, atau Nama)
+  /// Login asinkron dengan validasi langsung ke database Supabase (mendukung Username atau Email)
   Future<bool> loginAsync(String usernameOrEmail, String password) async {
     lastLoginError = null;
     // 1. Cek dari memori lokal terlebih dahulu
@@ -804,23 +808,22 @@ class DatabaseService extends ChangeNotifier {
         if (c != null) {
           final clean = usernameOrEmail.trim();
           final cleanLower = clean.toLowerCase();
-          final cleanDigits = clean.replaceAll(RegExp(r'[^0-9]'), '');
           final table = _supabase.userTableName;
 
           dynamic res;
-          // Coba query Supabase case-insensitive
+          // Query Supabase case-insensitive berdasarkan username, email, google_email, nama_user
           try {
             res = await c
                 .from(table)
                 .select('*')
-                .or('username.ilike.$cleanLower,email.ilike.$cleanLower,google_email.ilike.$cleanLower,nama_user.ilike.$cleanLower${cleanDigits.length >= 8 ? ",phone_number.ilike.%$cleanDigits%" : ""}')
+                .or('username.ilike.$cleanLower,email.ilike.$cleanLower,google_email.ilike.$cleanLower,nama_user.ilike.$cleanLower')
                 .maybeSingle();
           } catch (_) {
             try {
               res = await c
                   .from(table)
                   .select('*')
-                  .or('username.eq.$clean,email.eq.$clean,google_email.eq.$clean,phone_number.eq.$clean')
+                  .or('username.eq.$clean,email.eq.$clean,google_email.eq.$clean')
                   .maybeSingle();
             } catch (_) {}
           }

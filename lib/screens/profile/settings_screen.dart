@@ -2,13 +2,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../widgets/app_loading_animation.dart';
-import '../../widgets/biometric_auth_dialog.dart';
 import '../../theme/app_theme.dart';
 import '../../services/audio_notification_service.dart';
-import '../../services/export_report_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final DatabaseService db;
@@ -30,23 +29,29 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   // Controllers Profil
   late TextEditingController _nameCtrl;
   late TextEditingController _usernameCtrl;
-  late TextEditingController _phoneCtrl;
+  late TextEditingController _emailCtrl;
   String _selectedAvatar = '';
-  bool _is2faActive = false;
   bool _isSavingProfile = false;
 
   // Settings Aplikasi
-  bool _soundFx = true;
   bool _notifications = true;
-  bool _promoNotifications = true;
-  bool _autoPrint = false;
-  bool _haptic = true;
-  String _mapStyle = 'osm';
-  String _themeMode = 'light';
+  String _themeMode = 'system';
   String _language = 'id';
-  bool _biometric = false;
-  String _cacheSize = '14.8 MB';
   Uint8List? _customImageBytes;
+
+  static const String csWhatsAppUrl = 'https://wa.me/qr/LXPSUAAWEP7YJ1';
+
+  Future<void> _launchWhatsAppCS() async {
+    final uri = Uri.parse(csWhatsAppUrl);
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      debugPrint('[SettingsScreen] launch WhatsApp error: $e');
+    }
+  }
 
   Future<void> _pickProfilePhoto() async {
     try {
@@ -65,10 +70,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           _customImageBytes = bytes;
           _selectedAvatar = base64String;
         });
-        _showSnackbar('Foto profil berhasil dipilih dari galeri');
       }
     } catch (e) {
-      _showSnackbar('Gagal memilih foto: $e', isError: true);
+      debugPrint('Gagal memilih foto: $e');
     }
   }
 
@@ -77,7 +81,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _customImageBytes = null;
       _selectedAvatar = '';
     });
-    _showSnackbar('Foto profil telah dihapus');
   }
 
   @override
@@ -88,20 +91,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     final u = widget.db.currentUser;
     _nameCtrl = TextEditingController(text: u?.namaUser ?? '');
     _usernameCtrl = TextEditingController(text: u?.username ?? '');
-    _phoneCtrl = TextEditingController(text: u?.phoneNumber ?? '');
+    _emailCtrl = TextEditingController(text: u?.googleEmail ?? u?.displayEmail ?? '');
     _selectedAvatar = u?.displayPhoto ?? '';
-    _is2faActive = u?.isTwoFactorEnabled ?? false;
 
-    _soundFx = widget.db.appSoundFx;
     _notifications = widget.db.appNotifications;
-    _promoNotifications = widget.db.appPromoNotification;
-    _autoPrint = widget.db.appAutoPrintReceipt;
-    _haptic = widget.db.appHaptic;
-    _mapStyle = (widget.db.appMapStyle == 'carto_light') ? 'carto_light' : 'osm';
-    _themeMode = (widget.db.appThemeMode == 'dark' || widget.db.appThemeMode == 'system') ? widget.db.appThemeMode : 'light';
+    _themeMode = (widget.db.appThemeMode == 'dark' || widget.db.appThemeMode == 'light')
+        ? widget.db.appThemeMode
+        : 'system';
     _language = (widget.db.appLanguage == 'en') ? 'en' : 'id';
-    _biometric = widget.db.appBiometricAuth;
-    _cacheSize = '14.8 MB';
   }
 
   @override
@@ -109,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     _tabController.dispose();
     _nameCtrl.dispose();
     _usernameCtrl.dispose();
-    _phoneCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
@@ -118,28 +115,25 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     if (user == null) return;
 
     if (_nameCtrl.text.trim().isEmpty) {
-      _showSnackbar('Nama lengkap tidak boleh kosong', isError: true);
       return;
     }
 
     if (_usernameCtrl.text.trim().isEmpty) {
-      _showSnackbar('Username tidak boleh kosong', isError: true);
       return;
     }
 
-    AppLoadingAnimation.show(context, message: 'Menyimpan perubahan profil...');
+    AppLoadingAnimation.show(context, message: context.t('Menyimpan perubahan profil...', 'Saving profile changes...'));
     setState(() => _isSavingProfile = true);
 
     final cleanUsername = _usernameCtrl.text.trim().replaceAll('@', '').toLowerCase();
-    final cleanPhone = _phoneCtrl.text.trim();
+    final cleanEmail = _emailCtrl.text.trim();
 
     final success = await widget.db.updateUserProfile(
       idUser: user.idUser,
       namaUser: _nameCtrl.text.trim(),
       username: cleanUsername,
-      phoneNumber: cleanPhone,
+      email: cleanEmail.isNotEmpty ? cleanEmail : null,
       fotoProfil: _selectedAvatar.isNotEmpty ? _selectedAvatar : null,
-      isTwoFactorEnabled: _is2faActive,
       isConfigured: true,
     );
 
@@ -149,15 +143,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     setState(() => _isSavingProfile = false);
 
     if (success) {
-      _showSnackbar('Pengaturan profil berhasil disimpan');
       widget.onProfileUpdated?.call();
-    } else {
-      _showSnackbar('Gagal memperbarui profil pengguna', isError: true);
     }
-  }
-
-  void _showSnackbar(String msg, {bool isError = false}) {
-    // Dinonaktifkan - Sistem notifikasi banner dihilangkan
   }
 
   @override
@@ -205,17 +192,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.t('Pengaturan Akun', 'Account Settings'),
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
-            ),
-            Text(
-              context.t('Keamanan Akun & Preferensi', 'Account Security & Preferences'),
-              style: TextStyle(fontSize: 11, color: context.textSecondary),
-            ),
-          ],
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.t('Pengaturan Akun', 'Account Settings'),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
+              ),
+              Text(
+                context.t('Profil Pengguna & Preferensi', 'User Profile & Preferences'),
+                style: TextStyle(fontSize: 11, color: context.textSecondary),
+              ),
+            ],
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -225,8 +212,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           unselectedLabelColor: context.textSecondary,
           labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           tabs: [
-            Tab(icon: const Icon(Icons.shield_outlined, size: 20), text: context.t('Keamanan & Profil', 'Security & Profile')),
-            Tab(icon: const Icon(Icons.tune_rounded, size: 20), text: context.t('Sistem Aplikasi', 'System Settings')),
+            Tab(
+              icon: const Icon(Icons.person_outline_rounded, size: 20),
+              text: context.t('Profil Pengguna', 'User Profile'),
+            ),
+            Tab(
+              icon: const Icon(Icons.tune_rounded, size: 20),
+              text: context.t('Sistem Aplikasi', 'System Settings'),
+            ),
           ],
         ),
       ),
@@ -248,7 +241,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Card Foto Profil & Pilihan Avatar
+          // Card Foto Profil
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -264,7 +257,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     const Icon(Icons.photo_camera_front_outlined, size: 18, color: Color(0xFFEA580C)),
                     const SizedBox(width: 8),
                     Text(
-                      'Foto Profil Pengguna',
+                      context.t('Foto Profil Pengguna', 'User Profile Photo'),
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.textPrimary),
                     ),
                   ],
@@ -312,7 +305,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            user?.namaUser ?? 'Pengguna',
+                            user?.namaUser ?? context.t('Pengguna', 'User'),
                             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary),
                           ),
                           const SizedBox(height: 4),
@@ -324,8 +317,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                               border: Border.all(color: const Color(0xFFFFEDD5)),
                             ),
                             child: Text(
-                              user?.telepon.isNotEmpty == true ? user!.telepon : 'Member Rasantara',
+                              user?.displayEmail ?? 'user@rasantara.com',
                               style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -344,7 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 icon: const Icon(Icons.photo_library_outlined, size: 14),
-                                label: const Text('Ganti Foto', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                label: Text(context.t('Ganti Foto', 'Change Photo'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                                 onPressed: _pickProfilePhoto,
                               ),
                               if (_selectedAvatar.isNotEmpty || _customImageBytes != null)
@@ -356,7 +351,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                   ),
                                   onPressed: _removeProfilePhoto,
-                                  child: const Text('Hapus', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  child: Text(context.t('Hapus', 'Remove'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                                 ),
                             ],
                           ),
@@ -386,19 +381,22 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     const Icon(Icons.badge_outlined, size: 18, color: Color(0xFFEA580C)),
                     const SizedBox(width: 8),
                     Text(
-                      'Informasi & Kredensial Akun',
+                      context.t('Informasi Profil & Kredensial', 'Profile Info & Credentials'),
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.textPrimary),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 // Nama User
-                const Text('Nama Lengkap Tampilan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                Text(
+                  context.t('Nama Lengkap Tampilan', 'Display Name'),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _nameCtrl,
                   decoration: InputDecoration(
-                    hintText: 'Nama lengkap Anda',
+                    hintText: context.t('Nama lengkap Anda', 'Your full name'),
                     prefixIcon: const Icon(Icons.person_outline, size: 18),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -406,7 +404,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 const SizedBox(height: 14),
 
                 // Username
-                const Text('Username / ID Pengguna', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                Text(
+                  context.t('Username / ID Pengguna', 'Username / User ID'),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _usernameCtrl,
@@ -418,59 +419,19 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 ),
                 const SizedBox(height: 14),
 
-                // WhatsApp Phone
-                const Text('Nomor WhatsApp / Telepon', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                // Email
+                Text(
+                  context.t('Email Pengguna', 'User Email'),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                ),
                 const SizedBox(height: 6),
                 TextField(
-                  controller: _phoneCtrl,
-                  keyboardType: TextInputType.phone,
+                  controller: _emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    hintText: '081234567890',
-                    prefixIcon: const Icon(Icons.phone_android, size: 18),
+                    hintText: 'nama@domain.com',
+                    prefixIcon: const Icon(Icons.email_outlined, size: 18),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // 2FA Switch
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: context.fillSubtle,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.borderSubtle),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.security_rounded, color: Color(0xFF0284C7), size: 22),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.t('Autentikasi 2 Langkah (2FA)', 'Two-Factor Authentication (2FA)'),
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
-                            ),
-                            Text(
-                              context.t('Minta kode verifikasi SMS / Telepon saat login', 'Require SMS / Phone verification code upon login'),
-                              style: TextStyle(fontSize: 11, color: context.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Switch(
-                        value: _is2faActive,
-                        activeThumbColor: const Color(0xFFEA580C),
-                        onChanged: (val) {
-                          if (val && _phoneCtrl.text.trim().isEmpty) {
-                            _showSnackbar(context.t('Isi nomor telepon terlebih dahulu untuk mengaktifkan 2FA', 'Please enter your phone number first to enable 2FA'), isError: true);
-                            return;
-                          }
-                          setState(() => _is2faActive = val);
-                        },
-                      ),
-                    ],
                   ),
                 ),
               ],
@@ -489,7 +450,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                 : const Icon(Icons.save_rounded, size: 18),
             label: Text(
-              _isSavingProfile ? 'Menyimpan...' : 'Simpan Perubahan Profil',
+              _isSavingProfile ? context.t('Menyimpan...', 'Saving...') : context.t('Simpan Perubahan Profil', 'Save Profile Changes'),
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             onPressed: _isSavingProfile ? null : _handleSaveProfile,
@@ -509,7 +470,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           _buildSettingsCard(
             icon: Icons.palette_outlined,
             title: context.t('Tampilan & Tema', 'Theme & Appearance'),
-            subtitle: context.t('Sesuaikan kenyamanan visual dan mode aplikasi', 'Customize visual comfort and theme mode'),
+            subtitle: context.t('Mode tampilan sistem cerah atau gelap', 'System display mode light or dark'),
             children: [
               Text(
                 context.t('Mode Tampilan Tema', 'Theme Mode'),
@@ -518,6 +479,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               const SizedBox(height: 8),
               Row(
                 children: [
+                  _buildThemeOption(
+                    label: context.t('Sistem (Otomatis)', 'System (Auto)'),
+                    icon: Icons.brightness_auto_outlined,
+                    value: 'system',
+                    isSelected: _themeMode == 'system',
+                  ),
+                  const SizedBox(width: 8),
                   _buildThemeOption(
                     label: context.t('Terang', 'Light'),
                     icon: Icons.light_mode_outlined,
@@ -530,13 +498,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     icon: Icons.dark_mode_outlined,
                     value: 'dark',
                     isSelected: _themeMode == 'dark',
-                  ),
-                  const SizedBox(width: 8),
-                  _buildThemeOption(
-                    label: context.t('Sistem', 'System'),
-                    icon: Icons.brightness_auto_outlined,
-                    value: 'system',
-                    isSelected: _themeMode == 'system',
                   ),
                 ],
               ),
@@ -576,16 +537,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ),
           const SizedBox(height: 16),
 
-          // ── 3. NOTIFIKASI & SUARA ──
+          // ── 3. NOTIFIKASI (Hanya 1 Switch Sederhana) ──
           _buildSettingsCard(
             icon: Icons.notifications_active_outlined,
-            title: context.t('Notifikasi & Suara', 'Notifications & Sound'),
-            subtitle: context.t('Pengingat pesanan, promo, dan respons suara aplikasi', 'Order alerts, promos, and audio responses'),
+            title: context.t('Notifikasi', 'Notifications'),
+            subtitle: context.t('Pengingat status pesanan dan konfirmasi restoran', 'Order alerts and restaurant status updates'),
             children: [
               _buildSwitchTile(
                 icon: Icons.notifications_outlined,
-                title: context.t('Notifikasi Langsung ke HP / Windows', 'Push Notifications to Device / Windows'),
-                subtitle: context.t('Muncul di bilah status notifikasi HP & Windows Action Center (Toast OS)', 'Appear in phone status bar & Windows Action Center'),
+                title: context.t('Aktifkan Notifikasi', 'Enable Notifications'),
+                subtitle: context.t('Notifikasi status pesanan, meja, dan transaksi lunas', 'Alerts for orders, table status, and completed payments'),
                 value: _notifications,
                 onChanged: (val) async {
                   setState(() => _notifications = val);
@@ -595,94 +556,36 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   }
                 },
               ),
-              Divider(height: 20, color: context.borderSubtle),
-              _buildSwitchTile(
-                icon: Icons.local_offer_outlined,
-                title: context.t('Promo & Diskon Eksklusif', 'Promos & Exclusive Deals'),
-                subtitle: context.t('Info penawaran voucher mingguan dan flash sale kuliner', 'Weekly voucher discounts and flash sale specials'),
-                value: _promoNotifications,
-                onChanged: (val) {
-                  setState(() => _promoNotifications = val);
-                  widget.db.updateAppSettings(promoNotification: val);
-                },
-              ),
-              Divider(height: 20, color: context.borderSubtle),
-              _buildSwitchTile(
-                icon: Icons.volume_up_outlined,
-                title: context.t('Efek Suara Audio', 'Sound Effects'),
-                subtitle: context.t('Umpan balik suara saat klik tombol dan menambah menu ke keranjang', 'Audio feedback on button click and adding items to cart'),
-                value: _soundFx,
-                onChanged: (val) {
-                  setState(() => _soundFx = val);
-                  widget.db.updateAppSettings(soundFx: val);
-                },
-              ),
-              Divider(height: 20, color: context.borderSubtle),
-              _buildSwitchTile(
-                icon: Icons.vibration_rounded,
-                title: context.t('Umpan Balik Haptik (Getar)', 'Haptic Feedback (Vibration)'),
-                subtitle: context.t('Getaran lembut perangkat saat konfirmasi checkout dan aksi penting', 'Gentle device vibration on checkout and key actions'),
-                value: _haptic,
-                onChanged: (val) {
-                  setState(() => _haptic = val);
-                  widget.db.updateAppSettings(haptic: val);
-                },
-              ),
             ],
           ),
           const SizedBox(height: 16),
 
-          // ── 4. KEAMANAN & PRIVASI ──
+          // ── 4. KEBIJAKAN PRIVASI & PERLINDUNGAN DATA ──
           _buildSettingsCard(
-            icon: Icons.security_rounded,
-            title: context.t('Keamanan & Privasi', 'Security & Privacy'),
-            subtitle: context.t('Perlindungan akun, verifikasi masuk, dan biometrik', 'Account protection, 2FA sign-in, and biometrics'),
+            icon: Icons.privacy_tip_outlined,
+            title: context.t('Kebijakan Privasi & PDP', 'Privacy Policy & Data Protection'),
+            subtitle: context.t('Perlindungan data pribadi sesuai ketentuan resmi UU No. 27/2022', 'Personal data protection under official regulations'),
             children: [
-              _buildSwitchTile(
-                icon: Icons.phonelink_lock_rounded,
-                title: context.t('Verifikasi 2 Langkah (2FA Telepon)', '2-Step Verification (Phone 2FA)'),
-                subtitle: context.t('Minta kode verifikasi OTP SMS/Telepon setiap kali masuk akun baru', 'Require phone OTP verification code on new sign-ins'),
-                value: _is2faActive,
-                onChanged: (val) {
-                  if (val && _phoneCtrl.text.trim().isEmpty) {
-                    _showSnackbar(context.t('Isi nomor telepon terlebih dahulu pada tab profil', 'Please enter your phone number in the profile tab first'), isError: true);
-                    return;
-                  }
-                  setState(() => _is2faActive = val);
-                  _handleSaveProfile();
-                },
-              ),
-              Divider(height: 20, color: context.borderSubtle),
-              _buildSwitchTile(
-                icon: Icons.fingerprint_rounded,
-                title: context.t('Kunci Biometrik / PIN Transaksi', 'Biometric Lock / Transaction PIN'),
-                subtitle: context.t('Wajibkan sidik jari atau PIN sebelum memproses pembayaran pesanan', 'Require fingerprint or PIN before completing order payments'),
-                value: _biometric,
-                onChanged: (val) async {
-                  final isVerified = await BiometricAuthDialog.authenticate(
-                    context: context,
-                    title: val
-                        ? context.t('Aktivasi Kunci Biometrik', 'Enable Biometric Lock')
-                        : context.t('Nonaktifkan Kunci Biometrik', 'Disable Biometric Lock'),
-                    reason: val
-                        ? context.t('Verifikasi sidik jari atau PIN keamanan untuk mengaktifkan proteksi transaksi pesanan.', 'Verify fingerprint or PIN to activate order payment protection.')
-                        : context.t('Verifikasi sidik jari atau PIN keamanan Anda untuk menonaktifkan proteksi transaksi.', 'Verify fingerprint or PIN to disable payment protection.'),
-                  );
-                  if (isVerified) {
-                    setState(() => _biometric = val);
-                    widget.db.updateAppSettings(biometricAuth: val);
-                  }
-                },
-              ),
-              Divider(height: 20, color: context.borderSubtle),
               InkWell(
                 onTap: _showPrivacyPolicyDialog,
                 borderRadius: BorderRadius.circular(10),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: context.fillSubtle,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: context.borderSubtle),
+                  ),
                   child: Row(
                     children: [
-                      const Icon(Icons.privacy_tip_outlined, size: 20, color: Color(0xFF64748B)),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEA580C).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.shield_outlined, size: 20, color: Color(0xFFEA580C)),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -692,8 +595,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                               context.t('Kebijakan Privasi & Perlindungan Data', 'Privacy Policy & Data Protection'),
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                             ),
+                            const SizedBox(height: 2),
                             Text(
-                              context.t('Pelajari bagaimana data nomor dan pesanan Anda dilindungi', 'Learn how your data, orders, and privacy are protected'),
+                              context.t('Pelajari bagaimana data akun dan keamanan pesanan Anda dilindungi', 'Learn how your account data and order security are safeguarded'),
                               style: TextStyle(fontSize: 11, color: context.textSecondary),
                             ),
                           ],
@@ -708,234 +612,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ),
           const SizedBox(height: 16),
 
-          // ── 5. PREFERENSI PEMESANAN & PETA ──
-          _buildSettingsCard(
-            icon: Icons.receipt_long_outlined,
-            title: context.t('Preferensi Pemesanan & Peta', 'Ordering & Map Preferences'),
-            subtitle: context.t('Pengaturan pencetakan struk dan tampilan navigasi', 'Receipt printing options and map navigation styles'),
-            children: [
-              _buildSwitchTile(
-                icon: Icons.print_outlined,
-                title: context.t('Cetak Struk Otomatis (Auto-Print)', 'Auto-Print Thermal Receipt'),
-                subtitle: context.t('Kirim perintah cetak struk termal segera setelah transaksi lunas', 'Send print command to thermal printer upon payment completion'),
-                value: _autoPrint,
-                onChanged: (val) {
-                  setState(() => _autoPrint = val);
-                  widget.db.updateAppSettings(autoPrintReceipt: val);
-                },
-              ),
-              Divider(height: 20, color: context.borderSubtle),
-              Text(
-                context.t('Tipe Tampilan Peta Driver', 'Driver Map View Style'),
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: context.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _buildMapOption(
-                    label: 'OpenStreetMap',
-                    desc: context.t('Standar jalan & bangunan', 'Standard roads & buildings'),
-                    value: 'osm',
-                    isSelected: _mapStyle == 'osm',
-                  ),
-                  const SizedBox(width: 8),
-                  _buildMapOption(
-                    label: 'Carto Positron',
-                    desc: context.t('Minimalis & hemat data', 'Clean & data saving'),
-                    value: 'carto_light',
-                    isSelected: _mapStyle == 'carto_light',
-                  ),
-                ],
-              ),
-              Divider(height: 20, color: context.borderSubtle),
-              InkWell(
-                onTap: () {
-                  final ctrl = TextEditingController(text: ExportReportService.customerFeedbackGFormUrl);
-                  showDialog(
-                    context: context,
-                    builder: (dCtx) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      title: Row(
-                        children: [
-                          const Icon(Icons.feedback_outlined, color: Color(0xFFEA580C)),
-                          const SizedBox(width: 8),
-                          const Text('URL Google Form Ulasan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Masukkan tautan Google Form (dari https://docs.google.com/forms/) untuk ulasan pelanggan yang akan dijadikan QR code pada struk transaksi.',
-                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: ctrl,
-                            maxLines: 2,
-                            decoration: InputDecoration(
-                              hintText: 'https://docs.google.com/forms/d/e/.../viewform',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                              contentPadding: const EdgeInsets.all(10),
-                            ),
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dCtx),
-                          child: const Text('Batal'),
-                        ),
-                        FilledButton(
-                          style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
-                          onPressed: () {
-                            if (ctrl.text.trim().isNotEmpty) {
-                              setState(() {
-                                ExportReportService.customerFeedbackGFormUrl = ctrl.text.trim();
-                              });
-                            }
-                            Navigator.pop(dCtx);
-                            _showSnackbar('Tautan Google Form ulasan berhasil diperbarui');
-                          },
-                          child: const Text('Simpan URL'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(10),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.qr_code_2_rounded, size: 20, color: Color(0xFFEA580C)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.t('URL Google Form Ulasan Struk', 'Receipt Feedback Google Form URL'),
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
-                            ),
-                            Text(
-                              ExportReportService.customerFeedbackGFormUrl,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 11, color: Color(0xFFEA580C)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(Icons.edit_outlined, size: 18, color: context.textSecondary),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // ── 6. PENYIMPANAN & PEMELIHARAAN ──
-          _buildSettingsCard(
-            icon: Icons.cleaning_services_outlined,
-            title: context.t('Penyimpanan & Data Cache', 'Storage & Cache Data'),
-            subtitle: context.t('Kelola file sementara dan reset aplikasi', 'Manage temporary files and reset app'),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: context.fillSubtle,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: context.borderSubtle),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(context.t('Data Cache Sementara', 'Temporary Cache Data'), style: TextStyle(fontSize: 12, color: context.textSecondary)),
-                    Text(_cacheSize, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.textPrimary)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: context.textPrimary,
-                  side: BorderSide(color: context.borderSubtle),
-                  minimumSize: const Size.fromHeight(40),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                label: Text(context.t('Bersihkan Cache Gambar & Data Sementara', 'Clear Images & Temporary Cache'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                onPressed: () {
-                  PaintingBinding.instance.imageCache.clear();
-                  PaintingBinding.instance.imageCache.clearLiveImages();
-                  setState(() => _cacheSize = '0.0 MB');
-                  _showSnackbar(context.t('Cache gambar & data sementara berhasil dibersihkan (0.0 MB)', 'Temporary cache successfully cleared (0.0 MB)'));
-                },
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFDC2626),
-                  side: const BorderSide(color: Color(0xFFFCA5A5)),
-                  minimumSize: const Size.fromHeight(40),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                icon: const Icon(Icons.restore_rounded, size: 18),
-                label: Text(context.t('Kembalikan Semua Pengaturan ke Default', 'Reset All Settings to Factory Default'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      title: Text(context.t('Reset Pengaturan?', 'Reset Settings?'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      content: Text(
-                        context.t(
-                          'Semua tema, bahasa, suara, dan preferensi aplikasi akan dikembalikan ke pengaturan awal pabrik.',
-                          'All theme, language, sound, and app preferences will be reset to factory defaults.',
-                        ),
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.t('Batal', 'Cancel'))),
-                        FilledButton(
-                          style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
-                          onPressed: () async {
-                            Navigator.pop(ctx);
-                            PaintingBinding.instance.imageCache.clear();
-                            PaintingBinding.instance.imageCache.clearLiveImages();
-                            await widget.db.clearAppCacheAndPreferences();
-                            setState(() {
-                              _soundFx = true;
-                              _notifications = true;
-                              _promoNotifications = true;
-                              _autoPrint = false;
-                              _haptic = true;
-                              _mapStyle = 'osm';
-                              _themeMode = 'light';
-                              _language = 'id';
-                              _biometric = false;
-                              _cacheSize = '0.0 MB';
-                            });
-                          },
-                          child: Text(context.t('Reset', 'Reset')),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // ── 7. TENTANG APLIKASI & BANTUAN ──
+          // ── 5. TENTANG APLIKASI & KONTAK CS ──
           _buildSettingsCard(
             icon: Icons.info_outline_rounded,
             title: context.t('Tentang Aplikasi & Bantuan', 'About App & Customer Support'),
-            subtitle: context.t('Informasi versi dan kontak layanan pelanggan', 'Version information and customer care contacts'),
+            subtitle: context.t('Informasi versi dan kontak langsung layanan pelanggan', 'Version info and direct customer support contact'),
             children: [
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -963,30 +644,43 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               ),
               Divider(height: 16, color: context.borderSubtle),
               InkWell(
-                onTap: _showHelpSupportDialog,
+                onTap: _launchWhatsAppCS,
                 borderRadius: BorderRadius.circular(10),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF16A34A).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF16A34A).withValues(alpha: 0.25)),
+                  ),
                   child: Row(
                     children: [
-                      const Icon(Icons.headset_mic_outlined, size: 20, color: Color(0xFF15803D)),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.chat_bubble_outline_rounded, size: 18, color: Colors.white),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              context.t('Pusat Bantuan & Layanan CS', 'Help Center & CS Support'),
+                              context.t('Hubungi Kontak CS via WhatsApp', 'Contact Support via WhatsApp'),
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
                             ),
+                            const SizedBox(height: 2),
                             Text(
-                              context.t('No Telepon: +62 8978655469 • Email: endymahavira@gmail.com', 'Phone: +62 8978655469 • Email: endymahavira@gmail.com'),
-                              style: TextStyle(fontSize: 11, color: context.textSecondary),
+                              'https://wa.me/qr/LXPSUAAWEP7YJ1',
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
                       ),
-                      Icon(Icons.chevron_right_rounded, color: context.textSecondary),
+                      const Icon(Icons.open_in_new_rounded, size: 18, color: Color(0xFF16A34A)),
                     ],
                   ),
                 ),
@@ -1161,83 +855,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
-  // Opsi Pilihan Gaya Peta
-  Widget _buildMapOption({
-    required String label,
-    required String desc,
-    required String value,
-    required bool isSelected,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: () {
-          setState(() => _mapStyle = value);
-          widget.db.updateAppSettings(mapStyle: value);
-        },
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (context.isDarkMode ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFF7ED))
-                : context.fillSubtle,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? const Color(0xFFEA580C) : context.borderSubtle,
-              width: isSelected ? 2.0 : 1.0,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                    size: 18,
-                    color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF94A3B8),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? const Color(0xFFEA580C) : context.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.only(left: 26),
-                child: Text(
-                  desc,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    color: isSelected ? const Color(0xFFEA580C) : context.textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Dialog Kebijakan Privasi
+  // Dialog Kebijakan Privasi & PDP (Form Bersih & Elegan)
   void _showPrivacyPolicyDialog() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20),
         title: Row(
@@ -1257,8 +880,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Kebijakan Privasi & PDP', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary)),
-                  Text('UU No. 27/2022 Pelindungan Data Pribadi', style: TextStyle(fontSize: 11, color: context.textSecondary)),
+                  Text(
+                    context.t('Kebijakan Privasi & PDP', 'Privacy Policy & PDP'),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary),
+                  ),
+                  Text(
+                    context.t('Pelindungan Data Pribadi (UU No. 27/2022)', 'Personal Data Protection (Act No. 27/2022)'),
+                    style: TextStyle(fontSize: 11, color: context.textSecondary),
+                  ),
                 ],
               ),
             ),
@@ -1280,35 +909,45 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     border: Border.all(color: context.borderSubtle),
                   ),
                   child: Text(
-                    'PT Rasantara Kuliner Indonesia ("Rasantara") berkomitmen penuh melindungi privasi, integritas data, dan kenyamanan seluruh pengguna aplikasi Rasantara Resto & Cafe sesuai ketentuan UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi.',
+                    context.t(
+                      'PT Rasantara Kuliner Indonesia ("Rasantara") berkomitmen penuh melindungi privasi, integritas data, dan kenyamanan seluruh pengguna aplikasi Rasantara Resto & Cafe sesuai ketentuan UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi.',
+                      'PT Rasantara Kuliner Indonesia ("Rasantara") is fully committed to safeguarding user privacy and data security in compliance with Personal Data Protection regulations.',
+                    ),
                     style: TextStyle(fontSize: 11.5, color: context.textPrimary, height: 1.45),
                   ),
                 ),
                 const SizedBox(height: 14),
                 _buildPolicySection(
                   number: '1',
-                  title: 'Informasi & Data yang Dikumpulkan',
-                  body: 'Kami mengumpulkan data profil pengguna (nama lengkap, username, foto profil), data kontak resmi (nomor WhatsApp untuk pengiriman OTP), data alamat pengantaran makanan dan koordinat peta OpenStreetMap, serta riwayat pemesanan menu kuliner Anda.',
+                  title: context.t('Informasi & Data yang Dikumpulkan', 'Information Collected'),
+                  body: context.t(
+                    'Kami mengumpulkan nama lengkap, username, alamat email untuk autentikasi masuk, serta riwayat transaksi pemesanan menu kuliner Anda di meja restoran.',
+                    'We collect your full name, username, email address for authentication, and your restaurant dining order history.',
+                  ),
                 ),
                 _buildPolicySection(
                   number: '2',
-                  title: 'Tujuan Pemrosesan & Penggunaan Data',
-                  body: 'Data digunakan secara sah untuk verifikasi identitas masuk akun (2FA WhatsApp OTP), memproses pesanan makanan di dapur restoran, navigasi pengantaran pesanan oleh kurir/driver, perhitungan potongan harga pelanggan langganan, serta integrasi resmi payment gateway Midtrans Snap BI.',
+                  title: context.t('Tujuan Penggunaan Data', 'Purpose of Data Use'),
+                  body: context.t(
+                    'Data digunakan secara sah untuk verifikasi identitas akun, memproses antrean pesanan di dapur restoran, serta pencatatan struk pembayaran.',
+                    'Data is strictly used to authenticate your user account, prepare kitchen order tickets, and issue dining receipts.',
+                  ),
                 ),
                 _buildPolicySection(
                   number: '3',
-                  title: 'Keamanan, Enkripsi & Penyimpanan',
-                  body: 'Semua lalu lintas komunikasi dilindungi enkripsi protokol TLS 1.3. Data akun dan alamat tersimpan terenkripsi pada infrastruktur cloud Supabase Enterprise PostgreSQL. Kami tidak pernah merekam ataupun menyimpan PIN transaksi atau data kartu perbankan Anda di server lokal.',
+                  title: context.t('Keamanan & Enkripsi', 'Security & Encryption'),
+                  body: context.t(
+                    'Lalu lintas data dilindungi enkripsi SSL/TLS modern. Data kredensial tersimpan dengan aman pada database cloud Supabase PostgreSQL berstandar industri.',
+                    'All data traffic is protected with SSL/TLS protocols and stored securely on cloud enterprise databases.',
+                  ),
                 ),
                 _buildPolicySection(
                   number: '4',
-                  title: 'Pembagian Data kepada Pihak Ketiga',
-                  body: 'Informasi hanya diteruskan ke mitra pengemudi (nama depan dan alamat antar) saat pesanan aktif, serta lembaga gerbang pembayaran berizin Bank Indonesia untuk kliring transaksi pembayaran. Rasantara menjamin data Anda tidak pernah dijual atau disewakan kepada pihak manapun.',
-                ),
-                _buildPolicySection(
-                  number: '5',
-                  title: 'Hak Pemilik Data & Layanan Pengaduan',
-                  body: 'Sesuai UU PDP, Anda berhak melihat, memperbarui profil, mengubah izin notifikasi, dan mengajukan penghapusan akun beserta riwayat pesanan dengan menghubungi Petugas Perlindungan Data (DPO) resmi kami:\n• Email: endymahavira@gmail.com\n• WhatsApp Resmi: +62 8978655469',
+                  title: context.t('Layanan Bantuan & Kontak CS', 'Customer Care & Contact'),
+                  body: context.t(
+                    'Jika memiliki pertanyaan mengenai privasi akun, hubungi Layanan Pelanggan resmi Rasantara via WhatsApp:\nhttps://wa.me/qr/LXPSUAAWEP7YJ1',
+                    'For inquiries regarding your data privacy, reach out to our Customer Service via WhatsApp:\nhttps://wa.me/qr/LXPSUAAWEP7YJ1',
+                  ),
                 ),
               ],
             ),
@@ -1318,7 +957,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Saya Mengerti & Setuju'),
+            child: Text(context.t('Saya Mengerti', 'I Understand')),
           ),
         ],
       ),
@@ -1358,103 +997,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           Padding(
             padding: const EdgeInsets.only(left: 30),
             child: Text(body, style: TextStyle(fontSize: 11.5, color: context.textSecondary, height: 1.45)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Dialog Bantuan & Customer Service
-  void _showHelpSupportDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.headset_mic_rounded, color: Color(0xFF16A34A), size: 22),
-            SizedBox(width: 8),
-            Text('Pusat Bantuan CS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Butuh bantuan seputar pesanan atau pembayaran Anda?',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.fillSubtle,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.borderSubtle),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF15803D).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.phone_rounded, color: Color(0xFF15803D), size: 16),
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('No Telepon / WhatsApp', style: TextStyle(fontSize: 11, color: context.textSecondary)),
-                          Text('+62 8978655469', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Divider(height: 16, color: context.borderSubtle),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.email_outlined, color: Color(0xFF2563EB), size: 16),
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Email Resmi CS', style: TextStyle(fontSize: 11, color: context.textSecondary)),
-                          Text('endymahavira@gmail.com', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Tutup', style: TextStyle(color: Color(0xFF64748B))),
-          ),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
-            icon: const Icon(Icons.chat_bubble_outline, size: 16),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _showSnackbar('Menghubungi Customer Service WhatsApp (+62 8978655469)...');
-            },
-            label: const Text('Chat WhatsApp CS'),
           ),
         ],
       ),

@@ -553,7 +553,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'MEJA',
+                                  context.t('MEJA', 'TABLE'),
                                   style: TextStyle(
                                     fontSize: 8,
                                     fontWeight: FontWeight.bold,
@@ -574,7 +574,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                     borderRadius: BorderRadius.circular(3),
                                   ),
                                   child: Text(
-                                    isOccupied ? 'TERISI' : 'KOSONG',
+                                    isOccupied ? context.t('TERISI', 'OCCUPIED') : context.t('KOSONG', 'EMPTY'),
                                     style: TextStyle(
                                       fontSize: 7.5,
                                       fontWeight: FontWeight.w800,
@@ -602,7 +602,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                             FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
-                                '${tbl.kapasitas} Kursi',
+                                '${tbl.kapasitas} ${context.t('Kursi', 'Seats')}',
                                 style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w600,
@@ -655,7 +655,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
               onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
               style: TextStyle(fontSize: 13, color: context.textPrimary),
               decoration: InputDecoration(
-                hintText: 'Cari menu hidangan nusantara...',
+                hintText: context.t('Cari menu hidangan nusantara...', 'Search authentic dishes...'),
                 hintStyle: const TextStyle(fontSize: 12.5, color: AppTheme.textMuted),
                 prefixIcon: const Icon(Icons.search, size: 18, color: AppTheme.textMuted),
                 suffixIcon: _searchQuery.isNotEmpty
@@ -682,7 +682,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(cat.label),
+                    label: Text(cat.localizedLabel(context.isEnglish)),
                     selected: isSelected,
                     selectedColor: AppTheme.orangePrimary,
                     backgroundColor: context.surfaceBg,
@@ -907,9 +907,9 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                       Container(
                         color: Colors.black.withValues(alpha: 0.6),
                         alignment: Alignment.center,
-                        child: const Text(
-                          'HABIS',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        child: Text(
+                          context.t('HABIS', 'SOLD OUT'),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                       ),
                   ],
