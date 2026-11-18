@@ -1089,7 +1089,7 @@ class _SimpleAreaChartPainter extends CustomPainter {
 
     const leftMargin = 52.0;
     const rightMargin = 12.0;
-    const topMargin = 26.0;
+    const topMargin = 28.0;
     const bottomMargin = 22.0;
 
     final chartWidth = size.width - leftMargin - rightMargin;
@@ -1159,6 +1159,8 @@ class _SimpleAreaChartPainter extends CustomPainter {
       return topMargin + chartHeight * (1.0 - ratio);
     }
 
+    final baseline = topMargin + chartHeight;
+
     // Helper untuk menggambar area fill & garis kurva
     void drawSeries(List<double> vals, Color strokeColor) {
       final offsets = <Offset>[];
@@ -1178,9 +1180,18 @@ class _SimpleAreaChartPainter extends CustomPainter {
         final p3 = i < offsets.length - 2 ? offsets[i + 2] : p2;
 
         final cp1x = p1.dx + (p2.dx - p0.dx) / 6.0;
-        final cp1y = p1.dy + (p2.dy - p0.dy) / 6.0;
+        double cp1y = p1.dy + (p2.dy - p0.dy) / 6.0;
         final cp2x = p2.dx - (p3.dx - p1.dx) / 6.0;
-        final cp2y = p2.dy - (p3.dy - p1.dy) / 6.0;
+        double cp2y = p2.dy - (p3.dy - p1.dy) / 6.0;
+
+        // Cegah kurva melengkung ke bawah menembus garis dasar 0 (Overshoot / sag)
+        if (vals[i] == 0 && vals[i + 1] == 0) {
+          cp1y = baseline;
+          cp2y = baseline;
+        } else {
+          cp1y = cp1y.clamp(topMargin, baseline);
+          cp2y = cp2y.clamp(topMargin, baseline);
+        }
 
         path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.dx, p2.dy);
       }
@@ -1280,10 +1291,10 @@ class _SimpleAreaChartPainter extends CustomPainter {
       final pillWidth = textPainter.width + pillPaddingH * 2;
       final pillHeight = textPainter.height + pillPaddingV * 2;
 
-      // Letakkan badge di atas titik dengan aman (jika terlalu mepet batas atas, geser sedikit ke bawah titik)
-      double pillY = y - pillHeight - 4;
-      if (pillY < 3) {
-        pillY = y + 6;
+      // Letakkan badge di atas titik secara konsisten
+      double pillY = y - pillHeight - 5;
+      if (pillY < 4) {
+        pillY = 4;
       }
       final double pillX = (x - pillWidth / 2).clamp(
         leftMargin - 2,

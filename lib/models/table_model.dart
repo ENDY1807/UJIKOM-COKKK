@@ -29,10 +29,8 @@ class TableModel {
     this.qrCode,
   });
 
-  /// Payload QR Code resmi untuk meja ini yang dipindai oleh pelanggan
-  String get qrPayload => (qrCode != null && qrCode!.isNotEmpty)
-      ? qrCode!
-      : 'https://rasantara.app/order?table=${Uri.encodeComponent(nomorMeja)}';
+  /// Payload QR Code resmi untuk meja ini yang dipindai oleh pelanggan (murni nomor meja, tanpa link/URL web)
+  String get qrPayload => nomorMeja;
 
   TableModel copyWith({
     int? idMeja,
@@ -61,7 +59,7 @@ class TableModel {
           ? map['kapasitas'] as int
           : int.tryParse('${map['kapasitas']}') ?? 4,
       status: TableStatus.fromString(map['status']?.toString() ?? map['status_meja']?.toString() ?? 'Kosong'),
-      qrCode: map['qr_code']?.toString(),
+      qrCode: noMeja,
     );
   }
 
@@ -71,7 +69,7 @@ class TableModel {
       'nomor_meja': nomorMeja,
       'kapasitas': kapasitas,
       'status_meja': status.label,
-      'qr_code': qrPayload,
+      'qr_code': nomorMeja,
     };
   }
 }

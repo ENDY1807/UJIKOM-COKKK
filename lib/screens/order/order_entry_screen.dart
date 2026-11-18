@@ -2023,8 +2023,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 ),
               );
             },
-            icon: Icon(isPelanggan ? Icons.qr_code_2_rounded : Icons.shopping_cart_checkout, size: 18),
-            label: Text(isPelanggan ? 'Bayar / Pesan' : 'Rincian Pesanan'),
+            label: Text(isPelanggan ? 'Bayar' : 'Rincian Pesanan'),
             style: FilledButton.styleFrom(
               backgroundColor: isPelanggan ? const Color(0xFF16A34A) : AppTheme.orangePrimary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

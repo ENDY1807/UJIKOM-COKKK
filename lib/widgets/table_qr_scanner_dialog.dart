@@ -80,7 +80,7 @@ class _TableQrScannerDialogState extends State<TableQrScannerDialog>
   String? _parseTableFromRaw(String raw) {
     final clean = raw.trim();
 
-    // 1. Cek format URL (misal: https://rasantara.app/order?table=Meja 02 atau ?meja=02)
+    // 1. Cek format parameter jika QR lama berisi URL (backward compatibility)
     final uri = Uri.tryParse(clean);
     if (uri != null && uri.hasQuery) {
       final tableParam = uri.queryParameters['table'] ??
@@ -634,7 +634,7 @@ class _TableQrViewerDialogState extends State<TableQrViewerDialog> {
       orElse: () => TableModel(idMeja: 1, nomorMeja: _currentTable, kapasitas: 4),
     );
 
-    final qrData = 'https://rasantara.app/order?table=$_currentTable';
+    final qrData = currentTableObj.qrPayload;
 
     return Dialog(
       backgroundColor: context.surfaceCard,

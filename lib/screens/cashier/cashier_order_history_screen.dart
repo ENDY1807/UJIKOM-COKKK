@@ -489,12 +489,6 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
           }).toList();
         }
 
-        // Hitung ringkasan
-        final totalPesanan = filtered.length;
-        final totalNominal = filtered
-            .where((o) => o.status == OrderStatus.selesai || o.isPaid)
-            .fold(0, (sum, o) => sum + o.grandTotalSetelahDiskon);
-
         return Scaffold(
           backgroundColor: context.surfaceBg,
           appBar: Navigator.canPop(context)
@@ -693,45 +687,6 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
                 ),
               ),
 
-              // ── BANNER RINGKASAN DATA ──
-              Container(
-                margin: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: context.surfaceCard,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: context.borderSubtle),
-                ),
-                child: Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 6,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.receipt_long_outlined, size: 16, color: AppTheme.orangePrimary),
-                        const SizedBox(width: 6),
-                        Text(
-                          '$totalPesanan Pesanan Ditemukan',
-                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: context.textPrimary),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Total Lunas: ', style: TextStyle(fontSize: 12, color: context.textSecondary)),
-                        Text(
-                          _currencyFmt.format(totalNominal),
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
 
               // ── LIST RIWAYAT PESANAN ──
               Expanded(

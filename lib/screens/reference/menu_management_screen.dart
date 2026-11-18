@@ -421,7 +421,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.link_rounded, size: 15, color: Color(0xFF64748B)),
+                    const Icon(Icons.qr_code_rounded, size: 15, color: Color(0xFF64748B)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -433,13 +433,13 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                     ),
                     IconButton(
                       icon: const Icon(Icons.copy_rounded, size: 15),
-                      tooltip: 'Salin Link QR',
+                      tooltip: 'Salin Kode QR',
                       visualDensity: VisualDensity.compact,
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: table.qrPayload));
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Link QR ${table.nomorMeja} disalin ke clipboard'),
+                            content: Text('Kode QR ${table.nomorMeja} disalin ke clipboard'),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
