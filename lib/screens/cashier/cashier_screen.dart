@@ -43,8 +43,13 @@ class ThousandsSeparatorInputFormatter extends TextInputFormatter {
 
 class CashierScreen extends StatefulWidget {
   final DatabaseService db;
+  final String? initialTableNo;
 
-  const CashierScreen({super.key, required this.db});
+  const CashierScreen({
+    super.key,
+    required this.db,
+    this.initialTableNo,
+  });
 
   @override
   State<CashierScreen> createState() => _CashierScreenState();
@@ -64,6 +69,33 @@ class _CashierScreenState extends State<CashierScreen> {
   int? _loadedMidtransOrderId;
 
   final _currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialTable();
+  }
+
+  @override
+  void didUpdateWidget(CashierScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTableNo != oldWidget.initialTableNo && widget.initialTableNo != null) {
+      _checkInitialTable();
+    }
+  }
+
+  void _checkInitialTable() {
+    if (widget.initialTableNo != null) {
+      final match = widget.db.orders.where(
+        (o) => o.noMeja.toLowerCase() == widget.initialTableNo!.toLowerCase() &&
+               o.status != OrderStatus.selesai &&
+               o.status != OrderStatus.dibatalkan,
+      ).toList();
+      if (match.isNotEmpty) {
+        _selectOrder(match.first);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -251,10 +283,10 @@ class _CashierScreenState extends State<CashierScreen> {
       metodePembayaran: method,
     );
 
-    // 2. Pesanan otomatis lunas & selesai, langsung masuk ke riwayat pesanan dan meja kembali kosong
+    // 2. Pesanan otomatis lunas & selesai, meja berstatus terisi dengan jeda 5 menit sebelum otomatis kosong
     widget.db.updateOrderStatus(order.idOrder, OrderStatus.selesai);
     widget.db.updateOrderPaymentStatus(order.idOrder, true);
-    widget.db.updateTableStatus(order.noMeja, TableStatus.kosong);
+    widget.db.scheduleTableAutoReset(order.noMeja, delay: const Duration(minutes: 5));
 
     // 3. Masukkan ke simulasi alur dapur koki
     OrderSimulationService().getOrCreateProgress(order);

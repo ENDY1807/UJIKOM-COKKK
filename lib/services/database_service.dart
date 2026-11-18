@@ -301,6 +301,13 @@ class DatabaseService extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    if (_tableResetTimers != null) {
+      for (final timer in _tableResetTimers!.values) {
+        timer.cancel();
+      }
+      _tableResetTimers!.clear();
+    }
+    _tableOccupiedUntil?.clear();
     stopFastOrderSync();
     stopBackgroundFullSync();
     super.dispose();
@@ -1393,9 +1400,95 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
+  // --- JEDA RESET OTOMATIS STATUS MEJA (5 MENIT SETELAH DITERIMA KASIR) ---
+  Map<String, Timer>? _tableResetTimers;
+  Map<String, Timer> get _safeResetTimers =>
+      _tableResetTimers ??= <String, Timer>{};
+
+  Map<String, DateTime>? _tableOccupiedUntil;
+  Map<String, DateTime> get _safeOccupiedUntil =>
+      _tableOccupiedUntil ??= <String, DateTime>{};
+
+  Set<String>? _manuallyClearedTables;
+  Set<String> get _safeClearedTables =>
+      _manuallyClearedTables ??= <String>{};
+
+  DateTime? getTableOccupiedUntil(String nomorMeja) =>
+      _safeOccupiedUntil[nomorMeja.toLowerCase().trim()];
+
+  bool isTableTemporarilyOccupied(String nomorMeja) {
+    final clean = nomorMeja.toLowerCase().trim();
+    if (_safeClearedTables.contains(clean)) return false;
+
+    final now = DateTime.now();
+
+    // 1. Cek dari jadwal memory occupiedUntil
+    final until = _safeOccupiedUntil[clean];
+    if (until != null && until.isAfter(now)) {
+      return true;
+    }
+
+    // 2. Cek dari riwayat transaksi kasir terbaru (dalam kurun 5 menit terakhir)
+    for (final trx in _transactions) {
+      if (trx.order.noMeja.toLowerCase().trim() == clean) {
+        final diff = now.difference(trx.tanggal);
+        if (diff >= Duration.zero && diff < const Duration(minutes: 5)) {
+          return true;
+        }
+        break; // Cukup verifikasi transaksi paling mutakhir untuk meja ini
+      }
+    }
+
+    return false;
+  }
+
+  void cancelTableAutoReset(String nomorMeja) {
+    final key = nomorMeja.toLowerCase().trim();
+    _safeResetTimers[key]?.cancel();
+    _safeResetTimers.remove(key);
+    _safeOccupiedUntil.remove(key);
+  }
+
+  void scheduleTableAutoReset(
+    String nomorMeja, {
+    Duration delay = const Duration(minutes: 5),
+  }) {
+    final key = nomorMeja.toLowerCase().trim();
+    _safeClearedTables.remove(key);
+    _safeResetTimers[key]?.cancel();
+    _safeOccupiedUntil[key] = DateTime.now().add(delay);
+
+    // Meja tetap terisi selama durasi jeda
+    updateTableStatus(nomorMeja, TableStatus.terisi);
+
+    _safeResetTimers[key] = Timer(delay, () {
+      _safeOccupiedUntil.remove(key);
+      _safeResetTimers.remove(key);
+
+      // Cek apakah ada pesanan aktif baru di meja ini
+      final hasActiveOrder = _orders.any(
+        (o) =>
+            o.noMeja.toLowerCase().trim() == key &&
+            o.status != OrderStatus.selesai &&
+            o.status != OrderStatus.dibatalkan,
+      );
+
+      if (!hasActiveOrder) {
+        updateTableStatus(nomorMeja, TableStatus.kosong);
+      }
+    });
+  }
+
   void updateTableStatus(String nomorMeja, TableStatus status) {
+    final key = nomorMeja.toLowerCase().trim();
+    if (status == TableStatus.kosong) {
+      _safeClearedTables.add(key);
+      cancelTableAutoReset(nomorMeja);
+    } else {
+      _safeClearedTables.remove(key);
+    }
     final index = _tables.indexWhere(
-      (t) => t.nomorMeja.toLowerCase() == nomorMeja.toLowerCase(),
+      (t) => t.nomorMeja.toLowerCase().trim() == key,
     );
     if (index != -1) {
       _tables[index] = _tables[index].copyWith(status: status);
@@ -1409,7 +1502,11 @@ class DatabaseService extends ChangeNotifier {
 
   void syncTableStatusWithOrders() {
     for (int i = 0; i < _tables.length; i++) {
-      if (_tables[i].status != TableStatus.reservasi) {
+      if (_tables[i].status == TableStatus.reservasi) continue;
+
+      if (isTableTemporarilyOccupied(_tables[i].nomorMeja)) {
+        _tables[i] = _tables[i].copyWith(status: TableStatus.terisi);
+      } else {
         _tables[i] = _tables[i].copyWith(status: TableStatus.kosong);
       }
     }
@@ -1417,7 +1514,7 @@ class DatabaseService extends ChangeNotifier {
       if (order.status != OrderStatus.selesai &&
           order.status != OrderStatus.dibatalkan) {
         final idx = _tables.indexWhere(
-          (t) => t.nomorMeja.toLowerCase() == order.noMeja.toLowerCase(),
+          (t) => t.nomorMeja.toLowerCase().trim() == order.noMeja.toLowerCase().trim(),
         );
         if (idx != -1) {
           _tables[idx] = _tables[idx].copyWith(status: TableStatus.terisi);
@@ -1456,6 +1553,8 @@ class DatabaseService extends ChangeNotifier {
     );
     _orders.insert(0, order);
 
+    // Batalkan timer jeda jika meja diisi pesanan baru
+    cancelTableAutoReset(noMeja);
     // Tandai status meja terisi
     updateTableStatus(noMeja, TableStatus.terisi);
     notifyListeners();
@@ -1634,13 +1733,14 @@ class DatabaseService extends ChangeNotifier {
 
     _transactions.insert(0, transaction);
 
-    // Pesanan otomatis lunas & selesai, langsung masuk ke riwayat pesanan dan meja kembali kosong
+    // Pesanan otomatis lunas & selesai, langsung masuk ke riwayat pesanan.
+    // Meja tetap terisi dengan jeda 5 menit sebelum otomatis reset ke kosong.
     final orderIndex = _orders.indexWhere((o) => o.idOrder == order.idOrder);
     if (orderIndex != -1) {
       _orders[orderIndex].status = OrderStatus.selesai;
       _orders[orderIndex].isPaid = true;
     }
-    updateTableStatus(order.noMeja, TableStatus.kosong);
+    scheduleTableAutoReset(order.noMeja, delay: const Duration(minutes: 5));
     notifyListeners();
 
     // Simpan ke Supabase

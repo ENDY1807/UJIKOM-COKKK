@@ -104,7 +104,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
           password: password.isNotEmpty ? password : existingUser.password,
           email: email.isNotEmpty ? email : (existingUser.googleEmail ?? existingUser.displayEmail),
           phone: phone.isNotEmpty ? phone : existingUser.phoneNumber,
-          message: 'Akun pelanggan yang sudah ada berhasil di-upgrade menjadi Member Berlangganan VIP!',
+          message: 'Akun pelanggan yang sudah ada berhasil di-upgrade menjadi Member!',
         );
         _resetForm();
         return;
@@ -134,7 +134,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
       password: password,
       email: email,
       phone: phone,
-      message: 'Pelanggan berhasil didaftarkan sebagai Member Berlangganan VIP dengan Diskon ${widget.db.memberDiscountPercent}%!',
+      message: 'Pelanggan berhasil didaftarkan sebagai Member dengan Diskon ${widget.db.memberDiscountPercent}%!',
     );
     _resetForm();
   }
@@ -233,7 +233,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                       Text(
-                        'Kelola & Pendaftaran Pelanggan Langganan VIP',
+                        'Kelola & Pendaftaran Pelanggan Member',
                         style: TextStyle(fontSize: 11, color: context.textSecondary),
                       ),
                     ],
@@ -507,7 +507,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
-                'Hapus Langganan VIP',
+                'Hapus Member',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
@@ -599,7 +599,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
-                    'Ubah Diskon Member VIP',
+                    'Ubah Diskon Member',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -716,7 +716,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                   if (!mounted) return;
                   messenger.showSnackBar(
                     SnackBar(
-                      content: Text('Besaran diskon member VIP berhasil diubah menjadi $selectedPercent%!'),
+                      content: Text('Besaran diskon member berhasil diubah menjadi $selectedPercent%!'),
                       backgroundColor: const Color(0xFF1E293B),
                       behavior: SnackBarBehavior.floating,
                     ),
@@ -781,7 +781,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Total Member VIP',
+                                'Total Member',
                                 style: TextStyle(fontSize: 11, color: context.textSecondary),
                               ),
                               Text(
@@ -834,7 +834,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                                     ],
                                   ),
                                   Text(
-                                    '${widget.db.memberDiscountPercent}% OFF',
+                                    '${widget.db.memberDiscountPercent}%',
                                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                                   ),
                                 ],
@@ -947,7 +947,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                                         border: Border.all(color: const Color(0xFF86EFAC)),
                                       ),
                                       child: Text(
-                                        'VIP ${widget.db.memberDiscountPercent}%',
+                                        'Potongan: ${widget.db.memberDiscountPercent}%',
                                         style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
                                       ),
                                     ),
@@ -965,7 +965,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                           // Tombol Hapus Langganan untuk Admin, Waiter, Kasir, Owner
                           IconButton(
                             icon: const Icon(Icons.person_remove_rounded, color: Color(0xFFDC2626), size: 20),
-                            tooltip: 'Hapus Langganan VIP',
+                            tooltip: 'Hapus Member',
                             onPressed: () => _confirmUnsubscribe(member),
                           ),
                         ],

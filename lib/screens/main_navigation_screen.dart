@@ -3,6 +3,7 @@ import '../models/user_model.dart';
 import '../models/menu_model.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
+import 'dashboard/dashboard_screen.dart';
 import 'order/order_entry_screen.dart';
 import 'order/customer_order_flow_screen.dart';
 import 'cashier/cashier_screen.dart';
@@ -49,9 +50,32 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   String? _searchQueryForOrder;
   String? _autoApplyCouponForOrder;
 
-  void _navigateToTab(int index, {MenuCategory? category, String? searchQuery, String? couponCode, String? tableNo}) {
+  void _navigateToTab(
+    int index, {
+    MenuCategory? category,
+    String? searchQuery,
+    String? couponCode,
+    String? tableNo,
+    String? target,
+  }) {
+    final role = widget.db.currentUser?.role ?? UserRole.pelanggan;
+    int targetIndex = index;
+    if (target == 'order') {
+      if (role == UserRole.waiter) {
+        targetIndex = 1;
+      } else if (role == UserRole.administrator) {
+        targetIndex = 2;
+      }
+    } else if (target == 'cashier') {
+      if (role == UserRole.kasir) {
+        targetIndex = 1;
+      } else if (role == UserRole.administrator) {
+        targetIndex = 3;
+      }
+    }
+
     setState(() {
-      _currentIndex = index;
+      _currentIndex = targetIndex;
       if (category != null) _selectedCategoryForOrder = category;
       if (searchQuery != null) _searchQueryForOrder = searchQuery;
       if (couponCode != null) _autoApplyCouponForOrder = couponCode;
@@ -79,12 +103,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
 
     // ── ROLE KASIR ──
-    // Saat membuka aplikasi, Kasir LANGSUNG terbuka menu Entri Transaksi!
+    // Kasir memiliki Dashboard untuk memantau denah meja (kosong vs terisi) & proses bayar!
     if (role == UserRole.kasir) {
+      list.add(NavDestinationItem(
+        label: context.t('Dashboard', 'Dashboard'),
+        icon: Icons.dashboard_rounded,
+        screen: DashboardScreen(db: widget.db, onNavigateToTab: _navigateToTab),
+      ));
       list.add(NavDestinationItem(
         label: context.t('Entri Transaksi', 'Transactions'),
         icon: Icons.point_of_sale_rounded,
-        screen: CashierScreen(db: widget.db),
+        screen: CashierScreen(
+          key: ValueKey('cashier-$_selectedTableForOrder'),
+          db: widget.db,
+          initialTableNo: _selectedTableForOrder,
+        ),
       ));
       list.add(NavDestinationItem(
         label: context.t('Riwayat Pesanan', 'Order History'),
@@ -108,8 +141,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
 
     // ── ROLE WAITER ──
-    // Saat membuka aplikasi, Waiter LANGSUNG terbuka menu Entri Order!
+    // Waiter memiliki Dashboard untuk visualisasi ketersediaan meja & pilih meja untuk order!
     if (role == UserRole.waiter) {
+      list.add(NavDestinationItem(
+        label: context.t('Dashboard', 'Dashboard'),
+        icon: Icons.dashboard_rounded,
+        screen: DashboardScreen(db: widget.db, onNavigateToTab: _navigateToTab),
+      ));
       list.add(NavDestinationItem(
         label: context.t('Entri Order', 'Order Entry'),
         icon: Icons.restaurant_menu_rounded,
@@ -182,8 +220,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
 
     // ── ROLE ADMINISTRATOR (Level 1 UKK 2134) ──
-    // Admin mengelola referensi menu masakan, order, transaksi, laporan, registrasi user, dst.
-    // Tanpa Beranda, Admin langsung terbuka menu Entri Referensi (Kelola Menu).
+    list.add(NavDestinationItem(
+      label: context.t('Dashboard', 'Dashboard'),
+      icon: Icons.dashboard_rounded,
+      screen: DashboardScreen(db: widget.db, onNavigateToTab: _navigateToTab),
+    ));
+
     list.add(NavDestinationItem(
       label: context.t('Entri Referensi', 'References'),
       icon: Icons.inventory_2_outlined,
@@ -215,7 +257,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     list.add(NavDestinationItem(
       label: context.t('Entri Transaksi', 'Transactions'),
       icon: Icons.point_of_sale_rounded,
-      screen: CashierScreen(db: widget.db),
+      screen: CashierScreen(
+        key: ValueKey('cashier-$_selectedTableForOrder'),
+        db: widget.db,
+        initialTableNo: _selectedTableForOrder,
+      ),
     ));
 
     list.add(NavDestinationItem(

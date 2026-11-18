@@ -563,7 +563,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           // ── 4. KEBIJAKAN PRIVASI & PERLINDUNGAN DATA ──
           _buildSettingsCard(
             icon: Icons.privacy_tip_outlined,
-            title: context.t('Kebijakan Privasi & PDP', 'Privacy Policy & Data Protection'),
+            title: context.t('Kebijakan Privasi', 'Privacy Policy & Data Protection'),
             subtitle: context.t('Perlindungan data pribadi sesuai ketentuan resmi UU No. 27/2022', 'Personal data protection under official regulations'),
             children: [
               InkWell(

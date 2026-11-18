@@ -867,7 +867,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     }
 
     // Default / Admin: Dropdown Meja Kosong dengan Akses Lengkap & QR Generator
-    final availableTables = tables.where((t) => t.status == TableStatus.kosong || t.nomorMeja == _selectedTableNo).toList();
+    final availableTables = tables
+        .where((t) =>
+            (t.status == TableStatus.kosong && !widget.db.isTableTemporarilyOccupied(t.nomorMeja)) ||
+            t.nomorMeja == _selectedTableNo)
+        .toList();
 
     return Container(
       color: context.surfaceCard,
@@ -2099,7 +2103,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                     label: const FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        'Kirim Pesanan ke Kasir & Dapur',
+                        'Bayar di kasir',
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                       ),
                     ),

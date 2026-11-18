@@ -141,7 +141,9 @@ class _TableQrScannerDialogState extends State<TableQrScannerDialog>
           ).toList();
           final activeOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
           final curUserId = widget.db.currentUser?.idUser;
-          final isOccupied = table?.status == TableStatus.terisi || activeOrder != null;
+          final isOccupied = table?.status == TableStatus.terisi ||
+              activeOrder != null ||
+              widget.db.isTableTemporarilyOccupied(detectedTable);
           final isMyOrder = activeOrder != null && curUserId != null && activeOrder.idUser == curUserId;
 
           if (widget.db.currentUser?.role == UserRole.pelanggan && isOccupied && !isMyOrder) {
@@ -586,7 +588,9 @@ class _TableQrScannerDialogState extends State<TableQrScannerDialog>
                 ).toList();
                 final activeOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
                 final curUserId = widget.db.currentUser?.idUser;
-                final isOccupied = table?.status == TableStatus.terisi || activeOrder != null;
+                final isOccupied = table?.status == TableStatus.terisi ||
+                    activeOrder != null ||
+                    widget.db.isTableTemporarilyOccupied(selected);
                 final isMyOrder = activeOrder != null && curUserId != null && activeOrder.idUser == curUserId;
 
                 if (widget.db.currentUser?.role == UserRole.pelanggan && isOccupied && !isMyOrder) {
