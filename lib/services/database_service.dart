@@ -1479,6 +1479,81 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
+  /// Tambah item makanan baru ke pesanan aktif yang sudah ada di meja (Dine-in Add-on Order)
+  void appendItemsToOrder({
+    required int idOrder,
+    required List<OrderItemModel> newItems,
+    String? extraNotes,
+  }) {
+    final index = _orders.indexWhere((o) => o.idOrder == idOrder);
+    if (index == -1 || newItems.isEmpty) return;
+
+    final targetOrder = _orders[index];
+    final updatedItems = List<OrderItemModel>.from(targetOrder.items);
+
+    for (final newItem in newItems) {
+      final existingIdx = updatedItems.indexWhere(
+        (it) => it.menu.idMasakan == newItem.menu.idMasakan && it.catatan == newItem.catatan,
+      );
+      if (existingIdx != -1) {
+        updatedItems[existingIdx].jumlah += newItem.jumlah;
+      } else {
+        updatedItems.add(newItem);
+      }
+    }
+
+    String updatedNotes = targetOrder.keterangan;
+    if (extraNotes != null && extraNotes.isNotEmpty) {
+      updatedNotes = updatedNotes.isEmpty ? extraNotes : '$updatedNotes | $extraNotes';
+    }
+
+    _orders[index] = targetOrder.copyWith(
+      items: updatedItems,
+      keterangan: updatedNotes,
+    );
+    notifyListeners();
+
+    if (_isSupabaseConnected) {
+      _supabase.appendOrderDetails(idOrder, newItems);
+    }
+  }
+
+  /// Pindahkan pesanan aktif dari satu meja ke meja lain (Transfer Meja)
+  bool transferOrderTable({
+    required int idOrder,
+    required String newTableNo,
+  }) {
+    final index = _orders.indexWhere((o) => o.idOrder == idOrder);
+    if (index == -1) return false;
+
+    final oldTable = _orders[index].noMeja;
+    if (oldTable.toLowerCase() == newTableNo.toLowerCase()) return true;
+
+    // Perbarui no_meja pada pesanan
+    _orders[index] = _orders[index].copyWith(noMeja: newTableNo);
+
+    // Update status meja baru menjadi terisi
+    updateTableStatus(newTableNo, TableStatus.terisi);
+
+    // Cek apakah di meja lama masih ada order aktif lain, jika tidak ada kembalikan ke kosong
+    final hasRemainingOrders = _orders.any((o) =>
+        o.idOrder != idOrder &&
+        o.noMeja.toLowerCase() == oldTable.toLowerCase() &&
+        !o.isPaid &&
+        o.status != OrderStatus.selesai &&
+        o.status != OrderStatus.dibatalkan);
+    if (!hasRemainingOrders) {
+      updateTableStatus(oldTable, TableStatus.kosong);
+    }
+
+    notifyListeners();
+
+    if (_isSupabaseConnected) {
+      _supabase.updateOrderTable(idOrder, newTableNo);
+    }
+    return true;
+  }
+
   void deleteOrder(int idOrder) {
     _orders.removeWhere((o) => o.idOrder == idOrder);
     notifyListeners();
@@ -1550,6 +1625,68 @@ class DatabaseService extends ChangeNotifier {
     // Simpan ke Supabase
     if (_isSupabaseConnected) {
       _supabase.updateOrderStatus(order.idOrder, OrderStatus.selesai);
+      _supabase.updateOrderPaymentStatus(order.idOrder, true);
+      _supabase.insertTransaction(transaction).then((saved) {
+        if (saved != null) {
+          final idx = _transactions.indexOf(transaction);
+          if (idx != -1) {
+            _transactions[idx] = saved;
+            notifyListeners();
+          }
+        }
+      });
+    }
+
+    return transaction;
+  }
+
+  /// Pemrosesan Transaksi QRIS Mandiri langsung oleh Pelanggan di Meja
+  /// - Meja TETAP terisi (TableStatus.terisi) karena pelanggan sedang makan di tempat
+  /// - Pesanan ditandai Lunas (isPaid = true) & status diproses dapur
+  /// - Transaksi tercatat resmi di database dan laporan kasir/owner
+  TransactionModel processCustomerDirectQris({
+    required OrderModel order,
+    required int jumlahBayar,
+  }) {
+    final newId =
+        (_transactions
+            .map((t) => t.idTransaksi)
+            .fold(0, (max, id) => id > max ? id : max)) +
+        1;
+    final effDiskonMember = order.diskonMember;
+    final total = (order.totalHarga - effDiskonMember).clamp(
+      0,
+      order.totalHarga,
+    );
+
+    final transaction = TransactionModel(
+      idTransaksi: newId,
+      idUser: _currentUser?.idUser ?? 0,
+      namaKasir: 'Self-Service QRIS (${_currentUser?.namaUser ?? 'Pelanggan'})',
+      order: order,
+      tanggal: DateTime.now(),
+      totalBayar: total,
+      jumlahBayar: jumlahBayar,
+      kembalian: 0,
+      metodePembayaran: 'QRIS',
+      diskonMember: effDiskonMember,
+    );
+
+    _transactions.insert(0, transaction);
+
+    final orderIndex = _orders.indexWhere((o) => o.idOrder == order.idOrder);
+    if (orderIndex != -1) {
+      _orders[orderIndex].status = OrderStatus.diproses;
+      _orders[orderIndex].isPaid = true;
+      _orders[orderIndex].metodePembayaran = 'QRIS';
+    }
+    // Meja tetap aktif bersantap
+    updateTableStatus(order.noMeja, TableStatus.terisi);
+    notifyListeners();
+
+    // Sinkronisasi cloud Supabase
+    if (_isSupabaseConnected) {
+      _supabase.updateOrderStatus(order.idOrder, OrderStatus.diproses);
       _supabase.updateOrderPaymentStatus(order.idOrder, true);
       _supabase.insertTransaction(transaction).then((saved) {
         if (saved != null) {

@@ -337,19 +337,6 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                         const SizedBox(height: 22),
 
-                        // Deskripsi Singkat Soal Aplikasi Ini
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 340),
-                          child: Text(
-                            'Sistem kasir dan manajemen operasional restoran modern yang cepat, terpadu, dan andal untuk menyajikan pengalaman kuliner nusantara terbaik.',
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              color: Colors.white.withValues(alpha: 0.9),
-                              height: 1.6,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -528,7 +515,7 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                     child: Center(
                       child: Text(
-                        'Daftar Pelanggan',
+                        'Daftar',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -552,13 +539,6 @@ class _LoginScreenState extends State<LoginScreen>
             letterSpacing: -0.5,
             color: context.textPrimary,
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          _isRegisterMode
-              ? 'Daftar mandiri untuk memesan menu & berlangganan diskon VIP'
-              : 'Silakan masuk ke sistem restoran Rasantara',
-          style: TextStyle(fontSize: 12, color: context.textSecondary),
         ),
         const SizedBox(height: 16),
 
@@ -632,7 +612,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           const SizedBox(height: 14),
 
-          _primaryButton('Daftar & Mulai Memesan', Icons.check_circle_outline, _handleRegister),
+          _primaryButton('Daftar', Icons.check_circle_outline, _handleRegister),
           const SizedBox(height: 12),
           Center(
             child: TextButton(

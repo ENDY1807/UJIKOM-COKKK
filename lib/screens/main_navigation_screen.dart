@@ -340,7 +340,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    role == UserRole.pelanggan ? 'Rasantara • Pesan Mandiri Meja' : 'Rasantara',
+                    role == UserRole.pelanggan ? 'Rasantara' : 'Rasantara',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: -0.3, color: context.textPrimary),
                     overflow: TextOverflow.ellipsis,
                   ),

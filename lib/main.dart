@@ -106,7 +106,7 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> with WidgetsBinding
 
     if (_showSplash) {
       return MaterialApp(
-        title: 'Rasantara · Sistem Kasir & Restoran',
+        title: 'Rasantara',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
@@ -120,7 +120,7 @@ class _KasirRestoranAppState extends State<KasirRestoranApp> with WidgetsBinding
     }
 
     return MaterialApp(
-      title: 'Rasantara · Sistem Kasir & Restoran',
+      title: 'Rasantara',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

@@ -168,20 +168,26 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
 
         final total = matched.fold<int>(0, (sum, t) => sum + t.totalBayar);
         final qris = matched
-            .where((t) => t.metodePembayaran.trim().toLowerCase().contains('qris'))
+            .where(
+              (t) => t.metodePembayaran.trim().toLowerCase().contains('qris'),
+            )
             .fold<int>(0, (sum, t) => sum + t.totalBayar);
         final cash = matched
-            .where((t) => !t.metodePembayaran.trim().toLowerCase().contains('qris'))
+            .where(
+              (t) => !t.metodePembayaran.trim().toLowerCase().contains('qris'),
+            )
             .fold<int>(0, (sum, t) => sum + t.totalBayar);
 
-        revenueList.add(PeriodRevenueData(
-          date: targetDate,
-          label: _getDayName(targetDate.weekday),
-          revenue: total,
-          orderCount: matched.length,
-          qrisRevenue: qris,
-          cashRevenue: cash,
-        ));
+        revenueList.add(
+          PeriodRevenueData(
+            date: targetDate,
+            label: _getDayName(targetDate.weekday),
+            revenue: total,
+            orderCount: matched.length,
+            qrisRevenue: qris,
+            cashRevenue: cash,
+          ),
+        );
       }
     } else if (_periodFilter == RevenuePeriodFilter.perBulan) {
       periodSubtitle = '4 Minggu Terakhir';
@@ -197,20 +203,26 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
 
         final total = matched.fold<int>(0, (sum, t) => sum + t.totalBayar);
         final qris = matched
-            .where((t) => t.metodePembayaran.trim().toLowerCase().contains('qris'))
+            .where(
+              (t) => t.metodePembayaran.trim().toLowerCase().contains('qris'),
+            )
             .fold<int>(0, (sum, t) => sum + t.totalBayar);
         final cash = matched
-            .where((t) => !t.metodePembayaran.trim().toLowerCase().contains('qris'))
+            .where(
+              (t) => !t.metodePembayaran.trim().toLowerCase().contains('qris'),
+            )
             .fold<int>(0, (sum, t) => sum + t.totalBayar);
 
-        revenueList.add(PeriodRevenueData(
-          date: startWeek,
-          label: 'Mgg ${4 - w}',
-          revenue: total,
-          orderCount: matched.length,
-          qrisRevenue: qris,
-          cashRevenue: cash,
-        ));
+        revenueList.add(
+          PeriodRevenueData(
+            date: startWeek,
+            label: 'Mgg ${4 - w}',
+            revenue: total,
+            orderCount: matched.length,
+            qrisRevenue: qris,
+            cashRevenue: cash,
+          ),
+        );
       }
     } else {
       periodSubtitle = '12 Bulan Terakhir';
@@ -224,56 +236,53 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
 
         final total = matched.fold<int>(0, (sum, t) => sum + t.totalBayar);
         final qris = matched
-            .where((t) => t.metodePembayaran.trim().toLowerCase().contains('qris'))
+            .where(
+              (t) => t.metodePembayaran.trim().toLowerCase().contains('qris'),
+            )
             .fold<int>(0, (sum, t) => sum + t.totalBayar);
         final cash = matched
-            .where((t) => !t.metodePembayaran.trim().toLowerCase().contains('qris'))
+            .where(
+              (t) => !t.metodePembayaran.trim().toLowerCase().contains('qris'),
+            )
             .fold<int>(0, (sum, t) => sum + t.totalBayar);
 
-        revenueList.add(PeriodRevenueData(
-          date: monthDate,
-          label: _getMonthName(monthDate.month),
-          revenue: total,
-          orderCount: matched.length,
-          qrisRevenue: qris,
-          cashRevenue: cash,
-        ));
+        revenueList.add(
+          PeriodRevenueData(
+            date: monthDate,
+            label: _getMonthName(monthDate.month),
+            revenue: total,
+            orderCount: matched.length,
+            qrisRevenue: qris,
+            cashRevenue: cash,
+          ),
+        );
       }
     }
 
-    final filteredTotalRevenue = revenueList.fold<int>(0, (sum, d) => sum + d.revenue);
+    final filteredTotalRevenue = revenueList.fold<int>(
+      0,
+      (sum, d) => sum + d.revenue,
+    );
 
     // ── 2. Hitung Distribusi Metode Pembayaran dari Database ──
     int qrisCount = 0;
     int tunaiCount = 0;
-    int ewalletCount = 0;
-    int debitCount = 0;
     int qrisTotal = 0;
     int tunaiTotal = 0;
-    int ewalletTotal = 0;
-    int debitTotal = 0;
 
     for (final t in transactions) {
       final method = t.metodePembayaran.trim().toLowerCase();
       if (method.contains('qris')) {
         qrisCount++;
         qrisTotal += t.totalBayar;
-      } else if (method.contains('tunai') || method.contains('cash')) {
+      } else {
         tunaiCount++;
         tunaiTotal += t.totalBayar;
-      } else if (method.contains('wallet') || method.contains('gopay') || method.contains('dana') || method.contains('ovo')) {
-        ewalletCount++;
-        ewalletTotal += t.totalBayar;
-      } else {
-        debitCount++;
-        debitTotal += t.totalBayar;
       }
     }
 
     final qrisShare = totalTrx > 0 ? (qrisCount / totalTrx) : 0.0;
     final tunaiShare = totalTrx > 0 ? (tunaiCount / totalTrx) : 0.0;
-    final ewalletShare = totalTrx > 0 ? (ewalletCount / totalTrx) : 0.0;
-    final debitShare = totalTrx > 0 ? (debitCount / totalTrx) : 0.0;
 
     // ── 3. Hitung Peringkat Menu Terlaris dari Database ──
     final menuSalesMap = <String, int>{};
@@ -345,16 +354,23 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
               return GestureDetector(
                 onTap: () => setState(() => _periodFilter = f),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.orangePrimary : Colors.transparent,
+                    color: isSelected
+                        ? AppTheme.orangePrimary
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(7),
                   ),
                   child: Text(
                     f.label,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w600,
                       color: isSelected ? Colors.white : context.textSecondary,
                     ),
                   ),
@@ -367,11 +383,7 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
         if (isSmall) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              titleSection,
-              const SizedBox(height: 12),
-              filterToggles,
-            ],
+            children: [titleSection, const SizedBox(height: 12), filterToggles],
           );
         }
 
@@ -388,10 +400,7 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
 
     // ── 5. Data Titik Omzet dari Database Sesuai Filter Waktu ──
     final revenuePoints = revenueList.map((d) {
-      return ChartDataPoint(
-        label: d.label,
-        value: d.revenue.toDouble(),
-      );
+      return ChartDataPoint(label: d.label, value: d.revenue.toDouble());
     }).toList();
 
     // Kartu Laporan Penghasilan (Area Chart Oranye Bersih)
@@ -458,8 +467,6 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
                   painter: _PaymentDonutPainter(
                     qrisShare: qrisShare,
                     cashShare: tunaiShare,
-                    ewalletShare: ewalletShare,
-                    debitShare: debitShare,
                   ),
                   child: Center(
                     child: Column(
@@ -496,23 +503,11 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
                       '${(qrisShare * 100).toStringAsFixed(0)}% • ${currencyFmt.format(qrisTotal)}',
                       const Color(0xFFEA580C),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     _buildLegendItem(
                       'Tunai',
                       '${(tunaiShare * 100).toStringAsFixed(0)}% • ${currencyFmt.format(tunaiTotal)}',
                       const Color(0xFF2563EB),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildLegendItem(
-                      'E-Wallet',
-                      '${(ewalletShare * 100).toStringAsFixed(0)}% • ${currencyFmt.format(ewalletTotal)}',
-                      const Color(0xFFD97706),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildLegendItem(
-                      'Debit/EDC',
-                      '${(debitShare * 100).toStringAsFixed(0)}% • ${currencyFmt.format(debitTotal)}',
-                      const Color(0xFF64748B),
                     ),
                   ],
                 ),
@@ -530,25 +525,15 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                flex: 11,
-                child: cardPenghasilan,
-              ),
+              Expanded(flex: 11, child: cardPenghasilan),
               const SizedBox(width: 14),
-              Expanded(
-                flex: 10,
-                child: paymentCard,
-              ),
+              Expanded(flex: 10, child: paymentCard),
             ],
           );
         }
 
         return Column(
-          children: [
-            cardPenghasilan,
-            const SizedBox(height: 14),
-            paymentCard,
-          ],
+          children: [cardPenghasilan, const SizedBox(height: 14), paymentCard],
         );
       },
     );
@@ -809,15 +794,8 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
 class _PaymentDonutPainter extends CustomPainter {
   final double qrisShare;
   final double cashShare;
-  final double ewalletShare;
-  final double debitShare;
 
-  _PaymentDonutPainter({
-    required this.qrisShare,
-    required this.cashShare,
-    required this.ewalletShare,
-    required this.debitShare,
-  });
+  _PaymentDonutPainter({required this.qrisShare, required this.cashShare});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -832,7 +810,7 @@ class _PaymentDonutPainter extends CustomPainter {
 
     canvas.drawCircle(center, radius - strokeWidth / 2, bgPaint);
 
-    final total = qrisShare + cashShare + ewalletShare + debitShare;
+    final total = qrisShare + cashShare;
     if (total <= 0) return;
 
     double startAngle = -math.pi / 2;
@@ -858,16 +836,12 @@ class _PaymentDonutPainter extends CustomPainter {
 
     drawSegment(qrisShare, const Color(0xFFEA580C));
     drawSegment(cashShare, const Color(0xFF2563EB));
-    drawSegment(ewalletShare, const Color(0xFFD97706));
-    drawSegment(debitShare, const Color(0xFF64748B));
   }
 
   @override
   bool shouldRepaint(covariant _PaymentDonutPainter oldDelegate) {
     return oldDelegate.qrisShare != qrisShare ||
-        oldDelegate.cashShare != cashShare ||
-        oldDelegate.ewalletShare != ewalletShare ||
-        oldDelegate.debitShare != debitShare;
+        oldDelegate.cashShare != cashShare;
   }
 }
 
@@ -1011,7 +985,9 @@ class _RasantaraAreaChartCardState extends State<RasantaraAreaChartCard> {
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w600,
-              color: _hoveredIndex != null ? AppTheme.orangePrimary : context.textSecondary,
+              color: _hoveredIndex != null
+                  ? AppTheme.orangePrimary
+                  : context.textSecondary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1191,14 +1167,17 @@ class _SimpleAreaChartPainter extends CustomPainter {
         ..close();
 
       final fillPaint = Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            strokeColor.withValues(alpha: isDark ? 0.30 : 0.20),
-            strokeColor.withValues(alpha: 0.01),
-          ],
-        ).createShader(Rect.fromLTWH(leftMargin, topMargin, chartWidth, chartHeight));
+        ..shader =
+            LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                strokeColor.withValues(alpha: isDark ? 0.30 : 0.20),
+                strokeColor.withValues(alpha: 0.01),
+              ],
+            ).createShader(
+              Rect.fromLTWH(leftMargin, topMargin, chartWidth, chartHeight),
+            );
 
       canvas.drawPath(fillPath, fillPaint);
 

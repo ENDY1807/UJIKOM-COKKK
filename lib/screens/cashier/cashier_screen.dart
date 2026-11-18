@@ -124,6 +124,118 @@ class _CashierScreenState extends State<CashierScreen> {
     return _parsedBayar >= _selectedOrder!.grandTotalSetelahDiskon && _parsedBayar > 0;
   }
 
+  void _showTransferTableCashierDialog(OrderModel order) {
+    final availableTables = widget.db.tables
+        .where((t) => t.nomorMeja.toLowerCase() != order.noMeja.toLowerCase())
+        .toList();
+
+    final emptyList = availableTables.where((t) => t.status == TableStatus.kosong);
+    String? selectedTarget = emptyList.isNotEmpty
+        ? emptyList.first.nomorMeja
+        : (availableTables.isNotEmpty ? availableTables.first.nomorMeja : null);
+
+    if (selectedTarget == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tidak ada meja lain yang tersedia untuk dipindahkan.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          backgroundColor: context.surfaceCard,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.swap_horiz_rounded, color: Color(0xFF0284C7)),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text('Pindah ${order.noMeja} (Order #${order.idOrder})', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pilih meja tujuan baru untuk memindahkan seluruh pesanan tamu "${order.namaPelanggan}":',
+                style: TextStyle(fontSize: 12.5, color: context.textSecondary),
+              ),
+              const SizedBox(height: 14),
+              DropdownButtonFormField<String>(
+                initialValue: selectedTarget,
+                decoration: InputDecoration(
+                  labelText: 'Meja Tujuan Baru',
+                  prefixIcon: const Icon(Icons.table_restaurant_rounded, color: Color(0xFF0284C7)),
+                  filled: true,
+                  fillColor: context.surfaceBg,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                items: availableTables.map((t) {
+                  final isKosong = t.status == TableStatus.kosong;
+                  return DropdownMenuItem(
+                    value: t.nomorMeja,
+                    child: Text(
+                      '${t.nomorMeja} (${t.status.label})',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isKosong ? FontWeight.bold : FontWeight.normal,
+                        color: isKosong ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setDlgState(() => selectedTarget = val);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal'),
+            ),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0284C7)),
+              icon: const Icon(Icons.check_rounded, size: 16),
+              label: const Text('Pindahkan Meja'),
+              onPressed: () {
+                if (selectedTarget != null) {
+                  final target = selectedTarget!;
+                  widget.db.transferOrderTable(
+                    idOrder: order.idOrder,
+                    newTableNo: target,
+                  );
+                  Navigator.pop(ctx);
+                  final updatedOrders = widget.db.orders.where((o) => o.idOrder == order.idOrder);
+                  setState(() {
+                    _selectedOrder = updatedOrders.isNotEmpty ? updatedOrders.first : null;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Pesanan berhasil dipindahkan dari ${order.noMeja} ke $target!'),
+                      backgroundColor: const Color(0xFF16A34A),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _processPayment({String? forceMethod}) {
     if (_selectedOrder == null) return;
     final order = _selectedOrder!;
@@ -229,9 +341,18 @@ class _CashierScreenState extends State<CashierScreen> {
                   ],
                 );
               } else {
-                return _selectedOrder == null
-                    ? _buildOrderList(activeOrders)
-                    : _buildPaymentPanel();
+                return PopScope(
+                  canPop: _selectedOrder == null,
+                  onPopInvokedWithResult: (didPop, result) {
+                    if (didPop) return;
+                    if (_selectedOrder != null) {
+                      setState(() => _selectedOrder = null);
+                    }
+                  },
+                  child: _selectedOrder == null
+                      ? _buildOrderList(activeOrders)
+                      : _buildPaymentPanel(),
+                );
               }
             },
           ),
@@ -611,15 +732,24 @@ class _CashierScreenState extends State<CashierScreen> {
             // Header Meja & Tombol Tutup
             Row(
               children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  tooltip: 'Kembali ke Antrean',
+                  onPressed: () => setState(() => _selectedOrder = null),
+                ),
+                const SizedBox(width: 4),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Text(
-                            'Pembayaran ${order.noMeja}',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+                          Flexible(
+                            child: Text(
+                              'Pembayaran ${order.noMeja}',
+                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: context.textPrimary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                           const SizedBox(width: 8),
                           StatusBadge.fromStatus(order.status.label),
@@ -644,10 +774,25 @@ class _CashierScreenState extends State<CashierScreen> {
             ),
             Divider(height: 22, color: context.borderSubtle),
 
-            // Rincian Item Menu
-            Text(
-              'Rincian Hidangan Meja:',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
+            // Rincian Item Menu & Aksi Pindah Meja
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Rincian Hidangan Meja:',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimary),
+                ),
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF0284C7),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                  label: const Text('Pindah Meja', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  onPressed: () => _showTransferTableCashierDialog(order),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Container(

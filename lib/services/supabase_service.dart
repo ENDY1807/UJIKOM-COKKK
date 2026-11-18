@@ -737,6 +737,43 @@ class SupabaseService {
     }
   }
 
+  /// Pindahkan pesanan aktif ke nomor meja baru
+  Future<bool> updateOrderTable(int idOrder, String newTableNo) async {
+    try {
+      await client
+          .from(_orderTable)
+          .update({'no_meja': newTableNo})
+          .eq('id_order', idOrder);
+      return true;
+    } catch (e) {
+      debugPrint('[SupabaseService] updateOrderTable error: $e');
+      return false;
+    }
+  }
+
+  /// Tambahkan item hidangan baru ke pesanan aktif yang sudah ada di Supabase
+  Future<bool> appendOrderDetails(int idOrder, List<OrderItemModel> newItems) async {
+    try {
+      if (newItems.isEmpty) return true;
+      final details = newItems
+          .map((item) => {
+                'id_order': idOrder,
+                'id_masakan': item.menu.idMasakan,
+                'jumlah': item.jumlah,
+                'harga_satuan': item.menu.harga,
+                'subtotal': item.subtotal,
+                'keterangan': item.catatan,
+                'status_detail_order': 'Menunggu',
+              })
+          .toList();
+      await client.from(_detailOrderTable).insert(details);
+      return true;
+    } catch (e) {
+      debugPrint('[SupabaseService] appendOrderDetails error: $e');
+      return false;
+    }
+  }
+
   Future<bool> deleteOrder(int idOrder) async {
     try {
       await client.from(_detailOrderTable).delete().eq('id_order', idOrder);

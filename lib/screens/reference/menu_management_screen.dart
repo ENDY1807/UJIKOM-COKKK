@@ -772,7 +772,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
     final menus = widget.db.menus;
 
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 80 + MediaQuery.of(context).padding.bottom),
       itemCount: menus.length,
       separatorBuilder: (context, index) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
@@ -784,15 +784,16 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
             side: const BorderSide(color: AppTheme.borderSubtle),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Foto Hidangan
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
-                    width: 72,
-                    height: 72,
+                    width: 70,
+                    height: 70,
                     color: context.fillSubtle,
                     child: (menu.gambarUrl.isNotEmpty)
                         ? MenuModel.buildImage(
@@ -828,27 +829,30 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
                               color: AppTheme.orangeLight,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               menu.kategori.label,
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
+                              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
                             ),
                           ),
-                          const SizedBox(width: 8),
                           StatusBadge.fromStatus(menu.status.label),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 5),
                       Text(
                         menu.namaMasakan,
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.textPrimary),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (menu.deskripsi.isNotEmpty) ...[
                         const SizedBox(height: 2),
@@ -856,26 +860,29 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                           menu.deskripsi,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 12, color: context.textSecondary),
+                          style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                         ),
                       ],
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 5),
                       Text(
                         _currencyFormat.format(menu.harga),
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.orangePrimary),
                       ),
                     ],
                   ),
                 ),
                 // Action Buttons
                 Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: Icon(
                         menu.isTersedia ? Icons.toggle_on : Icons.toggle_off,
                         color: menu.isTersedia ? AppTheme.statusGreen : AppTheme.textMuted,
-                        size: 30,
+                        size: 28,
                       ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       tooltip: menu.isTersedia ? 'Tandai Habis' : 'Tandai Tersedia',
                       onPressed: () {
                         widget.db.toggleMenuStatus(menu.idMasakan);
@@ -886,11 +893,15 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 20, color: AppTheme.textMuted),
+                          icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textMuted),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                           onPressed: () => _showAddEditMenuDialog(menu),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.statusRed),
+                          icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.statusRed),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                           tooltip: 'Hapus Menu',
                           onPressed: () {
                             showDialog(
@@ -939,40 +950,45 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
         // Banner Pengelolaan QR Meja Admin
         Container(
           margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: context.surfaceCard,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.borderSubtle),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7ED),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C), size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Kelola Data Meja & QR Code Pelanggan (${tables.length} Meja)',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.textPrimary),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 520;
+              final infoContent = Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    Text(
-                      'Admin menyimpan data meja dan dapat melihat/mencetak stiker QR code untuk ditempel di meja tamu.',
-                      style: TextStyle(fontSize: 11, color: context.textSecondary),
+                    child: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFEA580C), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Kelola Data Meja (${tables.length} Meja)',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.textPrimary),
+                        ),
+                        Text(
+                          'Simpan data meja dan cetak stiker QR code meja tamu.',
+                          style: TextStyle(fontSize: 11, color: context.textSecondary),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              OutlinedButton.icon(
+                  ),
+                ],
+              );
+
+              final printButton = OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFEA580C),
                   side: const BorderSide(color: Color(0xFFFDBA74)),
@@ -982,15 +998,34 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                 icon: const Icon(Icons.print_outlined, size: 15),
                 label: const Text('Cetak Semua QR', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                 onPressed: _showAllTablesQrDialog,
-              ),
-            ],
+              );
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    infoContent,
+                    const SizedBox(height: 10),
+                    printButton,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: infoContent),
+                  const SizedBox(width: 10),
+                  printButton,
+                ],
+              );
+            },
           ),
         ),
 
         // Grid Meja
         Expanded(
           child: GridView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 80 + MediaQuery.of(context).padding.bottom),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 260,
               mainAxisSpacing: 12,

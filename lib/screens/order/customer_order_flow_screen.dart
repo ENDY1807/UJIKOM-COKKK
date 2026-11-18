@@ -156,11 +156,6 @@ class _CustomerOrderFlowScreenState extends State<CustomerOrderFlowScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
               ),
               const SizedBox(height: 8),
-              Text(
-                'Pesanan Anda sedang dipersiapkan oleh koki dapur Rasantara. Pembayaran tunai atau QRIS dapat Anda selesaikan di meja kasir setelah selesai makan.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: context.textSecondary, height: 1.4),
-              ),
             ],
           ),
           actionsAlignment: MainAxisAlignment.center,
@@ -188,8 +183,6 @@ class _CustomerOrderFlowScreenState extends State<CustomerOrderFlowScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = widget.db.currentUser;
-
     // JIKA MEJA TELAH DI-SCAN: TAMPILKAN ENTRI ORDER KHUSUS MEJA TERSEBUT
     if (_scannedTableNo != null && _scannedTableNo!.isNotEmpty) {
       return OrderEntryScreen(
@@ -259,7 +252,7 @@ class _CustomerOrderFlowScreenState extends State<CustomerOrderFlowScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Pindai QR Code Meja Anda',
+                      'Pindai QR Di Meja Anda',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
@@ -268,17 +261,6 @@ class _CustomerOrderFlowScreenState extends State<CustomerOrderFlowScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      user != null && user.namaUser.isNotEmpty
-                          ? 'Halo, ${user.namaUser}! Arahkan kamera ke stiker QR Code di meja makan Anda untuk membuka menu hidangan.'
-                          : 'Arahkan kamera smartphone ke stiker QR Code yang tertera di meja makan Anda untuk membuka menu dan memesan hidangan.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: context.textSecondary,
-                        height: 1.45,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -384,26 +366,46 @@ class _CustomerOrderFlowScreenState extends State<CustomerOrderFlowScreen> {
                         ),
                       ),
 
-                      // Tombol Senter / Torch
+                      // Tombol Senter / Torch & Ganti Kamera Depan / Belakang
                       if (_isCameraSupportedPlatform && _scannerController != null)
                         Positioned(
                           top: 8,
                           right: 8,
-                          child: IconButton(
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.black.withValues(alpha: 0.6),
-                              padding: const EdgeInsets.all(6),
-                              minimumSize: const Size(32, 32),
-                            ),
-                            icon: Icon(
-                              _torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-                              color: _torchOn ? const Color(0xFFFBBF24) : Colors.white,
-                              size: 18,
-                            ),
-                            onPressed: () {
-                              _scannerController?.toggleTorch();
-                              setState(() => _torchOn = !_torchOn);
-                            },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.black.withValues(alpha: 0.6),
+                                  padding: const EdgeInsets.all(6),
+                                  minimumSize: const Size(32, 32),
+                                ),
+                                icon: Icon(
+                                  _torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                                  color: _torchOn ? const Color(0xFFFBBF24) : Colors.white,
+                                  size: 18,
+                                ),
+                                onPressed: () {
+                                  _scannerController?.toggleTorch();
+                                  setState(() => _torchOn = !_torchOn);
+                                },
+                              ),
+                              const SizedBox(width: 6),
+                              IconButton(
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.black.withValues(alpha: 0.6),
+                                  padding: const EdgeInsets.all(6),
+                                  minimumSize: const Size(32, 32),
+                                ),
+                                icon: const Icon(
+                                  Icons.flip_camera_ios_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                tooltip: 'Ganti Kamera (Depan / Belakang)',
+                                onPressed: () => _scannerController?.switchCamera(),
+                              ),
+                            ],
                           ),
                         ),
                     ],

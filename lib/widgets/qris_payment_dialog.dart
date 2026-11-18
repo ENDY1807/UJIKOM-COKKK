@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/order_model.dart';
+import '../models/user_model.dart';
 import '../services/database_service.dart';
 import '../services/payment_gateway_service.dart';
 import '../theme/app_theme.dart';
@@ -121,11 +122,17 @@ class _QrisPaymentDialogState extends State<QrisPaymentDialog> {
 
     if (!mounted) return;
 
-    final transaction = widget.db.processTransaction(
-      order: widget.order,
-      jumlahBayar: widget.totalAmount,
-      metodePembayaran: 'QRIS',
-    );
+    final isCustomer = widget.db.currentUser?.role == UserRole.pelanggan;
+    final transaction = isCustomer
+        ? widget.db.processCustomerDirectQris(
+            order: widget.order,
+            jumlahBayar: widget.totalAmount,
+          )
+        : widget.db.processTransaction(
+            order: widget.order,
+            jumlahBayar: widget.totalAmount,
+            metodePembayaran: 'QRIS',
+          );
 
     setState(() {
       _isProcessingPayment = false;

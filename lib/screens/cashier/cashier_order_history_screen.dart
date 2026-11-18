@@ -497,28 +497,30 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
 
         return Scaffold(
           backgroundColor: context.surfaceBg,
-          appBar: AppBar(
-            elevation: 0,
-            backgroundColor: context.surfaceCard,
-            foregroundColor: context.textPrimary,
-            title: Row(
-              children: [
-                const Icon(Icons.history_rounded, size: 22, color: AppTheme.orangePrimary),
-                const SizedBox(width: 8),
-                Text(
-                  'Riwayat Pesanan Restoran',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: context.textPrimary),
-                ),
-              ],
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.date_range_rounded),
-                tooltip: 'Pilih Tanggal',
-                onPressed: _pickCustomDate,
-              ),
-            ],
-          ),
+          appBar: Navigator.canPop(context)
+              ? AppBar(
+                  elevation: 0,
+                  backgroundColor: context.surfaceCard,
+                  foregroundColor: context.textPrimary,
+                  title: Row(
+                    children: [
+                      const Icon(Icons.history_rounded, size: 22, color: AppTheme.orangePrimary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Riwayat Pesanan Restoran',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: context.textPrimary),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.date_range_rounded),
+                      tooltip: 'Pilih Tanggal',
+                      onPressed: _pickCustomDate,
+                    ),
+                  ],
+                )
+              : null,
           body: Column(
             children: [
               // ── BAGIAN SEARCH & FILTER TANGGAL ──
@@ -527,6 +529,37 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: Column(
                   children: [
+                    if (!Navigator.canPop(context))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.orangeLight,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.history_rounded, size: 18, color: AppTheme.orangePrimary),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Riwayat Pesanan',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.textPrimary),
+                                ),
+                              ],
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.date_range_rounded, color: AppTheme.orangePrimary, size: 20),
+                              tooltip: 'Pilih Tanggal',
+                              onPressed: _pickCustomDate,
+                            ),
+                          ],
+                        ),
+                      ),
                     // Search Bar
                     Container(
                       height: 42,
@@ -669,10 +702,14 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: context.borderSubtle),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 6,
                   children: [
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.receipt_long_outlined, size: 16, color: AppTheme.orangePrimary),
                         const SizedBox(width: 6),
@@ -683,6 +720,7 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
                       ],
                     ),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text('Total Lunas: ', style: TextStyle(fontSize: 12, color: context.textSecondary)),
                         Text(
@@ -727,7 +765,7 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
                         )
                       : ListView.separated(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.fromLTRB(16, 10, 16, 24 + MediaQuery.of(context).padding.bottom),
                           itemCount: filtered.length,
                           separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {

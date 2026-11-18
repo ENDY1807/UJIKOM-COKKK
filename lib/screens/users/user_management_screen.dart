@@ -252,7 +252,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     return Scaffold(
       backgroundColor: context.surfaceBg,
       body: ListView.separated(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 80 + MediaQuery.of(context).padding.bottom),
         itemCount: users.length,
         separatorBuilder: (context, index) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
@@ -267,122 +267,279 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: AppTheme.orangeLight,
-                    child: Text(
-                      user.namaUser.isNotEmpty ? user.namaUser[0].toUpperCase() : 'U',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 540;
+
+                  if (isCompact) {
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Text(
-                              user.namaUser,
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: AppTheme.orangeLight,
+                              child: Text(
+                                user.namaUser.isNotEmpty ? user.namaUser[0].toUpperCase() : 'U',
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
+                              ),
                             ),
-                            if (isCurrentUser) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.statusGreenBg,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'Akun Aktif',
-                                  style: TextStyle(fontSize: 10, color: AppTheme.statusGreen, fontWeight: FontWeight.bold),
-                                ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    user.namaUser,
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: context.textPrimary),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (isCurrentUser || user.isSubscribed) ...[
+                                    const SizedBox(height: 3),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 4,
+                                      children: [
+                                        if (isCurrentUser)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.statusGreenBg,
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'Akun Aktif',
+                                              style: TextStyle(fontSize: 10, color: AppTheme.statusGreen, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        if (user.isSubscribed)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFDCFCE7),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: const Color(0xFF86EFAC)),
+                                            ),
+                                            child: const Text(
+                                              'VIP Langganan',
+                                              style: TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
                               ),
-                            ],
-                            if (user.isSubscribed) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFDCFCE7),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: const Color(0xFF86EFAC)),
-                                ),
-                                child: const Text(
-                                  'VIP Langganan',
-                                  style: TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
-                                ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppTheme.orangeLight,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppTheme.orangeBorder),
                               ),
-                            ],
+                              child: Text(
+                                user.role.label,
+                                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.orangePrimary),
+                              ),
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 8),
                         Text(
                           'Username: @${user.username}${user.phoneNumber.isNotEmpty ? ' • ${user.phoneNumber}' : ''}',
                           style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                         ),
                         if (user.googleEmail != null && user.googleEmail!.isNotEmpty)
-                          Text(
-                            user.googleEmail!,
-                            style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              user.googleEmail!,
+                              style: const TextStyle(fontSize: 11.5, color: AppTheme.textMuted),
+                            ),
                           ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.orangeLight,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.orangeBorder),
-                    ),
-                    child: Text(
-                      user.role.label,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.orangePrimary),
-                    ),
-                  ),
-                  if ((isAdmin || widget.db.currentUser?.role == UserRole.waiter) && !isCurrentUser) ...[
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 20, color: AppTheme.textMuted),
-                      tooltip: 'Edit Data',
-                      onPressed: () => _showAddUserDialog(user),
-                    ),
-                    if (isAdmin)
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.statusRed),
-                        tooltip: 'Hapus Pengguna',
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (delCtx) => AlertDialog(
-                              backgroundColor: AppTheme.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              title: const Text('Konfirmasi Hapus', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                              content: Text('Yakin ingin menghapus pengguna "${user.namaUser}"?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(delCtx).pop(),
-                                  child: const Text('Batal'),
+                        if ((isAdmin || widget.db.currentUser?.role == UserRole.waiter) && !isCurrentUser) ...[
+                          const SizedBox(height: 8),
+                          Divider(height: 1, color: context.borderSubtle),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton.icon(
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  visualDensity: VisualDensity.compact,
                                 ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.statusRed),
+                                icon: const Icon(Icons.edit_outlined, size: 16, color: AppTheme.textMuted),
+                                label: const Text('Edit', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                                onPressed: () => _showAddUserDialog(user),
+                              ),
+                              if (isAdmin) ...[
+                                const SizedBox(width: 8),
+                                TextButton.icon(
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                  icon: const Icon(Icons.delete_outline, size: 16, color: AppTheme.statusRed),
+                                  label: const Text('Hapus', style: TextStyle(fontSize: 12, color: AppTheme.statusRed)),
                                   onPressed: () {
-                                    widget.db.deleteUser(user.idUser);
-                                    Navigator.of(delCtx).pop();
-                                    setState(() {});
+                                    showDialog(
+                                      context: context,
+                                      builder: (delCtx) => AlertDialog(
+                                        backgroundColor: AppTheme.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        title: const Text('Konfirmasi Hapus', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        content: Text('Yakin ingin menghapus pengguna "${user.namaUser}"?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(delCtx).pop(),
+                                            child: const Text('Batal'),
+                                          ),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.statusRed),
+                                            onPressed: () {
+                                              widget.db.deleteUser(user.idUser);
+                                              Navigator.of(delCtx).pop();
+                                              setState(() {});
+                                            },
+                                            child: const Text('Hapus'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
                                   },
-                                  child: const Text('Hapus'),
                                 ),
                               ],
-                            ),
-                          );
-                        },
+                            ],
+                          ),
+                        ],
+                      ],
+                    );
+                  }
+
+                  // Layout Wide Desktop
+                  return Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: AppTheme.orangeLight,
+                        child: Text(
+                          user.namaUser.isNotEmpty ? user.namaUser[0].toUpperCase() : 'U',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.orangePrimary),
+                        ),
                       ),
-                  ],
-                ],
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  user.namaUser,
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.textPrimary),
+                                ),
+                                if (isCurrentUser) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.statusGreenBg,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'Akun Aktif',
+                                      style: TextStyle(fontSize: 10, color: AppTheme.statusGreen, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                                if (user.isSubscribed) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: const Color(0xFF86EFAC)),
+                                    ),
+                                    child: const Text(
+                                      'VIP Langganan',
+                                      style: TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Username: @${user.username}${user.phoneNumber.isNotEmpty ? ' • ${user.phoneNumber}' : ''}',
+                              style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                            ),
+                            if (user.googleEmail != null && user.googleEmail!.isNotEmpty)
+                              Text(
+                                user.googleEmail!,
+                                style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.orangeLight,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppTheme.orangeBorder),
+                        ),
+                        child: Text(
+                          user.role.label,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.orangePrimary),
+                        ),
+                      ),
+                      if ((isAdmin || widget.db.currentUser?.role == UserRole.waiter) && !isCurrentUser) ...[
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 20, color: AppTheme.textMuted),
+                          tooltip: 'Edit Data',
+                          onPressed: () => _showAddUserDialog(user),
+                        ),
+                        if (isAdmin)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.statusRed),
+                            tooltip: 'Hapus Pengguna',
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (delCtx) => AlertDialog(
+                                  backgroundColor: AppTheme.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  title: const Text('Konfirmasi Hapus', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  content: Text('Yakin ingin menghapus pengguna "${user.namaUser}"?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(delCtx).pop(),
+                                      child: const Text('Batal'),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.statusRed),
+                                      onPressed: () {
+                                        widget.db.deleteUser(user.idUser);
+                                        Navigator.of(delCtx).pop();
+                                        setState(() {});
+                                      },
+                                      child: const Text('Hapus'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    ],
+                  );
+                },
               ),
             ),
           );

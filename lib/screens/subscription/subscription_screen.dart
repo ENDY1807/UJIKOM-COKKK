@@ -210,46 +210,64 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.surfaceBg,
-      appBar: AppBar(
-        backgroundColor: context.surfaceCard,
-        elevation: 0.5,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEA580C).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+      appBar: Navigator.canPop(context)
+          ? AppBar(
+              backgroundColor: context.surfaceCard,
+              elevation: 0.5,
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEA580C).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.card_membership_rounded, color: Color(0xFFEA580C), size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Berlangganan',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
+                      ),
+                      Text(
+                        'Kelola & Pendaftaran Pelanggan Langganan VIP',
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              child: const Icon(Icons.card_membership_rounded, color: Color(0xFFEA580C), size: 20),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Berlangganan',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
+              bottom: TabBar(
+                controller: _tabController,
+                indicatorColor: const Color(0xFFEA580C),
+                labelColor: const Color(0xFFEA580C),
+                unselectedLabelColor: context.textSecondary,
+                tabs: const [
+                  Tab(icon: Icon(Icons.people_alt_outlined, size: 18), text: 'Daftar Member'),
+                  Tab(icon: Icon(Icons.person_add_alt_1_outlined, size: 18), text: 'Input Pelanggan'),
+                ],
+              ),
+            )
+          : PreferredSize(
+              preferredSize: const Size.fromHeight(48),
+              child: Container(
+                color: context.surfaceCard,
+                child: TabBar(
+                  controller: _tabController,
+                  indicatorColor: const Color(0xFFEA580C),
+                  indicatorWeight: 3,
+                  labelColor: const Color(0xFFEA580C),
+                  unselectedLabelColor: context.textSecondary,
+                  tabs: const [
+                    Tab(icon: Icon(Icons.people_alt_outlined, size: 18), text: 'Daftar Member'),
+                    Tab(icon: Icon(Icons.person_add_alt_1_outlined, size: 18), text: 'Input Pelanggan'),
+                  ],
                 ),
-                Text(
-                  'Kelola & Pendaftaran Pelanggan Langganan VIP',
-                  style: TextStyle(fontSize: 11, color: context.textSecondary),
-                ),
-              ],
+              ),
             ),
-          ],
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: const Color(0xFFEA580C),
-          labelColor: const Color(0xFFEA580C),
-          unselectedLabelColor: context.textSecondary,
-          tabs: const [
-            Tab(icon: Icon(Icons.people_alt_outlined, size: 18), text: 'Daftar Member'),
-            Tab(icon: Icon(Icons.person_add_alt_1_outlined, size: 18), text: 'Input Pelanggan'),
-          ],
-        ),
-      ),
       body: TabBarView(
         controller: _tabController,
         children: [

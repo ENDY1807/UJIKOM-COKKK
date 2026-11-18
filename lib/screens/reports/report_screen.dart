@@ -214,6 +214,95 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
+  // HELPER RESPONSIVE MOBILE TAMPILAN LEBIH RAPIH & TERSTRUKTUR
+  // ══════════════════════════════════════════════════════════════════════════════
+  Widget _buildResponsiveSummaryCards(BuildContext context, List<Widget> cards) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 680;
+        if (isCompact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: cards.map((c) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: c,
+            )).toList(),
+          );
+        }
+        return Row(
+          children: cards.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final card = entry.value;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: idx < cards.length - 1 ? 8 : 0),
+                child: card,
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildResponsiveHeader({
+    required BuildContext context,
+    required Widget titleWidget,
+    required Widget subtitleWidget,
+    required List<Widget> actions,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 680;
+        if (isCompact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              titleWidget,
+              const SizedBox(height: 4),
+              subtitleWidget,
+              if (actions.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: actions.map((a) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: a,
+                    )).toList(),
+                  ),
+                ),
+              ],
+            ],
+          );
+        }
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  titleWidget,
+                  const SizedBox(height: 4),
+                  subtitleWidget,
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: actions,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════
   // 1. LAPORAN KHUSUS WAITER: LAPORAN MAKANAN BEST SELLER
   // ══════════════════════════════════════════════════════════════════════════════
   Widget _buildWaiterBestSellerReport() {
@@ -227,38 +316,34 @@ class _ReportScreenState extends State<ReportScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header Waiter
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF3C7),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.military_tech_rounded, color: Color(0xFFD97706), size: 20),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Laporan Makanan Best Seller',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Peringkat menu masakan & minuman terfavorit tamu untuk panduan table service',
-                    style: TextStyle(fontSize: 12, color: context.textSecondary),
-                  ),
-                ],
+        _buildResponsiveHeader(
+          context: context,
+          titleWidget: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.military_tech_rounded, color: Color(0xFFD97706), size: 20),
               ),
-            ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Laporan Makanan Best Seller',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          subtitleWidget: Text(
+            'Peringkat menu masakan & minuman terfavorit tamu untuk panduan table service',
+            style: TextStyle(fontSize: 12, color: context.textSecondary),
+          ),
+          actions: [
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF2563EB),
@@ -275,34 +360,27 @@ class _ReportScreenState extends State<ReportScreen> {
         const SizedBox(height: 18),
 
         // 3 Metrik Waiter
-        Row(
-          children: [
-            Expanded(
-              child: _summaryCard(
-                title: 'Total Porsi Terjual',
-                value: '$totalPortions Porsi',
-                subtitle: 'Dipesan oleh tamu',
-                icon: Icons.restaurant_rounded,
-                isPrimary: true,
-              ),
+        _buildResponsiveSummaryCards(
+          context,
+          [
+            _summaryCard(
+              title: 'Total Porsi Terjual',
+              value: '$totalPortions Porsi',
+              subtitle: 'Dipesan oleh tamu',
+              icon: Icons.restaurant_rounded,
+              isPrimary: true,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _summaryCard(
-                title: 'Menu Terlaris #1',
-                value: topOne,
-                subtitle: '$topOneQty porsi terjual',
-                icon: Icons.star_rounded,
-              ),
+            _summaryCard(
+              title: 'Menu Terlaris #1',
+              value: topOne,
+              subtitle: '$topOneQty porsi terjual',
+              icon: Icons.star_rounded,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _summaryCard(
-                title: 'Total Hidangan',
-                value: '${menus.length} Menu',
-                subtitle: 'Katalog aktif restoran',
-                icon: Icons.inventory_2_outlined,
-              ),
+            _summaryCard(
+              title: 'Total Hidangan',
+              value: '${menus.length} Menu',
+              subtitle: 'Katalog aktif restoran',
+              icon: Icons.inventory_2_outlined,
             ),
           ],
         ),
@@ -514,105 +592,89 @@ class _ReportScreenState extends State<ReportScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header Kasir
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFDCFCE7),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF16A34A), size: 20),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Laporan Daftar Penjualan Kasir',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Rekapitulasi penjualan selesai, setoran uang tunai kasir, dan pembayaran QRIS',
-                    style: TextStyle(fontSize: 12, color: context.textSecondary),
-                  ),
-                ],
+        _buildResponsiveHeader(
+          context: context,
+          titleWidget: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF16A34A), size: 20),
               ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Laporan Daftar Penjualan Kasir',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          subtitleWidget: Text(
+            'Rekapitulasi penjualan selesai, setoran uang tunai kasir, dan pembayaran QRIS',
+            style: TextStyle(fontSize: 12, color: context.textSecondary),
+          ),
+          actions: [
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF16A34A),
+                side: const BorderSide(color: Color(0xFF16A34A)),
+              ),
+              onPressed: () async {
+                await ExportReportService.exportTransactionsExcelCsv(
+                  transactions: widget.db.transactions,
+                );
+              },
+              icon: const Icon(Icons.file_download_outlined, size: 16),
+              label: const Text('Ekspor Excel'),
             ),
-            Wrap(
-              spacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF16A34A),
-                    side: const BorderSide(color: Color(0xFF16A34A)),
-                  ),
-                  onPressed: () async {
-                    await ExportReportService.exportTransactionsExcelCsv(
-                      transactions: widget.db.transactions,
-                    );
-                  },
-                  icon: const Icon(Icons.file_download_outlined, size: 16),
-                  label: const Text('Ekspor Excel'),
-                ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.orangePrimary,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    await ExportReportService.exportTransactionsPdf(
-                      transactions: widget.db.transactions,
-                      totalOmzet: widget.db.totalOmzet,
-                      restaurantName: 'Rasantara Restoran (Table Service)',
-                      address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
-                    );
-                  },
-                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
-                  label: const Text('Cetak PDF'),
-                ),
-              ],
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.orangePrimary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                await ExportReportService.exportTransactionsPdf(
+                  transactions: widget.db.transactions,
+                  totalOmzet: widget.db.totalOmzet,
+                  restaurantName: 'Rasantara Restoran (Table Service)',
+                  address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
+                );
+              },
+              icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+              label: const Text('Cetak PDF'),
             ),
           ],
         ),
         const SizedBox(height: 18),
 
         // Summary Kasir (Total Penjualan, Total Tunai Kasir, Total QRIS)
-        Row(
-          children: [
-            Expanded(
-              child: _summaryCard(
-                title: 'Total Penjualan Selesai',
-                value: _currencyFormat.format(widget.db.totalOmzet),
-                subtitle: '${transactions.length} Transaksi Terlayani',
-                icon: Icons.payments_rounded,
-                isPrimary: true,
-              ),
+        _buildResponsiveSummaryCards(
+          context,
+          [
+            _summaryCard(
+              title: 'Total Penjualan Selesai',
+              value: _currencyFormat.format(widget.db.totalOmzet),
+              subtitle: '${transactions.length} Transaksi Terlayani',
+              icon: Icons.payments_rounded,
+              isPrimary: true,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _summaryCard(
-                title: 'Total Uang Tunai (Cash)',
-                value: _currencyFormat.format(totalCash),
-                subtitle: 'Uang fisik di laci kasir',
-                icon: Icons.attach_money_rounded,
-              ),
+            _summaryCard(
+              title: 'Total Uang Tunai (Cash)',
+              value: _currencyFormat.format(totalCash),
+              subtitle: 'Uang fisik di laci kasir',
+              icon: Icons.attach_money_rounded,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _summaryCard(
-                title: 'Total QRIS (Nirsentuh)',
-                value: _currencyFormat.format(totalQris),
-                subtitle: 'Masuk langsung rekening bank',
-                icon: Icons.qr_code_2_rounded,
-              ),
+            _summaryCard(
+              title: 'Total QRIS (Nirsentuh)',
+              value: _currencyFormat.format(totalQris),
+              subtitle: 'Masuk langsung rekening bank',
+              icon: Icons.qr_code_2_rounded,
             ),
           ],
         ),
@@ -756,105 +818,89 @@ class _ReportScreenState extends State<ReportScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header Owner
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.insights_rounded, color: Color(0xFF2563EB), size: 20),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Laporan Penghasilan & Keuangan (Owner)',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Analisis omzet restoran, tren pendapatan table service, dan performa finansial',
-                    style: TextStyle(fontSize: 12, color: context.textSecondary),
-                  ),
-                ],
+        _buildResponsiveHeader(
+          context: context,
+          titleWidget: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.insights_rounded, color: Color(0xFF2563EB), size: 20),
               ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Laporan Penghasilan & Keuangan (Owner)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          subtitleWidget: Text(
+            'Analisis omzet restoran, tren pendapatan table service, dan performa finansial',
+            style: TextStyle(fontSize: 12, color: context.textSecondary),
+          ),
+          actions: [
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF16A34A),
+                side: const BorderSide(color: Color(0xFF16A34A)),
+              ),
+              onPressed: () async {
+                await ExportReportService.exportTransactionsExcelCsv(
+                  transactions: widget.db.transactions,
+                );
+              },
+              icon: const Icon(Icons.file_download_outlined, size: 16),
+              label: const Text('Ekspor Excel'),
             ),
-            Wrap(
-              spacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF16A34A),
-                    side: const BorderSide(color: Color(0xFF16A34A)),
-                  ),
-                  onPressed: () async {
-                    await ExportReportService.exportTransactionsExcelCsv(
-                      transactions: widget.db.transactions,
-                    );
-                  },
-                  icon: const Icon(Icons.file_download_outlined, size: 16),
-                  label: const Text('Ekspor Excel'),
-                ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.orangePrimary,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    await ExportReportService.exportTransactionsPdf(
-                      transactions: widget.db.transactions,
-                      totalOmzet: widget.db.totalOmzet,
-                      restaurantName: 'Rasantara Restoran (Table Service)',
-                      address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
-                    );
-                  },
-                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
-                  label: const Text('Cetak Laporan'),
-                ),
-              ],
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.orangePrimary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                await ExportReportService.exportTransactionsPdf(
+                  transactions: widget.db.transactions,
+                  totalOmzet: widget.db.totalOmzet,
+                  restaurantName: 'Rasantara Restoran (Table Service)',
+                  address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
+                );
+              },
+              icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+              label: const Text('Cetak Laporan'),
             ),
           ],
         ),
         const SizedBox(height: 18),
 
         // Metric Cards Owner
-        Row(
-          children: [
-            Expanded(
-              child: _summaryCard(
-                title: 'Total Omzet Restoran',
-                value: _currencyFormat.format(widget.db.totalOmzet),
-                subtitle: 'Seluruh pesanan selesai',
-                icon: Icons.account_balance_wallet_rounded,
-                isPrimary: true,
-              ),
+        _buildResponsiveSummaryCards(
+          context,
+          [
+            _summaryCard(
+              title: 'Total Omzet Restoran',
+              value: _currencyFormat.format(widget.db.totalOmzet),
+              subtitle: 'Seluruh pesanan selesai',
+              icon: Icons.account_balance_wallet_rounded,
+              isPrimary: true,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _summaryCard(
-                title: 'Total Transaksi Selesai',
-                value: '${widget.db.totalTransaksiCount} Order',
-                subtitle: 'Lunas & terlayani',
-                icon: Icons.receipt_long_rounded,
-              ),
+            _summaryCard(
+              title: 'Total Transaksi Selesai',
+              value: '${widget.db.totalTransaksiCount} Order',
+              subtitle: 'Lunas & terlayani',
+              icon: Icons.receipt_long_rounded,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _summaryCard(
-                title: 'Rata-Rata Bill Meja',
-                value: _currencyFormat.format(widget.db.rataRataTransaksi),
-                subtitle: 'Average order value',
-                icon: Icons.trending_up_rounded,
-              ),
+            _summaryCard(
+              title: 'Rata-Rata Bill Meja',
+              value: _currencyFormat.format(widget.db.rataRataTransaksi),
+              subtitle: 'Average order value',
+              icon: Icons.trending_up_rounded,
             ),
           ],
         ),
@@ -874,111 +920,93 @@ class _ReportScreenState extends State<ReportScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Top Action Header Admin
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Laporan Terpadu Restoran (Admin)',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
-                  ),
-                  Text(
-                    'Rekapitulasi lengkap omzet penghasilan, penjualan kasir, dan menu best seller',
-                    style: TextStyle(fontSize: 12, color: context.textSecondary),
-                  ),
-                ],
+        _buildResponsiveHeader(
+          context: context,
+          titleWidget: Text(
+            'Laporan Terpadu Restoran (Admin)',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitleWidget: Text(
+            'Rekapitulasi lengkap omzet penghasilan, penjualan kasir, dan menu best seller',
+            style: TextStyle(fontSize: 12, color: context.textSecondary),
+          ),
+          actions: [
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF2563EB),
+                side: const BorderSide(color: Color(0xFF2563EB)),
               ),
+              onPressed: _isSyncingCloud ? null : _refreshFromSupabase,
+              icon: _isSyncingCloud
+                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.sync_rounded, size: 16),
+              label: const Text('Segarkan'),
             ),
-            Wrap(
-              spacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF2563EB),
-                    side: const BorderSide(color: Color(0xFF2563EB)),
-                  ),
-                  onPressed: _isSyncingCloud ? null : _refreshFromSupabase,
-                  icon: _isSyncingCloud
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.sync_rounded, size: 16),
-                  label: const Text('Segarkan'),
-                ),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.orangePrimary,
-                    side: const BorderSide(color: AppTheme.orangePrimary),
-                  ),
-                  onPressed: _showPrintReportPreview,
-                  icon: const Icon(Icons.preview_rounded, size: 16),
-                  label: const Text('Pratinjau'),
-                ),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF16A34A),
-                    side: const BorderSide(color: Color(0xFF16A34A)),
-                  ),
-                  onPressed: () async {
-                    await ExportReportService.exportTransactionsExcelCsv(
-                      transactions: widget.db.transactions,
-                    );
-                  },
-                  icon: const Icon(Icons.file_download_outlined, size: 16),
-                  label: const Text('Excel'),
-                ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.orangePrimary,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    await ExportReportService.exportTransactionsPdf(
-                      transactions: widget.db.transactions,
-                      totalOmzet: widget.db.totalOmzet,
-                      restaurantName: 'Rasantara Restoran (Table Service)',
-                      address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
-                    );
-                  },
-                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
-                  label: const Text('Cetak PDF'),
-                ),
-              ],
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.orangePrimary,
+                side: const BorderSide(color: AppTheme.orangePrimary),
+              ),
+              onPressed: _showPrintReportPreview,
+              icon: const Icon(Icons.preview_rounded, size: 16),
+              label: const Text('Pratinjau'),
+            ),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF16A34A),
+                side: const BorderSide(color: Color(0xFF16A34A)),
+              ),
+              onPressed: () async {
+                await ExportReportService.exportTransactionsExcelCsv(
+                  transactions: widget.db.transactions,
+                );
+              },
+              icon: const Icon(Icons.file_download_outlined, size: 16),
+              label: const Text('Excel'),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.orangePrimary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                await ExportReportService.exportTransactionsPdf(
+                  transactions: widget.db.transactions,
+                  totalOmzet: widget.db.totalOmzet,
+                  restaurantName: 'Rasantara Restoran (Table Service)',
+                  address: 'Jl. Soekarno-Hatta No. 590, Sekejati, Buahbatu, Kota Bandung',
+                );
+              },
+              icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+              label: const Text('Cetak PDF'),
             ),
           ],
         ),
         const SizedBox(height: 18),
 
         // Summary Cards
-        Row(
-          children: [
-            Expanded(
-              child: _summaryCard(
-                title: 'Total Pendapatan',
-                value: _currencyFormat.format(widget.db.totalOmzet),
-                subtitle: 'Semua transaksi selesai',
-                icon: Icons.account_balance_wallet_rounded,
-                isPrimary: true,
-              ),
+        _buildResponsiveSummaryCards(
+          context,
+          [
+            _summaryCard(
+              title: 'Total Pendapatan',
+              value: _currencyFormat.format(widget.db.totalOmzet),
+              subtitle: 'Semua transaksi selesai',
+              icon: Icons.account_balance_wallet_rounded,
+              isPrimary: true,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _summaryCard(
-                title: 'Jumlah Transaksi',
-                value: '${widget.db.totalTransaksiCount} Order',
-                subtitle: 'Lunas & terlayani',
-                icon: Icons.receipt_long_rounded,
-              ),
+            _summaryCard(
+              title: 'Jumlah Transaksi',
+              value: '${widget.db.totalTransaksiCount} Order',
+              subtitle: 'Lunas & terlayani',
+              icon: Icons.receipt_long_rounded,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _summaryCard(
-                title: 'Rata-Rata Bill',
-                value: _currencyFormat.format(widget.db.rataRataTransaksi),
-                subtitle: 'Rata-rata per meja',
-                icon: Icons.trending_up_rounded,
-              ),
+            _summaryCard(
+              title: 'Rata-Rata Bill',
+              value: _currencyFormat.format(widget.db.rataRataTransaksi),
+              subtitle: 'Rata-rata per meja',
+              icon: Icons.trending_up_rounded,
             ),
           ],
         ),

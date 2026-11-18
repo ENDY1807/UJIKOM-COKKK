@@ -7,6 +7,7 @@ import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/table_qr_scanner_dialog.dart';
+import '../../widgets/qris_payment_dialog.dart';
 
 class OrderEntryScreen extends StatefulWidget {
   final DatabaseService db;
@@ -88,6 +89,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     return false;
   }
 
+  bool get _isPelanggan => widget.db.currentUser?.role == UserRole.pelanggan;
+
   // Potongan harga khusus Pelanggan Langganan VIP
   int get _diskonMemberAmount {
     if (!_isCurrentCustomerSubscribed) return 0;
@@ -168,6 +171,77 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     );
   }
 
+  void _onTableChangedOrScanned(String newTable) {
+    if (newTable.trim().isEmpty) return;
+    if (newTable.toLowerCase() != _selectedTableNo.toLowerCase()) {
+      final activeOrders = widget.db.orders.where(
+        (o) =>
+            o.noMeja.toLowerCase() == _selectedTableNo.toLowerCase() &&
+            !o.isPaid &&
+            o.status != OrderStatus.selesai &&
+            o.status != OrderStatus.dibatalkan,
+      );
+      final activeOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
+
+      if (activeOrder != null) {
+        _showTransferTableDialog(activeOrder, newTable);
+        return;
+      }
+    }
+    setState(() => _selectedTableNo = newTable);
+  }
+
+  void _showTransferTableDialog(OrderModel activeOrder, String newTable) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.swap_horiz_rounded, color: Color(0xFF0284C7)),
+            SizedBox(width: 8),
+            Text('Pindah Meja Makan?'),
+          ],
+        ),
+        content: Text(
+          'Anda memiliki pesanan aktif di $_selectedTableNo (Order #${activeOrder.idOrder}).\n\n'
+          'Pindahkan seluruh pesanan dan tagihan Anda ke $newTable?',
+          style: const TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() => _selectedTableNo = newTable);
+            },
+            child: const Text('Tetap di Meja Lama'),
+          ),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0284C7)),
+            icon: const Icon(Icons.check_rounded, size: 16),
+            label: const Text('Ya, Pindahkan Pesanan'),
+            onPressed: () {
+              widget.db.transferOrderTable(
+                idOrder: activeOrder.idOrder,
+                newTableNo: newTable,
+              );
+              Navigator.pop(ctx);
+              setState(() => _selectedTableNo = newTable);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Pesanan berhasil dipindahkan dari ${activeOrder.noMeja} ke $newTable!'),
+                  backgroundColor: const Color(0xFF16A34A),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _submitOrder() {
     if (_cart.isEmpty) {
       return;
@@ -176,9 +250,55 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     final custName = widget.db.currentUser?.role == UserRole.pelanggan
         ? widget.db.currentUser!.namaUser
         : 'Pelanggan $_selectedTableNo';
-    final orderNotes = 'Layanan Meja $_selectedTableNo';
     final effDiskonMember = _diskonMemberAmount;
 
+    // DINE-IN CHECK: Cek apakah meja ini sudah memiliki pesanan aktif yang sedang berjalan
+    final activeOrders = widget.db.orders.where(
+      (o) =>
+          o.noMeja.toLowerCase() == _selectedTableNo.toLowerCase() &&
+          !o.isPaid &&
+          o.status != OrderStatus.selesai &&
+          o.status != OrderStatus.dibatalkan,
+    );
+    final activeOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
+
+    if (activeOrder != null) {
+      // DINE-IN ADD-ON: Otomatis tambahkan hidangan baru ke dalam Bill aktif meja tersebut
+      widget.db.appendItemsToOrder(
+        idOrder: activeOrder.idOrder,
+        newItems: _cart.values.toList(),
+        extraNotes: 'Pesanan Tambahan Meja $_selectedTableNo',
+      );
+
+      setState(() {
+        _cart.clear();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Pesanan tambahan berhasil digabungkan ke Bill $_selectedTableNo!',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      widget.onOrderSubmitted?.call();
+      return;
+    }
+
+    // Jika belum ada pesanan aktif: Buat pesanan baru
+    final orderNotes = 'Layanan Meja $_selectedTableNo';
     widget.db.createOrder(
       noMeja: _selectedTableNo,
       namaPelanggan: custName,
@@ -214,6 +334,81 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     );
 
     widget.onOrderSubmitted?.call();
+  }
+
+  void _submitOrderWithQris() {
+    if (_cart.isEmpty) return;
+
+    final custName = widget.db.currentUser?.role == UserRole.pelanggan
+        ? widget.db.currentUser!.namaUser
+        : 'Pelanggan $_selectedTableNo';
+    final effDiskonMember = _diskonMemberAmount;
+    final totalToPay = _grandTotal;
+
+    // DINE-IN CHECK: Cek apakah meja ini sudah memiliki pesanan aktif
+    final activeOrders = widget.db.orders.where(
+      (o) =>
+          o.noMeja.toLowerCase() == _selectedTableNo.toLowerCase() &&
+          !o.isPaid &&
+          o.status != OrderStatus.selesai &&
+          o.status != OrderStatus.dibatalkan,
+    );
+    final activeOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
+
+    if (activeOrder != null) {
+      // DINE-IN ADD-ON: Tambahkan ke pesanan aktif
+      widget.db.appendItemsToOrder(
+        idOrder: activeOrder.idOrder,
+        newItems: _cart.values.toList(),
+        extraNotes: 'Pesanan Tambahan (QRIS Mandiri)',
+      );
+
+      setState(() {
+        _cart.clear();
+      });
+
+      widget.onOrderSubmitted?.call();
+
+      QrisPaymentDialog.show(
+        context,
+        order: activeOrder,
+        totalAmount: activeOrder.grandTotalSetelahDiskon,
+        db: widget.db,
+        onPaymentSuccess: () {
+          if (mounted) setState(() {});
+        },
+      );
+      return;
+    }
+
+    final orderNotes = 'Layanan Meja $_selectedTableNo (QRIS Mandiri)';
+    final order = widget.db.createOrder(
+      noMeja: _selectedTableNo,
+      namaPelanggan: custName,
+      keterangan: orderNotes,
+      items: _cart.values.toList(),
+      diskonMember: effDiskonMember,
+      metodePembayaran: 'QRIS',
+    );
+
+    widget.db.updateTableStatus(_selectedTableNo, TableStatus.terisi);
+
+    setState(() {
+      _cart.clear();
+    });
+
+    widget.onOrderSubmitted?.call();
+
+    // Buka langsung pembayaran QRIS interaktif di layar smartphone pelanggan
+    QrisPaymentDialog.show(
+      context,
+      order: order,
+      totalAmount: totalToPay,
+      db: widget.db,
+      onPaymentSuccess: () {
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   @override
@@ -456,7 +651,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 }).toList(),
                 onChanged: (val) {
                   if (val != null) {
-                    setState(() => _selectedTableNo = val);
+                    _onTableChangedOrScanned(val);
                   }
                 },
               ),
@@ -502,16 +697,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                           color: const Color(0xFFDCFCE7),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
-                          'Tersambung QR',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
-                        ),
                       ),
                     ],
-                  ),
-                  Text(
-                    'Pesanan terhubung otomatis ke meja Anda',
-                    style: TextStyle(fontSize: 11, color: context.textSecondary),
                   ),
                 ],
               ),
@@ -532,12 +719,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   context,
                   db: widget.db,
                   onTableScanned: (newTable) {
-                    setState(() => _selectedTableNo = newTable);
+                    _onTableChangedOrScanned(newTable);
                   },
                 );
               },
               icon: const Icon(Icons.qr_code_scanner_rounded, size: 14),
-              label: const Text('Ganti / Scan Meja', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              label: const Text('Ganti Meja', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -579,7 +766,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 );
               }).toList(),
               onChanged: (val) {
-                if (val != null) setState(() => _selectedTableNo = val);
+                if (val != null) _onTableChangedOrScanned(val);
               },
             ),
           ),
@@ -719,15 +906,15 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     // kelompokkan menu ke dalam section: Paket Spesial, Makanan, Minuman, Camilan & Add-On
     if (_selectedCategory == MenuCategory.semua && _searchQuery.isEmpty) {
       final sections = [
-        (category: MenuCategory.paket, title: 'Paket Spesial', icon: Icons.stars_rounded),
+        (category: MenuCategory.paket, title: 'Paket', icon: Icons.stars_rounded),
         (category: MenuCategory.makanan, title: 'Makanan', icon: Icons.restaurant_rounded),
         (category: MenuCategory.minuman, title: 'Minuman', icon: Icons.local_cafe_rounded),
-        (category: MenuCategory.addon, title: 'Camilan & Add-On', icon: Icons.cookie_outlined),
+        (category: MenuCategory.addon, title: 'Camilan', icon: Icons.cookie_outlined),
       ];
 
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, _cart.isNotEmpty ? 96 : 24),
         children: sections.map((sec) {
           final catItems = items.where((m) => m.kategori == sec.category).toList();
           if (catItems.isEmpty) return const SizedBox.shrink();
@@ -785,7 +972,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
-                  childAspectRatio: isWide ? 0.95 : 0.85,
+                  childAspectRatio: isWide ? 0.95 : 0.74,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
@@ -803,10 +990,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
     return GridView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, _cart.isNotEmpty ? 96 : 24),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        childAspectRatio: isWide ? 0.95 : 0.85,
+        childAspectRatio: isWide ? 0.95 : 0.74,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
@@ -907,11 +1094,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                       children: [
                         Text(
                           menu.namaMasakan,
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.bold,
+                            height: 1.2,
                             color: context.textPrimary,
                           ),
                         ),
@@ -1518,6 +1706,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
   // ── CART PANEL (RINCIAN PESANAN MEJA) ──
   Widget _buildCartPanel({VoidCallback? onActionBeforeSubmit}) {
+    final isPelanggan = _isPelanggan;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1687,39 +1876,89 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              // Tombol Kirim Pesanan ke Kasir & Dapur (Pembayaran Tunai / QRIS Di Kasir)
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: _cart.isNotEmpty
-                      ? () {
-                          onActionBeforeSubmit?.call();
-                          _submitOrder();
-                        }
-                      : null,
-                  icon: const Icon(Icons.send_rounded, size: 18, color: Colors.white),
-                  label: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'Kirim Pesanan ke Kasir & Dapur',
+              if (isPelanggan) ...[
+                // Tombol Utama: Bayar Langsung via QRIS
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: _cart.isNotEmpty
+                        ? () {
+                            onActionBeforeSubmit?.call();
+                            _submitOrderWithQris();
+                          }
+                        : null,
+                    icon: const Icon(Icons.qr_code_2_rounded, size: 22, color: Colors.white),
+                    label: const Text(
+                      'Bayar QRIS',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.orangePrimary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF16A34A),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              const Center(
-                child: Text(
-                  'Pembayaran (Tunai atau QRIS) diselesaikan langsung di meja kasir',
-                  style: TextStyle(fontSize: 10.5, color: AppTheme.textMuted),
-                  textAlign: TextAlign.center,
+                const SizedBox(height: 10),
+                // Tombol Opsi Alternatif: Bayar Tunai di Kasir
+                SizedBox(
+                  width: double.infinity,
+                  height: 40,
+                  child: OutlinedButton.icon(
+                    onPressed: _cart.isNotEmpty
+                        ? () {
+                            onActionBeforeSubmit?.call();
+                            _submitOrder();
+                          }
+                        : null,
+                    icon: const Icon(Icons.storefront_rounded, size: 16),
+                    label: const Text(
+                      'Bayar Cash di kasir',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.textSecondary,
+                      side: BorderSide(color: context.borderSubtle),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
                 ),
-              ),
+              ] else ...[
+                // Tombol Waiter / Admin: Kirim Pesanan ke Kasir & Dapur
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: _cart.isNotEmpty
+                        ? () {
+                            onActionBeforeSubmit?.call();
+                            _submitOrder();
+                          }
+                        : null,
+                    icon: const Icon(Icons.send_rounded, size: 18, color: Colors.white),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'Kirim Pesanan ke Kasir & Dapur',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.orangePrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Center(
+                  child: Text(
+                    'Pembayaran (Tunai atau QRIS) diselesaikan langsung di meja kasir',
+                    style: TextStyle(fontSize: 10.5, color: AppTheme.textMuted),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -1729,6 +1968,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
   // ── MOBILE BOTTOM BAR ──
   Widget _buildMobileBottomBar() {
+    final isPelanggan = widget.db.currentUser?.role == UserRole.pelanggan;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -1782,10 +2023,10 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 ),
               );
             },
-            icon: const Icon(Icons.shopping_cart_checkout, size: 18),
-            label: const Text('Rincian Pesanan'),
+            icon: Icon(isPelanggan ? Icons.qr_code_2_rounded : Icons.shopping_cart_checkout, size: 18),
+            label: Text(isPelanggan ? 'Bayar / Pesan' : 'Rincian Pesanan'),
             style: FilledButton.styleFrom(
-              backgroundColor: AppTheme.orangePrimary,
+              backgroundColor: isPelanggan ? const Color(0xFF16A34A) : AppTheme.orangePrimary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
           ),
