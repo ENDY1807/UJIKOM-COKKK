@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../models/order_model.dart';
 import '../models/table_model.dart';
+import '../models/user_model.dart';
 import '../services/database_service.dart';
 import '../services/export_report_service.dart';
 import '../theme/app_theme.dart';
@@ -126,11 +128,63 @@ class _TableQrScannerDialogState extends State<TableQrScannerDialog>
         if (detectedTable != null && detectedTable.isNotEmpty) {
           _isProcessing = true;
           HapticFeedback.mediumImpact();
+
+          // Proteksi Meja: Jika sedang terisi oleh tamu lain, tolak pelanggan lain
+          final table = widget.db.tables.where(
+            (t) => t.nomorMeja.toLowerCase() == detectedTable.toLowerCase(),
+          ).firstOrNull;
+          final activeOrders = widget.db.orders.where(
+            (o) =>
+                o.noMeja.toLowerCase() == detectedTable.toLowerCase() &&
+                o.status != OrderStatus.selesai &&
+                o.status != OrderStatus.dibatalkan,
+          ).toList();
+          final activeOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
+          final curUserId = widget.db.currentUser?.idUser;
+          final isOccupied = table?.status == TableStatus.terisi || activeOrder != null;
+          final isMyOrder = activeOrder != null && curUserId != null && activeOrder.idUser == curUserId;
+
+          if (widget.db.currentUser?.role == UserRole.pelanggan && isOccupied && !isMyOrder) {
+            _showOccupiedAlert(detectedTable);
+            break;
+          }
+
           _onSuccess(detectedTable);
           break;
         }
       }
     }
+  }
+
+  void _showOccupiedAlert(String tableNo) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.block_rounded, color: Color(0xFFDC2626)),
+            SizedBox(width: 8),
+            Text('Meja Sedang Terisi', style: TextStyle(color: Colors.white, fontSize: 16)),
+          ],
+        ),
+        content: Text(
+          '$tableNo saat ini sedang digunakan oleh tamu lain. Anda tidak dapat membuat atau menambahkan pesanan di meja ini sampai meja dikosongkan.',
+          style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 13, height: 1.5),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.orangePrimary),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _isProcessing = false;
+            },
+            child: const Text('Tutup & Pindai Meja Lain'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _onSuccess(String tableNo) {
@@ -520,7 +574,26 @@ class _TableQrScannerDialogState extends State<TableQrScannerDialog>
             ),
             onPressed: () {
               if (_selectedManualTable != null) {
-                _onSuccess(_selectedManualTable!);
+                final selected = _selectedManualTable!;
+                final table = widget.db.tables.where(
+                  (t) => t.nomorMeja.toLowerCase() == selected.toLowerCase(),
+                ).firstOrNull;
+                final activeOrders = widget.db.orders.where(
+                  (o) =>
+                      o.noMeja.toLowerCase() == selected.toLowerCase() &&
+                      o.status != OrderStatus.selesai &&
+                      o.status != OrderStatus.dibatalkan,
+                ).toList();
+                final activeOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
+                final curUserId = widget.db.currentUser?.idUser;
+                final isOccupied = table?.status == TableStatus.terisi || activeOrder != null;
+                final isMyOrder = activeOrder != null && curUserId != null && activeOrder.idUser == curUserId;
+
+                if (widget.db.currentUser?.role == UserRole.pelanggan && isOccupied && !isMyOrder) {
+                  _showOccupiedAlert(selected);
+                  return;
+                }
+                _onSuccess(selected);
               }
             },
             icon: const Icon(Icons.restaurant_menu_rounded, size: 18),

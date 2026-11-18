@@ -91,6 +91,29 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
   bool get _isPelanggan => widget.db.currentUser?.role == UserRole.pelanggan;
 
+  // Cek apakah meja yang dipilih sedang ada orangnya (terisi oleh pelanggan lain)
+  bool get _isOccupiedByOther {
+    if (!_isPelanggan) return false;
+    final curUserId = widget.db.currentUser?.idUser;
+    final table = widget.db.tables.where(
+      (t) => t.nomorMeja.toLowerCase() == _selectedTableNo.toLowerCase(),
+    ).firstOrNull;
+    final activeOrders = widget.db.orders.where(
+      (o) =>
+          o.noMeja.toLowerCase() == _selectedTableNo.toLowerCase() &&
+          o.status != OrderStatus.selesai &&
+          o.status != OrderStatus.dibatalkan,
+    ).toList();
+
+    if (activeOrders.isNotEmpty) {
+      final activeOrder = activeOrders.first;
+      // Jika ada pesanan aktif di meja ini dan bukan milik pelanggan yang sedang login
+      return curUserId == null || activeOrder.idUser != curUserId;
+    }
+    // Jika tidak ada pesanan aktif di memori tapi status meja terisi
+    return table?.status == TableStatus.terisi;
+  }
+
   // Potongan harga khusus Pelanggan Langganan VIP
   int get _diskonMemberAmount {
     if (!_isCurrentCustomerSubscribed) return 0;
@@ -173,6 +196,51 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
   void _onTableChangedOrScanned(String newTable) {
     if (newTable.trim().isEmpty) return;
+
+    if (_isPelanggan) {
+      final table = widget.db.tables.where(
+        (t) => t.nomorMeja.toLowerCase() == newTable.toLowerCase(),
+      ).firstOrNull;
+      final targetOrders = widget.db.orders.where(
+        (o) =>
+            o.noMeja.toLowerCase() == newTable.toLowerCase() &&
+            o.status != OrderStatus.selesai &&
+            o.status != OrderStatus.dibatalkan,
+      ).toList();
+      final targetActiveOrder = targetOrders.isNotEmpty ? targetOrders.first : null;
+      final curUserId = widget.db.currentUser?.idUser;
+      final isOccupied = table?.status == TableStatus.terisi || targetActiveOrder != null;
+      final isMyOrder = targetActiveOrder != null && curUserId != null && targetActiveOrder.idUser == curUserId;
+
+      if (isOccupied && !isMyOrder) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: context.surfaceCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Row(
+              children: [
+                Icon(Icons.block_rounded, color: Color(0xFFDC2626)),
+                SizedBox(width: 8),
+                Text('Meja Sedang Terisi'),
+              ],
+            ),
+            content: Text(
+              '$newTable saat ini sedang digunakan oleh pelanggan lain. Anda tidak dapat beralih ke meja ini.',
+              style: const TextStyle(fontSize: 13),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Tutup'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    }
+
     if (newTable.toLowerCase() != _selectedTableNo.toLowerCase()) {
       final activeOrders = widget.db.orders.where(
         (o) =>
@@ -244,6 +312,18 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
   void _submitOrder() {
     if (_cart.isEmpty) {
+      return;
+    }
+
+    // Validasi proteksi meja: Jika meja terisi oleh pelanggan lain, blokir!
+    if (_isOccupiedByOther) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$_selectedTableNo sedang digunakan oleh tamu lain. Anda tidak dapat membuat atau menambahkan pesanan di meja ini.'),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
@@ -338,6 +418,18 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
   void _submitOrderWithQris() {
     if (_cart.isEmpty) return;
+
+    // Validasi proteksi meja: Jika meja terisi oleh pelanggan lain, blokir!
+    if (_isOccupiedByOther) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$_selectedTableNo sedang digunakan oleh tamu lain. Anda tidak dapat membuat atau menambahkan pesanan di meja ini.'),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     final custName = widget.db.currentUser?.role == UserRole.pelanggan
         ? widget.db.currentUser!.namaUser
@@ -662,72 +754,115 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
 
     // Untuk Pelanggan: Pemesanan Meja Terhubung dengan QR Meja
     if (isPelanggan) {
-      return Container(
-        color: context.surfaceCard,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          children: [
+      final isOccupiedByOther = _isOccupiedByOther;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isOccupiedByOther)
             Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00F2FE).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.qr_code_scanner_rounded, size: 22, color: Color(0xFF0284C7)),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: const Color(0xFFFEF2F2),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        _selectedTableNo,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: context.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFDCFCE7),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                    ],
+                  const Icon(Icons.error_outline_rounded, size: 16, color: Color(0xFFDC2626)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '$_selectedTableNo sedang terisi oleh tamu lain. Pemesanan terkunci.',
+                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+                    ),
                   ),
                 ],
               ),
             ),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF0284C7),
-                side: const BorderSide(color: Color(0xFF38BDF8)),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () {
-                if (widget.onRequestRescanTable != null) {
-                  widget.onRequestRescanTable!();
-                  return;
-                }
-                TableQrScannerDialog.show(
-                  context,
-                  db: widget.db,
-                  onTableScanned: (newTable) {
-                    _onTableChangedOrScanned(newTable);
+          Container(
+            color: context.surfaceCard,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isOccupiedByOther ? const Color(0xFFFEE2E2) : const Color(0xFF00F2FE).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isOccupiedByOther ? Icons.block_rounded : Icons.qr_code_scanner_rounded,
+                    size: 22,
+                    color: isOccupiedByOther ? const Color(0xFFDC2626) : const Color(0xFF0284C7),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            _selectedTableNo,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isOccupiedByOther ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              isOccupiedByOther ? 'Terisi (Tamu Lain)' : 'Meja Aktif',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isOccupiedByOther ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isOccupiedByOther
+                            ? 'Silakan tekan Ganti Meja untuk memilih meja kosong'
+                            : 'Pesanan akan langsung diantar pelayan ke meja ini',
+                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF0284C7),
+                    side: const BorderSide(color: Color(0xFF38BDF8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    if (widget.onRequestRescanTable != null) {
+                      widget.onRequestRescanTable!();
+                      return;
+                    }
+                    TableQrScannerDialog.show(
+                      context,
+                      db: widget.db,
+                      onTableScanned: (newTable) {
+                        _onTableChangedOrScanned(newTable);
+                      },
+                    );
                   },
-                );
-              },
-              icon: const Icon(Icons.qr_code_scanner_rounded, size: 14),
-              label: const Text('Ganti Meja', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 14),
+                  label: const Text('Ganti Meja', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
@@ -1876,13 +2011,37 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                 ],
               ),
               const SizedBox(height: 12),
+              if (_isOccupiedByOther) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFECACA)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.lock_rounded, size: 16, color: Color(0xFFDC2626)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '$_selectedTableNo sedang terisi oleh tamu lain. Pemesanan terkunci.',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
               if (isPelanggan) ...[
                 // Tombol Utama: Bayar Langsung via QRIS
                 SizedBox(
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton.icon(
-                    onPressed: _cart.isNotEmpty
+                    onPressed: (_cart.isNotEmpty && !_isOccupiedByOther)
                         ? () {
                             onActionBeforeSubmit?.call();
                             _submitOrderWithQris();
@@ -1906,7 +2065,7 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                   width: double.infinity,
                   height: 40,
                   child: OutlinedButton.icon(
-                    onPressed: _cart.isNotEmpty
+                    onPressed: (_cart.isNotEmpty && !_isOccupiedByOther)
                         ? () {
                             onActionBeforeSubmit?.call();
                             _submitOrder();

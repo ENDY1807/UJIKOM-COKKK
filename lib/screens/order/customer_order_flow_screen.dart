@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../../models/order_model.dart';
+import '../../models/table_model.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
 import 'order_entry_screen.dart';
@@ -103,6 +105,29 @@ class _CustomerOrderFlowScreenState extends State<CustomerOrderFlowScreen> {
           _isProcessing = true;
           HapticFeedback.mediumImpact();
 
+          // Cek apakah meja sedang terisi / sedang digunakan oleh tamu lain
+          final table = widget.db.tables.firstWhere(
+            (t) => t.nomorMeja.toLowerCase() == parsed.toLowerCase(),
+            orElse: () => TableModel(idMeja: 0, nomorMeja: parsed, kapasitas: 4, status: TableStatus.kosong),
+          );
+          final activeOrders = widget.db.orders.where(
+            (o) =>
+                o.noMeja.toLowerCase() == parsed.toLowerCase() &&
+                o.status != OrderStatus.selesai &&
+                o.status != OrderStatus.dibatalkan,
+          ).toList();
+
+          final activeOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
+          final curUserId = widget.db.currentUser?.idUser;
+          final isTableOccupied = table.status == TableStatus.terisi || activeOrder != null;
+          final isMyOrder = activeOrder != null && curUserId != null && activeOrder.idUser == curUserId;
+
+          // Jika meja sedang ada orangnya dan BUKAN pesanan milik pelanggan ini -> Tolak!
+          if (isTableOccupied && !isMyOrder) {
+            _showTableOccupiedDialog(parsed);
+            break;
+          }
+
           setState(() {
             _scannedTableNo = parsed;
           });
@@ -127,6 +152,62 @@ class _CustomerOrderFlowScreenState extends State<CustomerOrderFlowScreen> {
         }
       }
     }
+  }
+
+  void _showTableOccupiedDialog(String tableNo) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: context.surfaceCard,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFFECACA), width: 2),
+                ),
+                child: const Icon(Icons.table_restaurant_rounded, color: Color(0xFFDC2626), size: 32),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '$tableNo Sedang Terisi',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Meja ini saat ini sedang ada tamu / berstatus Terisi. Pelanggan lain tidak dapat membuat atau menambahkan pesanan di meja ini sampai tamu selesai dan meja dibersihkan oleh kasir.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12.5, color: context.textSecondary, height: 1.5),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.orangePrimary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+              label: const Text('Pindai Meja Kosong Lain'),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _isProcessing = false;
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showOrderSubmittedDialog(String tableNo) {
@@ -443,6 +524,25 @@ class _CustomerOrderFlowScreenState extends State<CustomerOrderFlowScreen> {
                         }).toList(),
                         onChanged: (val) {
                           if (val != null) {
+                            final table = widget.db.tables.firstWhere(
+                              (t) => t.nomorMeja.toLowerCase() == val.toLowerCase(),
+                              orElse: () => TableModel(idMeja: 0, nomorMeja: val, kapasitas: 4, status: TableStatus.kosong),
+                            );
+                            final activeOrders = widget.db.orders.where(
+                              (o) =>
+                                  o.noMeja.toLowerCase() == val.toLowerCase() &&
+                                  o.status != OrderStatus.selesai &&
+                                  o.status != OrderStatus.dibatalkan,
+                            ).toList();
+                            final activeOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
+                            final curUserId = widget.db.currentUser?.idUser;
+                            final isTableOccupied = table.status == TableStatus.terisi || activeOrder != null;
+                            final isMyOrder = activeOrder != null && curUserId != null && activeOrder.idUser == curUserId;
+
+                            if (isTableOccupied && !isMyOrder) {
+                              _showTableOccupiedDialog(val);
+                              return;
+                            }
                             setState(() => _scannedTableNo = val);
                           }
                         },
