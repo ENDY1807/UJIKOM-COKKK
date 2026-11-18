@@ -286,6 +286,15 @@ class DatabaseService extends ChangeNotifier {
           notifyListeners();
         }
       }
+
+      // Sinkronkan besaran diskon member dari Supabase agar perubahan oleh Owner langsung sinkron ke Admin secara realtime
+      final cloudDiscount = await _supabase.fetchMemberDiscountPercent();
+      if (cloudDiscount != null && cloudDiscount != _memberDiscountPercent) {
+        _memberDiscountPercent = cloudDiscount;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('member_discount_percent', _memberDiscountPercent);
+        notifyListeners();
+      }
     } catch (_) {}
   }
 
@@ -390,6 +399,15 @@ class DatabaseService extends ChangeNotifier {
             await _saveUserAddressesLocal();
           }
         }
+
+        // 8. Sinkronisasi Pengaturan Diskon Member VIP dari cloud Supabase
+        final cloudDiscount = await _supabase.fetchMemberDiscountPercent();
+        if (cloudDiscount != null) {
+          _memberDiscountPercent = cloudDiscount;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('member_discount_percent', _memberDiscountPercent);
+        }
+
         _ensureDefaultDanaSandbox();
       } else {
         _ensureDefaultDanaSandbox();
@@ -1214,16 +1232,19 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
-  /// Mengubah persentase diskon member VIP (Dapat diubah oleh Admin & Owner)
+  /// Mengubah persentase diskon member VIP (Dapat diubah oleh Admin & Owner, tersinkron ke Cloud)
   Future<void> setMemberDiscountPercent(int percent) async {
-    _memberDiscountPercent = percent.clamp(1, 100);
+    _memberDiscountPercent = percent.clamp(0, 100);
+    notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('member_discount_percent', _memberDiscountPercent);
+      if (_isSupabaseConnected) {
+        await _supabase.saveMemberDiscountPercent(_memberDiscountPercent);
+      }
     } catch (e) {
       debugPrint('[DatabaseService] setMemberDiscountPercent error: $e');
     }
-    notifyListeners();
   }
 
   // --- ENTRI REFERENSI MENU / MASAKAN (Admin) ---

@@ -409,131 +409,156 @@ class _AnalyticsChartsWidgetState extends State<AnalyticsChartsWidget> {
       subtitle: currencyFmt.format(filteredTotalRevenue),
       dataPoints: revenuePoints,
       primaryColor: const Color(0xFFEA580C),
-      height: 175,
+      height: 190,
       valueFormatter: (v) => _formatCompactCurrency(v),
     );
 
     // ── 6. Kartu Metode Pembayaran (Ditempatkan Bersebelahan dengan Laporan Penghasilan) ──
-    final paymentCard = Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: context.surfaceCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderSubtle),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    Widget buildDonutContent() {
+      return Row(
         children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.pie_chart_outline_rounded,
-                color: AppTheme.orangePrimary,
-                size: 20,
+          SizedBox(
+            width: 120,
+            height: 120,
+            child: CustomPaint(
+              painter: _PaymentDonutPainter(
+                qrisShare: qrisShare,
+                cashShare: tunaiShare,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Metode Pembayaran',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: context.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Proporsi dari $totalTrx transaksi kasir',
-            style: TextStyle(fontSize: 12, color: context.textSecondary),
-          ),
-          const SizedBox(height: 18),
-
-          Row(
-            children: [
-              SizedBox(
-                width: 110,
-                height: 110,
-                child: CustomPaint(
-                  painter: _PaymentDonutPainter(
-                    qrisShare: qrisShare,
-                    cashShare: tunaiShare,
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '$totalTrx',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: context.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          'Transaksi',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: context.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-
-              Expanded(
+              child: Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildLegendItem(
-                      'QRIS',
-                      '${(qrisShare * 100).toStringAsFixed(0)}% • ${currencyFmt.format(qrisTotal)}',
-                      const Color(0xFFEA580C),
+                    Text(
+                      '$totalTrx',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: context.textPrimary,
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    _buildLegendItem(
-                      'Tunai',
-                      '${(tunaiShare * 100).toStringAsFixed(0)}% • ${currencyFmt.format(tunaiTotal)}',
-                      const Color(0xFF2563EB),
+                    Text(
+                      'Transaksi',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: context.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLegendItem(
+                  'QRIS',
+                  '${(qrisShare * 100).toStringAsFixed(0)}% • ${currencyFmt.format(qrisTotal)}',
+                  const Color(0xFFEA580C),
+                ),
+                const SizedBox(height: 12),
+                _buildLegendItem(
+                  'Tunai',
+                  '${(tunaiShare * 100).toStringAsFixed(0)}% • ${currencyFmt.format(tunaiTotal)}',
+                  const Color(0xFF2563EB),
+                ),
+              ],
+            ),
           ),
         ],
-      ),
-    );
+      );
+    }
+
+    Widget buildPaymentCard({required bool isExpanded}) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+        decoration: BoxDecoration(
+          color: context.surfaceCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.borderSubtle),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x06000000),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.pie_chart_outline_rounded,
+                  color: AppTheme.orangePrimary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Metode Pembayaran',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Proporsi dari $totalTrx transaksi kasir',
+              style: TextStyle(fontSize: 11.5, color: context.textSecondary),
+            ),
+            const SizedBox(height: 12),
+
+            if (isExpanded)
+              Expanded(
+                child: Center(
+                  child: buildDonutContent(),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: buildDonutContent(),
+              ),
+          ],
+        ),
+      );
+    }
 
     // Section 2 Kolom: Laporan Penghasilan (Kiri) & Metode Pembayaran (Kanan)
+    // Menggunakan IntrinsicHeight & CrossAxisAlignment.stretch agar kedua card memiliki tinggi yang SAMA PERSIS
     final revenueAndPaymentSection = LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= 780) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 11, child: cardPenghasilan),
-              const SizedBox(width: 14),
-              Expanded(flex: 10, child: paymentCard),
-            ],
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(flex: 11, child: cardPenghasilan),
+                const SizedBox(width: 14),
+                Expanded(flex: 10, child: buildPaymentCard(isExpanded: true)),
+              ],
+            ),
           );
         }
 
         return Column(
-          children: [cardPenghasilan, const SizedBox(height: 14), paymentCard],
+          children: [
+            cardPenghasilan,
+            const SizedBox(height: 14),
+            buildPaymentCard(isExpanded: false),
+          ],
+
         );
       },
     );
@@ -1063,8 +1088,8 @@ class _SimpleAreaChartPainter extends CustomPainter {
     if (points.isEmpty) return;
 
     const leftMargin = 52.0;
-    const rightMargin = 8.0;
-    const topMargin = 8.0;
+    const rightMargin = 12.0;
+    const topMargin = 26.0;
     const bottomMargin = 22.0;
 
     final chartWidth = size.width - leftMargin - rightMargin;
@@ -1202,7 +1227,100 @@ class _SimpleAreaChartPainter extends CustomPainter {
     final primaryVals = points.map((p) => p.value).toList();
     drawSeries(primaryVals, primaryColor);
 
-    // 3. Label Sumbu X di Bawah
+    // 3. Titik (Data Point Dots) & Label Nilai Penghasilan Permanen (Sudah Ada Tanpa Harus Ditekan)
+    final dotBgPaint = Paint()
+      ..color = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final primaryDotPaint = Paint()..color = primaryColor;
+    final secondaryDotPaint = Paint()..color = secondaryColor;
+
+    final valTextStyle = TextStyle(
+      color: isDark ? const Color(0xFFFFEDD5) : const Color(0xFFC2410C),
+      fontSize: 8.5,
+      fontWeight: FontWeight.bold,
+    );
+
+    for (int i = 0; i < points.length; i++) {
+      final x = getX(i);
+      final val = points[i].value;
+      final y = getY(val);
+
+      // Gambar titik untuk secondary series jika ada
+      if (hasSecondarySeries) {
+        final secY = getY(points[i].secondaryValue);
+        canvas.drawCircle(Offset(x, secY), 3.5, dotBgPaint);
+        canvas.drawCircle(Offset(x, secY), 2.0, secondaryDotPaint);
+      }
+
+      // Gambar titik data utama (primary series)
+      final isHovered = selectedIndex == i;
+      final dotRadius = isHovered ? 5.5 : 4.0;
+      final innerRadius = isHovered ? 3.5 : 2.5;
+
+      // Efek halo saat disentuh
+      if (isHovered) {
+        final haloPaint = Paint()
+          ..color = primaryColor.withValues(alpha: 0.25);
+        canvas.drawCircle(Offset(x, y), 8.5, haloPaint);
+      }
+
+      // Lingkaran luar (border) & lingkaran dalam (isi)
+      canvas.drawCircle(Offset(x, y), dotRadius, dotBgPaint);
+      canvas.drawCircle(Offset(x, y), innerRadius, primaryDotPaint);
+
+      // ── Badge / Label Nilai Penghasilan di Atas Titik (Permanen Tanpa Ditekan) ──
+      final valFormatted = valueFormatter(val);
+      final textPainter = TextPainter(
+        text: TextSpan(text: valFormatted, style: valTextStyle),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+
+      const pillPaddingH = 4.0;
+      const pillPaddingV = 1.5;
+      final pillWidth = textPainter.width + pillPaddingH * 2;
+      final pillHeight = textPainter.height + pillPaddingV * 2;
+
+      // Letakkan badge di atas titik dengan aman (jika terlalu mepet batas atas, geser sedikit ke bawah titik)
+      double pillY = y - pillHeight - 4;
+      if (pillY < 3) {
+        pillY = y + 6;
+      }
+      final double pillX = (x - pillWidth / 2).clamp(
+        leftMargin - 2,
+        size.width - rightMargin - pillWidth + 2,
+      );
+
+      final pillRect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(pillX, pillY, pillWidth, pillHeight),
+        const Radius.circular(4),
+      );
+
+      final pillBgPaint = Paint()
+        ..color = isDark
+            ? (isHovered
+                ? const Color(0xFF9A3412)
+                : const Color(0xFF1E293B).withValues(alpha: 0.92))
+            : (isHovered
+                ? const Color(0xFFFFEDD5)
+                : Colors.white.withValues(alpha: 0.95));
+
+      final pillBorderPaint = Paint()
+        ..color = isHovered
+            ? primaryColor
+            : primaryColor.withValues(alpha: isDark ? 0.45 : 0.25)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = isHovered ? 1.0 : 0.6;
+
+      canvas.drawRRect(pillRect, pillBgPaint);
+      canvas.drawRRect(pillRect, pillBorderPaint);
+
+      textPainter.paint(
+        canvas,
+        Offset(pillX + pillPaddingH, pillY + pillPaddingV),
+      );
+    }
+
+    // 4. Label Sumbu X di Bawah (Hari / Tanggal / Bulan)
     final xAxisLabelStyle = TextStyle(
       color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
       fontSize: 9.5,
@@ -1223,12 +1341,11 @@ class _SimpleAreaChartPainter extends CustomPainter {
       );
     }
 
-    // 4. Highlight Posisi Sentuh (Selected Index Indicator)
+    // 5. Highlight Posisi Sentuh (Selected Index Vertical Guide Line)
     if (selectedIndex != null &&
         selectedIndex! >= 0 &&
         selectedIndex! < points.length) {
       final x = getX(selectedIndex!);
-      final y = getY(points[selectedIndex!].value);
 
       final indicatorPaint = Paint()
         ..color = primaryColor.withValues(alpha: 0.35)
@@ -1240,13 +1357,6 @@ class _SimpleAreaChartPainter extends CustomPainter {
         Offset(x, topMargin + chartHeight),
         indicatorPaint,
       );
-
-      final dotBgPaint = Paint()
-        ..color = isDark ? const Color(0xFF0F172A) : Colors.white;
-      final dotPaint = Paint()..color = primaryColor;
-
-      canvas.drawCircle(Offset(x, y), 4.5, dotBgPaint);
-      canvas.drawCircle(Offset(x, y), 3.0, dotPaint);
     }
   }
 

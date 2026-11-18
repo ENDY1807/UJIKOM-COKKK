@@ -175,7 +175,14 @@ class ReceiptDialog extends StatelessWidget {
                       // Rincian Biaya & Diskon
                       _buildCostSummaryRow(context.t('Subtotal Hidangan', 'Dishes Subtotal'), currencyFmt.format(subtotal)),
                       if (diskonMember > 0)
-                        _buildCostSummaryRow(context.t('Diskon Pelanggan Langganan (VIP 10%)', 'VIP Member Discount (10%)'), '- ${currencyFmt.format(diskonMember)}', isDiscount: true),
+                        _buildCostSummaryRow(
+                          context.t(
+                            'Diskon Pelanggan Langganan (VIP ${subtotal > 0 ? (diskonMember * 100 ~/ subtotal) : 10}%)',
+                            'VIP Member Discount (${subtotal > 0 ? (diskonMember * 100 ~/ subtotal) : 10}%)',
+                          ),
+                          '- ${currencyFmt.format(diskonMember)}',
+                          isDiscount: true,
+                        ),
                       _buildCostSummaryRow(context.t('Pajak Restoran PB1 (10%)', 'Restaurant Tax PB1 (10%)'), context.t('Sudah Termasuk', 'Included'), isMuted: true),
 
                       const SizedBox(height: 8),

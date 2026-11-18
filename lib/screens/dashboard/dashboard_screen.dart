@@ -284,7 +284,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Anda mendapatkan diskon otomatis 10% untuk setiap pesanan hidangan di meja!',
+                    'Anda mendapatkan diskon otomatis ${widget.db.memberDiscountPercent}% untuk setiap pesanan hidangan di meja!',
                     style: TextStyle(fontSize: 12, color: Colors.brown.shade800),
                   ),
                 ],
@@ -326,7 +326,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 Text(
-                  'Dapatkan diskon 10% setiap kali bersantap di Rasantara.',
+                  'Dapatkan diskon ${widget.db.memberDiscountPercent}% setiap kali bersantap di Rasantara.',
                   style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                 ),
               ],
@@ -421,10 +421,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text('Panduan Tamu & Langganan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
                   ),
-                  content: const Text(
+                  content: Text(
                     'Tamu dapat mendaftar akun mandiri melalui tab "Daftar Akun Baru" pada layar login aplikasi di smartphone mereka. '
-                    'Waiter memandu tamu mengaktifkan opsi Member VIP saat pendaftaran untuk mendapatkan diskon langsung 10% setiap pemesanan.',
-                    style: TextStyle(fontSize: 13, height: 1.5),
+                    'Waiter memandu tamu mengaktifkan opsi Member VIP saat pendaftaran untuk mendapatkan diskon langsung ${widget.db.memberDiscountPercent}% setiap pemesanan.',
+                    style: const TextStyle(fontSize: 13, height: 1.5),
                   ),
                   actions: [
                     TextButton(

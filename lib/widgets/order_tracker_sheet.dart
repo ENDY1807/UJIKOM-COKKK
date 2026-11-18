@@ -593,9 +593,9 @@ class _OrderTrackerSheetState extends State<OrderTrackerSheet> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
-                                      'Diskon Pelanggan Langganan (10%)',
-                                      style: TextStyle(fontSize: 12, color: Color(0xFFEA580C)),
+                                    Text(
+                                      'Diskon Pelanggan Langganan (${widget.order.totalHarga > 0 ? (widget.order.totalDiskon * 100 ~/ widget.order.totalHarga) : widget.db.memberDiscountPercent}%)',
+                                      style: const TextStyle(fontSize: 12, color: Color(0xFFEA580C)),
                                     ),
                                     Text(
                                       '- ${fmt.format(widget.order.totalDiskon)}',

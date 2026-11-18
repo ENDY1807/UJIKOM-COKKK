@@ -918,10 +918,62 @@ class SupabaseService {
           .from('tb_user_payment_methods')
           .select('*')
           .eq('id_user', idUser)
+          .neq('id', 'CONFIG_DISCOUNT')
           .order('connected_at', ascending: false);
       return (res as List).map((map) => ConnectedPaymentMethod.fromMap(map)).toList();
     } catch (_) {
       return [];
+    }
+  }
+
+  // ============================================================
+  // SYSTEM CONFIG: MEMBER DISCOUNT (tb_user_payment_methods)
+  // ============================================================
+
+  /// Mengambil besaran persentase diskon member VIP dari cloud Supabase
+  Future<int?> fetchMemberDiscountPercent() async {
+    try {
+      final res = await client
+          .from('tb_user_payment_methods')
+          .select('balance, account_number')
+          .eq('id', 'CONFIG_DISCOUNT')
+          .maybeSingle();
+
+      if (res != null) {
+        if (res['balance'] != null) {
+          final val = int.tryParse(res['balance'].toString());
+          if (val != null && val >= 0 && val <= 100) return val;
+        }
+        if (res['account_number'] != null) {
+          final val = int.tryParse(res['account_number'].toString());
+          if (val != null && val >= 0 && val <= 100) return val;
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('[SupabaseService] fetchMemberDiscountPercent error: $e');
+      return null;
+    }
+  }
+
+  /// Menyimpan besaran persentase diskon member VIP ke cloud Supabase agar tersinkron ke semua perangkat (Owner & Admin)
+  Future<bool> saveMemberDiscountPercent(int percent) async {
+    try {
+      final data = {
+        'id': 'CONFIG_DISCOUNT',
+        'id_user': 1,
+        'provider': 'SYSTEM',
+        'account_number': '$percent',
+        'account_name': 'MEMBER_DISCOUNT_PERCENT',
+        'balance': percent,
+        'is_default': false,
+        'connected_at': DateTime.now().toIso8601String(),
+      };
+      await client.from('tb_user_payment_methods').upsert(data);
+      return true;
+    } catch (e) {
+      debugPrint('[SupabaseService] saveMemberDiscountPercent error: $e');
+      return false;
     }
   }
 

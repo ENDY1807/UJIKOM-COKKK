@@ -412,7 +412,7 @@ class ExportReportService {
                       // ── Subtotal & Diskon ──
                       _buildPdfReceiptRow('Subtotal Hidangan', _currencyFmt.format(subtotal)),
                       if (diskonMember > 0)
-                        _buildPdfReceiptRow('Diskon Pelanggan Langganan (VIP 10%)', '- ${_currencyFmt.format(diskonMember)}', isBoldValue: true, valColor: _cGreen),
+                        _buildPdfReceiptRow('Diskon Pelanggan Langganan (VIP ${subtotal > 0 ? (diskonMember * 100 ~/ subtotal) : 10}%)', '- ${_currencyFmt.format(diskonMember)}', isBoldValue: true, valColor: _cGreen),
                       _buildPdfReceiptRow('Pajak Restoran PB1 (10%)', 'Sudah Termasuk', valColor: _cMuted),
 
                       _buildPdfDashedDivider(),

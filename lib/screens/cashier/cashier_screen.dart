@@ -866,10 +866,10 @@ class _CashierScreenState extends State<CashierScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Diskon Langganan (VIP 10%):',
-                            style: TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
+                            'Diskon Langganan (VIP ${order.totalHarga > 0 ? (order.diskonMember * 100 ~/ order.totalHarga) : widget.db.memberDiscountPercent}%):',
+                            style: const TextStyle(fontSize: 13, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),

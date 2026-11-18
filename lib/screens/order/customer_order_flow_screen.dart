@@ -252,7 +252,7 @@ class _CustomerOrderFlowScreenState extends State<CustomerOrderFlowScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Pindai QR Di Meja Anda',
+                      'Pindai QR Code Meja Anda',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
