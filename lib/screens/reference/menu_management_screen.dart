@@ -409,45 +409,6 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
-
-              // Info Payload
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: context.fillSubtle,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: context.borderSubtle),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.qr_code_rounded, size: 15, color: Color(0xFF64748B)),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        table.qrPayload,
-                        style: const TextStyle(fontSize: 10.5, fontFamily: 'monospace'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.copy_rounded, size: 15),
-                      tooltip: 'Salin Kode QR',
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: table.qrPayload));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Kode QR ${table.nomorMeja} disalin ke clipboard'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 16),
 
               // Tombol aksi
