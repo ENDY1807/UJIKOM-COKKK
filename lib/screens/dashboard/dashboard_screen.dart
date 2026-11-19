@@ -666,7 +666,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isDark = context.isDarkMode;
 
     Color cardBg;
-    Color cardBorder;
     Color statusColor;
     Color statusBg;
     Color titleColor;
@@ -676,13 +675,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       statusLabel = 'Terisi';
       if (isDark) {
         cardBg = const Color(0xFF381504);
-        cardBorder = const Color(0xFFEA580C).withValues(alpha: 0.65);
         statusColor = const Color(0xFFFDBA74);
         statusBg = const Color(0xFFEA580C).withValues(alpha: 0.3);
         titleColor = const Color(0xFFFFEDD5);
       } else {
         cardBg = const Color(0xFFFFF7ED); // Warna oranye lembut untuk meja terisi
-        cardBorder = const Color(0xFFFDBA74);
         statusColor = const Color(0xFFC2410C);
         statusBg = const Color(0xFFFFEDD5);
         titleColor = const Color(0xFF9A3412);
@@ -691,13 +688,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       statusLabel = 'Reservasi';
       if (isDark) {
         cardBg = const Color(0xFF0F1F38);
-        cardBorder = const Color(0xFF3B82F6).withValues(alpha: 0.65);
         statusColor = const Color(0xFF93C5FD);
         statusBg = const Color(0xFF1D4ED8).withValues(alpha: 0.3);
         titleColor = const Color(0xFFDBEAFE);
       } else {
         cardBg = const Color(0xFFEFF6FF); // Warna biru lembut untuk meja reservasi
-        cardBorder = const Color(0xFF93C5FD);
         statusColor = const Color(0xFF1D4ED8);
         statusBg = const Color(0xFFDBEAFE);
         titleColor = const Color(0xFF1E40AF);
@@ -706,13 +701,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       statusLabel = 'Kosong';
       if (isDark) {
         cardBg = context.surfaceCard;
-        cardBorder = const Color(0xFF166534).withValues(alpha: 0.5);
         statusColor = const Color(0xFF86EFAC);
         statusBg = const Color(0xFF166534).withValues(alpha: 0.3);
         titleColor = context.textPrimary;
       } else {
         cardBg = Colors.white; // Putih bersih untuk meja kosong
-        cardBorder = const Color(0xFFBBF7D0);
         statusColor = const Color(0xFF15803D);
         statusBg = const Color(0xFFDCFCE7);
         titleColor = context.textPrimary;
@@ -730,13 +723,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: cardBorder,
-              width: 1.5,
-            ),
             boxShadow: [
               BoxShadow(
-                color: statusColor.withValues(alpha: 0.08),
+                color: statusColor.withValues(alpha: isDark ? 0.2 : 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
