@@ -1116,7 +1116,9 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                           decoration: BoxDecoration(
                             color: AppTheme.orangeLight,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppTheme.orangeBorder),
+                            boxShadow: const [
+                              BoxShadow(color: Color(0x0C000000), blurRadius: 10, offset: Offset(0, 4)),
+                            ],
                           ),
                           child: const Center(
                             child: Text(
