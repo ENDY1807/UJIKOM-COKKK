@@ -104,11 +104,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _buildActiveOrdersQueueSection(activeOrders, role),
               ] else ...[
                 // ── TAMPILAN STAFF (ADMIN, WAITER, KASIR, OWNER) ──
-                if (role == UserRole.waiter) ...[
-                  _buildWaiterAssistanceCard(),
-                  const SizedBox(height: 16),
-                ],
-
                 // ── 1. Metric Cards Table Service ──
                 _buildTableMetricCards(
                   totalTables: tables.length,
@@ -139,84 +134,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // ── KARTU PANDUAN BANTUAN WAITER ──
-  Widget _buildWaiterAssistanceCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBBF7D0)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFDCFCE7),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.support_agent_rounded, color: Color(0xFF16A34A), size: 26),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Panduan Waiter: Membantu Pelanggan',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Pelanggan dapat mendaftar mandiri via aplikasi. Jika tamu ingin berlangganan Member VIP, pandu pendaftaran pada menu Berlangganan.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF166534), height: 1.4),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF16A34A),
-              side: const BorderSide(color: Color(0xFF16A34A)),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: context.surfaceCard,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: const Row(
-                    children: [
-                      Icon(Icons.info_outline_rounded, color: Color(0xFF16A34A)),
-                      SizedBox(width: 8),
-                      Text('Panduan Tamu & Langganan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  content: const Text(
-                    'Tamu dapat mendaftar akun mandiri melalui tab "Daftar Akun Baru" pada layar login aplikasi di smartphone mereka.\n\n'
-                    'Waiter memandu tamu mengaktifkan opsi Member VIP saat pendaftaran untuk mendapatkan diskon langsung 10% setiap pemesanan.',
-                    style: TextStyle(fontSize: 13, height: 1.5),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Tutup'),
-                    ),
-                  ],
-                ),
-              );
-            },
-            child: const Text('Lihat Panduan', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }
@@ -299,7 +216,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 14),
           const Text(
-            'Scan stiker QR Code yang tertera pada meja makan Anda menggunakan kamera HP atau scanner aplikasi untuk langsung membuka daftar hidangan dan memesan menu ke dapur.',
+            'Scan QR Code yang tertera pada meja makan Anda menggunakan kamera HP atau scanner aplikasi untuk langsung membuka daftar hidangan dan memesan menu ke dapur.',
             style: TextStyle(
               fontSize: 13,
               color: Color(0xFFCBD5E1),
@@ -1286,7 +1203,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Cetak atau tampilkan QR code stiker untuk setiap meja restoran',
+                        'Cetak atau tampilkan QR code untuk setiap meja restoran',
                         style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
