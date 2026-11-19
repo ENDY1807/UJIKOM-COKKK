@@ -1,0 +1,171 @@
+=== DART ANALYZE OUTPUT ===
+Analyzing UJIKOM-COKKK...                                       
+
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/main.dart:2:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/models/payment_method_model.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/auth/google_onboarding_dialog.dart:2:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/cashier/cashier_order_history_screen.dart:1:1 • deprecated_member_use
+  error • Undefined class 'TransactionModel'. Try changing the name to the name of an existing class, or creating a class with the name 'TransactionModel' • lib/screens/cashier/cashier_order_history_screen.dart:93:54 • undefined_class
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/cashier/cashier_screen.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/dashboard/dashboard_screen.dart:2:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/login_screen.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/main_navigation_screen.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/order/customer_order_flow_screen.dart:2:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/order/order_entry_screen.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/profile/profile_screen.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/profile/settings_screen.dart:3:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/reference/menu_management_screen.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/reports/report_screen.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/splash_screen.dart:2:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/subscription/subscription_screen.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/users/user_management_screen.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/services/audio_notification_service.dart:4:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/services/export_report_service.dart:4:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/services/order_simulation_service.dart:3:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/theme/app_theme.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/analytics_charts.dart:2:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/app_loading_animation.dart:2:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/order_tracker_sheet.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/qris_payment_dialog.dart:2:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/receipt_dialog.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/status_badge.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/widgets/table_qr_scanner_dialog.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • test/widget_test.dart:1:1 • deprecated_member_use
+
+30 issues found. (ran in 8.6s)
+
+=== GREP ERRORS FROM BUILD LOG ===
+[        ]              "timestamp": "2026-11-19 02:02:54.000"
+[        ]            }
+[        ] [   +2 ms] Running build hooks for android_arm, android_arm64, android_x64 done.
+[        ] [   +2 ms] build_hooks: Complete
+[ +199 ms] [ +137 ms] lib/screens/cashier/cashier_order_history_screen.dart:93:54: Error: Type 'TransactionModel' not found.
+[        ] [   +1 ms]   DateTime _getEffectiveOrderDate(OrderModel order, [TransactionModel? trx]) {
+[        ] [        ]                                                      ^^^^^^^^^^^^^^^^
+[+2699 ms] [+2760 ms] lib/screens/cashier/cashier_order_history_screen.dart:93:54: Error: 'TransactionModel' isn't a type.
+[        ] [        ]   DateTime _getEffectiveOrderDate(OrderModel order, [TransactionModel? trx]) {
+[        ] [        ]                                                      ^^^^^^^^^^^^^^^^
+[+8399 ms] [+8354 ms] Persisting file store
+[        ] [   +1 ms] Done persisting file store
+
+=== GREP FAILURE FROM BUILD LOG ===
+[        ] Resource missing. [HTTP GET: https://dl.google.com/dl/android/maven2/com/google/errorprone/error_prone_parent/2.28.0/error_prone_parent-2.28.0.pom]
+[  +99 ms] Downloading https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_parent/2.28.0/error_prone_parent-2.28.0.pom to /home/runner/.gradle/.tmp/gradle_download11016539308644138219bin
+[        ] Resource missing. [HTTP GET: https://dl.google.com/dl/android/maven2/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.pom]
+[        ] Downloading https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.pom to /home/runner/.gradle/.tmp/gradle_download8465834261693508638bin
+[  +99 ms] Resource missing. [HTTP GET: https://dl.google.com/dl/android/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.pom]
+[        ] Resource missing. [HTTP GET: https://dl.google.com/dl/android/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.pom]
+[        ] Downloading https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.pom to /home/runner/.gradle/.tmp/gradle_download15772003233342039729bin
+[        ] Downloading https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.pom to /home/runner/.gradle/.tmp/gradle_download18259362320981589967bin
+[        ] Resource missing. [HTTP GET: https://dl.google.com/dl/android/maven2/com/google/guava/guava-parent/26.0-android/guava-parent-26.0-android.pom]
+[  +99 ms] Downloading https://repo.maven.apache.org/maven2/com/google/guava/guava-parent/26.0-android/guava-parent-26.0-android.pom to /home/runner/.gradle/.tmp/gradle_download6198468874909781912bin
+[        ] Resource missing. [HTTP GET: https://dl.google.com/dl/android/maven2/org/apache/commons/commons-lang3/3.16.0/commons-lang3-3.16.0.pom]
+--
+[        ] Downloading https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar to /home/runner/.gradle/.tmp/gradle_download6477616703590449196bin
+[        ] Downloading https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar to /home/runner/.gradle/.tmp/gradle_download13582382392400015509bin
+[        ] Downloading https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar to /home/runner/.gradle/.tmp/gradle_download1626842039905281982bin
+[        ] Downloading https://repo.maven.apache.org/maven2/com/google/flatbuffers/flatbuffers-java/1.12.0/flatbuffers-java-1.12.0.jar to /home/runner/.gradle/.tmp/gradle_download854168414141055081bin
+[        ] Downloading https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar to /home/runner/.gradle/.tmp/gradle_download13770407086317782077bin
+[        ] Downloading https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar to /home/runner/.gradle/.tmp/gradle_download10606218307001685337bin
+[        ] Downloading https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.17.1/commons-codec-1.17.1.jar to /home/runner/.gradle/.tmp/gradle_download2797869053530140473bin
+[ +104 ms] Downloading https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.16.0/commons-lang3-3.16.0.jar to /home/runner/.gradle/.tmp/gradle_download10734655979404011042bin
+[   +1 ms] Downloading https://repo.maven.apache.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar to /home/runner/.gradle/.tmp/gradle_download3290884991223172312bin
+--
+[        ]   Caching not enabled.
+[        ] Caching disabled for InstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.squareup/javawriter/2.5.0/81241ff7078ef14f42ea2a8995fa09c096256e6b/javawriter-2.5.0.jar because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for InstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.2/c4a06a64e650562f30b7bf9aaec1bfed43aca12b/failureaccess-1.0.2.jar because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for InstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.google.guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/b421526c5f297295adef1c886e5246c39d4ac629/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar because:
+[        ]   Build cache is disabled
+--
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/efcf230233942899afc9725c796cd831/transformed/analysis/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.2/c4a06a64e650562f30b7bf9aaec1bfed43aca12b/failureaccess-1.0.2.jar because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/runner/.gradle/caches/9.3.1/transforms/1d220edda495c014c7033c13a3d3e25b/transformed/merge/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for ExternalDependencyInstrumentingArtifactTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.2/c4a06a64e650562f30b7bf9aaec1bfed43aca12b/failureaccess-1.0.2.jar because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/b547b39c8777c32fd725d94af0d24f89/transformed/analysis/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+--
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/efcf230233942899afc9725c796cd831/transformed/analysis/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.2/c4a06a64e650562f30b7bf9aaec1bfed43aca12b/failureaccess-1.0.2.jar because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/b547b39c8777c32fd725d94af0d24f89/transformed/analysis/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+--
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.squareup/javawriter/2.5.0/81241ff7078ef14f42ea2a8995fa09c096256e6b/javawriter-2.5.0.jar because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.2/c4a06a64e650562f30b7bf9aaec1bfed43aca12b/failureaccess-1.0.2.jar because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/c3fbfedeb0d4d36d34781f51449cdf4f/transformed/analysis/instrumentation-hierarchy.bin because:
+[        ]   Build cache is disabled
+--
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/b547b39c8777c32fd725d94af0d24f89/transformed/analysis/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.2/c4a06a64e650562f30b7bf9aaec1bfed43aca12b/failureaccess-1.0.2.jar because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.google.guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/b421526c5f297295adef1c886e5246c39d4ac629/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar because:
+[        ]   Build cache is disabled
+--
+[        ]   Caching not enabled.
+[   +3 ms] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/efcf230233942899afc9725c796cd831/transformed/analysis/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.2/c4a06a64e650562f30b7bf9aaec1bfed43aca12b/failureaccess-1.0.2.jar because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[  +92 ms] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/b547b39c8777c32fd725d94af0d24f89/transformed/analysis/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+--
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/efcf230233942899afc9725c796cd831/transformed/analysis/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.2/c4a06a64e650562f30b7bf9aaec1bfed43aca12b/failureaccess-1.0.2.jar because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/b547b39c8777c32fd725d94af0d24f89/transformed/analysis/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+--
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/efcf230233942899afc9725c796cd831/transformed/analysis/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.2/c4a06a64e650562f30b7bf9aaec1bfed43aca12b/failureaccess-1.0.2.jar because:
+[        ]   Build cache is disabled
+[        ]   Caching not enabled.
+[        ] Caching disabled for MergeInstrumentationAnalysisTransform: /home/runner/.gradle/caches/9.3.1/transforms/b547b39c8777c32fd725d94af0d24f89/transformed/analysis/instrumentation-dependencies.bin because:
+[        ]   Build cache is disabled
+--
+[        ] Downloading https://dl.google.com/dl/android/maven2/com/android/tools/build/apkzlib/7.3.0/apkzlib-7.3.0.pom to /home/runner/.gradle/.tmp/gradle_download2986859590377334744bin
+[        ] Downloading https://repo.maven.apache.org/maven2/org/apache/apache/15/apache-15.pom to /home/runner/.gradle/.tmp/gradle_download13190554487169023483bin
+[        ] Resource missing. [HTTP GET: https://dl.google.com/dl/android/maven2/org/checkerframework/checker-qual/3.5.0/checker-qual-3.5.0.pom]
+[        ] Downloading https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.5.0/checker-qual-3.5.0.pom to /home/runner/.gradle/.tmp/gradle_download14151305161328725161bin
+[  +99 ms] Resource missing. [HTTP GET: https://dl.google.com/dl/android/maven2/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.pom]
+[        ] Resource missing. [HTTP GET: https://dl.google.com/dl/android/maven2/com/google/j2objc/j2objc-annotations/1.3/j2objc-annotations-1.3.pom]
+[        ] Downloading https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/1.3/j2objc-annotations-1.3.pom to /home/runner/.gradle/.tmp/gradle_download4597181304848174167bin
+[        ] Downloading https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.pom to /home/runner/.gradle/.tmp/gradle_download3156800203417710286bin
+[        ] Resource missing. [HTTP GET: https://dl.google.com/dl/android/maven2/xml-apis/xml-apis/1.4.01/xml-apis-1.4.01.pom]
+[  +99 ms] Downloading https://repo.maven.apache.org/maven2/xml-apis/xml-apis/1.4.01/xml-apis-1.4.01.pom to /home/runner/.gradle/.tmp/gradle_download1444867471690559320bin
+[        ] Resource missing. [HTTP GET: https://dl.google.com/dl/android/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/1.5.31/kotlin-stdlib-common-1.5.31.pom]
+[        ] Downloading https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/1.5.31/kotlin-stdlib-common-1.5.31.pom to /home/runner/.gradle/.tmp/gradle_download10363675035268607218bin
