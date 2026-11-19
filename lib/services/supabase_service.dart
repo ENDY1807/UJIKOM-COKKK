@@ -474,7 +474,7 @@ class SupabaseService {
     try {
       final data = {
         'nama_masakan': menu.namaMasakan,
-        'kategori': menu.kategori.label,
+        'kategori': menu.kategori.dbValue,
         'harga': menu.harga,
         'status_masakan': menu.status.label,
         'deskripsi': menu.deskripsi,
@@ -492,7 +492,7 @@ class SupabaseService {
     try {
       await client.from(_menuTable).update({
         'nama_masakan': menu.namaMasakan,
-        'kategori': menu.kategori.label,
+        'kategori': menu.kategori.dbValue,
         'harga': menu.harga,
         'status_masakan': menu.status.label,
         'deskripsi': menu.deskripsi,

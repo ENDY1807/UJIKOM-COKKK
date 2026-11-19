@@ -10,6 +10,20 @@ enum MenuCategory {
   final String label;
   const MenuCategory(this.label);
 
+  String get dbValue {
+    switch (this) {
+      case MenuCategory.paket:
+        return 'Paket';
+      case MenuCategory.minuman:
+        return 'Minuman';
+      case MenuCategory.addon:
+        return 'Addon';
+      case MenuCategory.makanan:
+      case MenuCategory.semua:
+        return 'Makanan';
+    }
+  }
+
   String localizedLabel(bool isEnglish) {
     if (!isEnglish) return label;
     switch (this) {
@@ -32,7 +46,7 @@ enum MenuCategory {
     if (v.contains('minum') || v.contains('drink') || v.contains('beverage')) return MenuCategory.minuman;
     if (v.contains('addon') || v.contains('add-on') || v.contains('snack') || v.contains('camilan') || v.contains('ekstra')) return MenuCategory.addon;
     return MenuCategory.values.firstWhere(
-      (c) => c.label.toLowerCase() == v || c.name.toLowerCase() == v,
+      (c) => c.label.toLowerCase() == v || c.name.toLowerCase() == v || c.dbValue.toLowerCase() == v,
       orElse: () => MenuCategory.makanan,
     );
   }
@@ -252,7 +266,7 @@ class MenuModel {
     return {
       if (idMasakan > 0) 'id_masakan': idMasakan,
       'nama_masakan': namaMasakan,
-      'kategori': kategori.label,
+      'kategori': kategori.dbValue,
       'harga': harga,
       'status_masakan': status.label,
       'deskripsi': deskripsi,
