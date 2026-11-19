@@ -144,7 +144,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Pelanggan Langganan (VIP Member)',
+                                    'Pelanggan Member',
                                     style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
                                   ),
                                   Text(
@@ -323,7 +323,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                               border: Border.all(color: const Color(0xFF86EFAC)),
                                             ),
                                             child: const Text(
-                                              'VIP Langganan',
+                                              'Member',
                                               style: TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
                                             ),
                                           ),
@@ -466,7 +466,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                       border: Border.all(color: const Color(0xFF86EFAC)),
                                     ),
                                     child: const Text(
-                                      'VIP Langganan',
+                                      'Member',
                                       style: TextStyle(fontSize: 10, color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
                                     ),
                                   ),
