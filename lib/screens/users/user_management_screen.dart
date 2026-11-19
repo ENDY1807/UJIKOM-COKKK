@@ -549,7 +549,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         backgroundColor: AppTheme.orangePrimary,
         foregroundColor: AppTheme.white,
         icon: const Icon(Icons.person_add),
-        label: const Text('Registrasi User / Pelanggan'),
+        label: const Text('Tambahkan User'),
         onPressed: () => _showAddUserDialog(),
       ),
     );
