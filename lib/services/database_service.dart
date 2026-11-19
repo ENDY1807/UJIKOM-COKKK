@@ -1202,6 +1202,9 @@ class DatabaseService extends ChangeNotifier {
         phoneNumber: phoneNumber,
         isSubscribed: isSubscribed,
       );
+      if (_currentUser?.idUser == idUser) {
+        _currentUser = _users[index];
+      }
       _saveUsersLocal();
       notifyListeners();
 

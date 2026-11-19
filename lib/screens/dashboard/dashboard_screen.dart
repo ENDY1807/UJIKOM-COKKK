@@ -143,6 +143,84 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // ── KARTU PANDUAN BANTUAN WAITER ──
+  Widget _buildWaiterAssistanceCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFBBF7D0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: Color(0xFFDCFCE7),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.support_agent_rounded, color: Color(0xFF16A34A), size: 26),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Panduan Waiter: Membantu Pelanggan',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Pelanggan dapat mendaftar mandiri via aplikasi. Jika tamu ingin berlangganan Member VIP, pandu pendaftaran pada menu Berlangganan.',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF166534), height: 1.4),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF16A34A),
+              side: const BorderSide(color: Color(0xFF16A34A)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: context.surfaceCard,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: const Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, color: Color(0xFF16A34A)),
+                      SizedBox(width: 8),
+                      Text('Panduan Tamu & Langganan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  content: const Text(
+                    'Tamu dapat mendaftar akun mandiri melalui tab "Daftar Akun Baru" pada layar login aplikasi di smartphone mereka.\n\n'
+                    'Waiter memandu tamu mengaktifkan opsi Member VIP saat pendaftaran untuk mendapatkan diskon langsung 10% setiap pemesanan.',
+                    style: TextStyle(fontSize: 13, height: 1.5),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Tutup'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: const Text('Lihat Panduan', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── KARTU HERO SCAN QR MEJA KHUSUS PELANGGAN ──
   Widget _buildPelangganHeroQrCard() {
     return Container(
@@ -388,87 +466,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ── KARTU PANDUAN BANTUAN WAITER UNTUK PELANGGAN ──
-  Widget _buildWaiterAssistanceCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBBF7D0)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFDCFCE7),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.support_agent_rounded, color: Color(0xFF16A34A), size: 26),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Panduan Waiter: Membantu Pelanggan',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'Pelanggan dapat mendaftar mandiri via aplikasi. Jika pelanggan menemui kendala saat registrasi atau berlangganan, pandu tamu atau daftarkan akun mereka langsung.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF166534), height: 1.4),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF16A34A),
-              side: const BorderSide(color: Color(0xFF16A34A)),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: context.surfaceCard,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: const Row(
-                    children: [
-                      Icon(Icons.info_outline_rounded, color: Color(0xFF16A34A)),
-                      SizedBox(width: 8),
-                      Text('Panduan Tamu & Langganan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  content: Text(
-                    'Tamu dapat mendaftar akun mandiri melalui tab "Daftar Akun Baru" pada layar login aplikasi di smartphone mereka. '
-                    'Waiter memandu tamu mengaktifkan opsi Member VIP saat pendaftaran untuk mendapatkan diskon langsung ${widget.db.memberDiscountPercent}% setiap pemesanan.',
-                    style: const TextStyle(fontSize: 13, height: 1.5),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Tutup'),
-                    ),
-                  ],
-                ),
-              );
-            },
-            child: const Text('Lihat Panduan', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ── 2. SISTEM DENAH & PILIH MEJA RESTORAN (KETERSEDIAAN KOSONG VS TERISI) ──
   Widget _buildTableGridSection(List<TableModel> tables, List<OrderModel> activeOrders, UserRole role) {
-    // Filter meja sesuai chip terpilih
+    // Filter meja sesuai chip yang terpilih
     final filteredTables = tables.where((t) {
       final isOcc = t.status == TableStatus.terisi || widget.db.isTableTemporarilyOccupied(t.nomorMeja);
       if (_selectedTableFilter == 1) return !isOcc && t.status != TableStatus.reservasi;
@@ -722,13 +722,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          if (role == UserRole.kasir && isOccupied && activeOrder != null) {
-            widget.onNavigateToTab(1, tableNo: table.nomorMeja, target: 'cashier');
-          } else {
-            widget.onNavigateToTab(1, tableNo: table.nomorMeja, target: 'order');
-          }
-        },
+        onTap: () => _showTableDetailModal(context, table, activeOrder, role),
         onLongPress: () => _showTableDetailModal(context, table, activeOrder, role),
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -959,9 +953,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
-              // Tombol Tindakan Cepat Terisi
+              // Tombol Pantau Pesanan & Tindakan Cepat
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2563EB),
+                    side: const BorderSide(color: Color(0xFF93C5FD)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    showOrderTrackerModal(
+                      context,
+                      db: widget.db,
+                      order: activeOrder,
+                      onNavigateToTab: (idx) => widget.onNavigateToTab(idx, tableNo: table.nomorMeja),
+                    );
+                  },
+                  icon: const Icon(Icons.track_changes_rounded, size: 18),
+                  label: const Text('Pantau Pesanan Meja Ini', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+              ),
+              const SizedBox(height: 10),
+
               Row(
                 children: [
                   if (role == UserRole.kasir || role == UserRole.administrator) ...[
