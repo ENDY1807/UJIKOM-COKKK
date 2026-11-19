@@ -156,10 +156,15 @@ class OrderModel {
     String? fallbackUserName,
     List<OrderItemModel>? items,
   }) {
-    final tglStr = map['tanggal']?.toString();
+    // Utamakan created_at untuk mendapatkan tanggal & jam lengkap (local time)
+    final tglStr = map['created_at']?.toString() ?? map['tanggal']?.toString();
     DateTime dt;
     try {
-      dt = tglStr != null ? DateTime.parse(tglStr) : DateTime.now();
+      if (tglStr != null && tglStr.isNotEmpty) {
+        dt = DateTime.parse(tglStr).toLocal();
+      } else {
+        dt = DateTime.now();
+      }
     } catch (_) {
       dt = DateTime.now();
     }
@@ -196,7 +201,8 @@ class OrderModel {
     return {
       if (idOrder > 0) 'id_order': idOrder,
       'no_meja': noMeja,
-      'tanggal': tanggal.toIso8601String(),
+      'tanggal': '${tanggal.year.toString().padLeft(4, '0')}-${tanggal.month.toString().padLeft(2, '0')}-${tanggal.day.toString().padLeft(2, '0')}',
+      'created_at': tanggal.toUtc().toIso8601String(),
       'id_user': idUser,
       'keterangan': namaPelanggan.isNotEmpty
           ? 'Pelanggan: $namaPelanggan${keterangan.isNotEmpty ? ' | $keterangan' : ''}'

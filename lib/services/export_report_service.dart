@@ -123,7 +123,7 @@ class ExportReportService {
               data: transactions.map((t) {
                 return [
                   '#TRX-${t.idTransaksi}',
-                  _dateFmt.format(t.tanggal),
+                  _dateFmt.format(t.tanggal.toLocal()),
                   t.order.noMeja,
                   t.order.namaPelanggan.isEmpty ? 'Pelanggan' : t.order.namaPelanggan,
                   t.namaKasir,
@@ -223,8 +223,8 @@ class ExportReportService {
       final itemsStr = t.order.items.map((i) => '${i.jumlah}x ${i.menu.namaMasakan}').join('; ');
       rows.add([
         t.idTransaksi,
-        DateFormat('yyyy-MM-dd').format(t.tanggal),
-        DateFormat('HH:mm:ss').format(t.tanggal),
+        DateFormat('yyyy-MM-dd').format(t.tanggal.toLocal()),
+        DateFormat('HH:mm:ss').format(t.tanggal.toLocal()),
         t.order.noMeja,
         t.order.namaPelanggan,
         t.namaKasir,
@@ -362,7 +362,7 @@ class ExportReportService {
                     children: [
                       _buildPdfReceiptRow('No. Transaksi', '#TRX-${transaction.idTransaksi.toString().padLeft(5, '0')}'),
                       _buildPdfReceiptRow('No. Pesanan', '#ORD-${order.idOrder}'),
-                      _buildPdfReceiptRow('Waktu Transaksi', _dateFmt.format(transaction.tanggal)),
+                      _buildPdfReceiptRow('Waktu Transaksi', _dateFmt.format(transaction.tanggal.toLocal())),
                       _buildPdfReceiptRow('Layanan / Meja', order.noMeja),
                       _buildPdfReceiptRow('Nama Pelanggan', order.namaPelanggan),
                       _buildPdfReceiptRow('Kasir Pemroses', transaction.namaKasir),
@@ -594,7 +594,7 @@ class ExportReportService {
                     children: [
                       _buildPdfReceiptRow('Layanan / Meja', order.noMeja, isBoldValue: true),
                       _buildPdfReceiptRow('No. Pesanan', '#ORD-${order.idOrder}'),
-                      _buildPdfReceiptRow('Waktu Pesan', _dateFmt.format(order.tanggal)),
+                      _buildPdfReceiptRow('Waktu Pesan', _dateFmt.format(order.tanggal.toLocal())),
                       _buildPdfReceiptRow('Nama Tamu', order.namaPelanggan),
                       _buildPdfReceiptRow('Metode Pembayaran', 'QRIS (Nirsentuh)', isBoldValue: true, valColor: _cOrange),
                     ],

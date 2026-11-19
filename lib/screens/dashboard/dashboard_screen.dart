@@ -564,6 +564,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: context.surfaceBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.borderSubtle),
+                // card border
               ),
               child: Center(
                 child: Text(
@@ -915,7 +916,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Tamu: ${activeOrder.namaPelanggan.isNotEmpty ? activeOrder.namaPelanggan : "Tamu Meja"} · ${DateFormat("HH:mm, dd MMM yyyy").format(activeOrder.tanggal)}',
+                'Tamu: ${activeOrder.namaPelanggan.isNotEmpty ? activeOrder.namaPelanggan : "Tamu Meja"} · ${DateFormat("HH:mm, dd MMM yyyy", "id_ID").format(activeOrder.tanggal.toLocal())}',
                 style: TextStyle(fontSize: 12, color: context.textSecondary),
               ),
               const SizedBox(height: 12),
@@ -1391,7 +1392,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildOrderQueueItem(OrderModel order, UserRole role) {
-    final timeStr = DateFormat('HH:mm').format(order.tanggal);
+    final timeStr = DateFormat('HH:mm').format(order.tanggal.toLocal());
 
     return InkWell(
       onTap: () {

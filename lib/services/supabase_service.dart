@@ -665,6 +665,7 @@ class SupabaseService {
       final Map<String, dynamic> orderMap = {
         'no_meja': order.noMeja,
         'tanggal': orderDateStr,
+        'created_at': order.tanggal.toUtc().toIso8601String(),
         if (order.idUser > 0) 'id_user': order.idUser,
         'keterangan': order.namaPelanggan.isNotEmpty
             ? 'Pelanggan: ${order.namaPelanggan}${order.keterangan.isNotEmpty ? ' | ${order.keterangan}' : ''}'
@@ -704,7 +705,14 @@ class SupabaseService {
         await client.from(_detailOrderTable).insert(details);
       }
 
-      return order.copyWith(idOrder: newOrderId);
+      DateTime finalDate = order.tanggal;
+      if (insertedOrder != null && insertedOrder['created_at'] != null) {
+        try {
+          finalDate = DateTime.parse(insertedOrder['created_at'].toString()).toLocal();
+        } catch (_) {}
+      }
+
+      return order.copyWith(idOrder: newOrderId, tanggal: finalDate);
     } catch (e) {
       debugPrint('[SupabaseService] insertOrder error: $e');
       return null;
@@ -862,6 +870,7 @@ class SupabaseService {
         if (trx.idUser > 0) 'id_user': trx.idUser,
         'id_order': trx.order.idOrder,
         'tanggal': trxDateStr,
+        'created_at': trx.tanggal.toUtc().toIso8601String(),
         'total_bayar': trx.totalBayar,
         'jumlah_bayar': trx.jumlahBayar,
         'kembalian': trx.kembalian,
@@ -891,16 +900,24 @@ class SupabaseService {
       // Update status order menjadi selesai
       await updateOrderStatus(trx.order.idOrder, OrderStatus.selesai);
 
+      DateTime finalDate = trx.tanggal;
+      if (res != null && res['created_at'] != null) {
+        try {
+          finalDate = DateTime.parse(res['created_at'].toString()).toLocal();
+        } catch (_) {}
+      }
+
       return TransactionModel(
         idTransaksi: newTrxId,
         idUser: trx.idUser,
         namaKasir: trx.namaKasir,
         order: trx.order,
-        tanggal: trx.tanggal,
+        tanggal: finalDate,
         totalBayar: trx.totalBayar,
         jumlahBayar: trx.jumlahBayar,
         kembalian: trx.kembalian,
         metodePembayaran: trx.metodePembayaran,
+        diskonMember: trx.diskonMember,
       );
     } catch (e) {
       debugPrint('[SupabaseService] insertTransaction error: $e');

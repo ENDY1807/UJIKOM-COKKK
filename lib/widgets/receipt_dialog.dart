@@ -121,7 +121,7 @@ class ReceiptDialog extends StatelessWidget {
                       // Metadata Transaksi
                       _buildReceiptRow(context.t('No. Transaksi', 'Transaction No.'), '#TRX-${transaction.idTransaksi.toString().padLeft(5, '0')}'),
                       _buildReceiptRow(context.t('No. Pesanan', 'Order No.'), '#ORD-${order.idOrder}'),
-                      _buildReceiptRow(context.t('Waktu Transaksi', 'Transaction Time'), dateFmt.format(transaction.tanggal)),
+                      _buildReceiptRow(context.t('Waktu Transaksi', 'Transaction Time'), dateFmt.format(transaction.tanggal.toLocal())),
                       _buildReceiptRow(context.t('Layanan / Meja', 'Service / Table'), order.noMeja),
                       _buildReceiptRow(context.t('Nama Pelanggan', 'Customer Name'), order.namaPelanggan),
                       _buildReceiptRow(context.t('Kasir Pemroses', 'Cashier'), transaction.namaKasir),

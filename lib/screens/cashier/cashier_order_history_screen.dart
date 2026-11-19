@@ -29,7 +29,7 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
     symbol: 'Rp ',
     decimalDigits: 0,
   );
-  final _dateFmt = DateFormat('dd MMM yyyy, HH:mm');
+  final _dateFmt = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
   final _dayFmt = DateFormat('dd MMMM yyyy', 'id_ID');
 
   @override
@@ -90,12 +90,25 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
     }
   }
 
+  DateTime _getEffectiveOrderDate(OrderModel order, [TransactionModel? trx]) {
+    final matchingTrx = trx ?? widget.db.transactions.where((t) => t.order.idOrder == order.idOrder).firstOrNull;
+    if (matchingTrx != null) {
+      if ((order.tanggal.hour == 0 && order.tanggal.minute == 0) || order.status == OrderStatus.selesai || order.isPaid) {
+        return matchingTrx.tanggal.toLocal();
+      }
+    }
+    return order.tanggal.toLocal();
+  }
+
   bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
+    final aLocal = a.toLocal();
+    final bLocal = b.toLocal();
+    return aLocal.year == bLocal.year && aLocal.month == bLocal.month && aLocal.day == bLocal.day;
   }
 
   bool _isWithinRange(DateTime date, DateTimeRange range) {
-    final d = DateTime(date.year, date.month, date.day);
+    final dLocal = date.toLocal();
+    final d = DateTime(dLocal.year, dLocal.month, dLocal.day);
     final start = DateTime(range.start.year, range.start.month, range.start.day);
     final end = DateTime(range.end.year, range.end.month, range.end.day);
     return !d.isBefore(start) && !d.isAfter(end);
@@ -196,7 +209,7 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
                             style: TextStyle(fontSize: 13, color: context.textSecondary),
                           ),
                           Text(
-                            _dateFmt.format(order.tanggal),
+                            'Waktu: ${_dateFmt.format(_getEffectiveOrderDate(order, transaction))} WIB',
                             style: const TextStyle(fontSize: 11.5, color: AppTheme.textMuted),
                           ),
                         ],
@@ -244,11 +257,16 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
                                     color: isQris ? const Color(0xFFC2410C) : const Color(0xFF15803D),
                                   ),
                                 ),
-                                if (transaction != null)
+                                if (transaction != null) ...[
                                   Text(
                                     'Kasir Pemroses: ${transaction.namaKasir}',
                                     style: TextStyle(fontSize: 11.5, color: context.textSecondary),
                                   ),
+                                  Text(
+                                    'Waktu Selesai: ${_dateFmt.format(transaction.tanggal.toLocal())} WIB',
+                                    style: TextStyle(fontSize: 11.5, color: context.textSecondary),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -725,7 +743,10 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
                           separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final order = filtered[index];
-                          final isQris = order.metodePembayaran?.toUpperCase() == 'QRIS';
+                          final matchingTrx = widget.db.transactions.where((t) => t.order.idOrder == order.idOrder).firstOrNull;
+                          final effectiveDate = _getEffectiveOrderDate(order, matchingTrx);
+                          final isQris = (order.metodePembayaran?.toUpperCase() == 'QRIS') ||
+                              (matchingTrx?.metodePembayaran.toUpperCase() == 'QRIS');
 
                           return InkWell(
                             onTap: () => _showOrderDetailSheet(order),
@@ -801,7 +822,7 @@ class _CashierOrderHistoryScreenState extends State<CashierOrderHistoryScreen> {
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        _dateFmt.format(order.tanggal),
+                                        _dateFmt.format(effectiveDate),
                                         style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
                                       ),
                                     ],
