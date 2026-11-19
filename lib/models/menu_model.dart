@@ -12,15 +12,16 @@ enum MenuCategory {
 
   String get dbValue {
     switch (this) {
+      case MenuCategory.semua:
+        return 'Semua';
+      case MenuCategory.makanan:
+        return 'Makanan';
       case MenuCategory.paket:
         return 'Paket';
       case MenuCategory.minuman:
         return 'Minuman';
       case MenuCategory.addon:
         return 'Addon';
-      case MenuCategory.makanan:
-      case MenuCategory.semua:
-        return 'Makanan';
     }
   }
 
@@ -45,8 +46,10 @@ enum MenuCategory {
     if (v.contains('paket')) return MenuCategory.paket;
     if (v.contains('minum') || v.contains('drink') || v.contains('beverage')) return MenuCategory.minuman;
     if (v.contains('addon') || v.contains('add-on') || v.contains('snack') || v.contains('camilan') || v.contains('ekstra')) return MenuCategory.addon;
+    if (v.contains('makan') || v == 'food') return MenuCategory.makanan;
+    if (v == 'semua' || v == 'all') return MenuCategory.semua;
     return MenuCategory.values.firstWhere(
-      (c) => c.label.toLowerCase() == v || c.name.toLowerCase() == v || c.dbValue.toLowerCase() == v,
+      (c) => c != MenuCategory.semua && (c.label.toLowerCase() == v || c.name.toLowerCase() == v || c.dbValue.toLowerCase() == v),
       orElse: () => MenuCategory.makanan,
     );
   }

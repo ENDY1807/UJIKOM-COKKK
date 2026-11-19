@@ -38,7 +38,15 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
     final priceController = TextEditingController(text: existing != null ? '${existing.harga}' : '');
     final descController = TextEditingController(text: existing?.deskripsi ?? '');
     final imageController = TextEditingController(text: existing?.gambarUrl ?? '');
-    var selectedCat = existing?.kategori ?? MenuCategory.makanan;
+    final availableCategories = [
+      MenuCategory.makanan,
+      MenuCategory.minuman,
+      MenuCategory.paket,
+      MenuCategory.addon,
+    ];
+    var selectedCat = (existing?.kategori != null && availableCategories.contains(existing!.kategori))
+        ? existing.kategori
+        : MenuCategory.makanan;
     var selectedStatus = existing?.status ?? MenuStatus.tersedia;
 
     showDialog(
@@ -68,7 +76,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> with Single
                     DropdownButtonFormField<MenuCategory>(
                       initialValue: selectedCat,
                       decoration: const InputDecoration(labelText: 'Kategori'),
-                      items: [MenuCategory.makanan, MenuCategory.minuman, MenuCategory.paket, MenuCategory.addon].map((cat) {
+                      items: availableCategories.map((cat) {
                         return DropdownMenuItem(value: cat, child: Text(cat.label));
                       }).toList(),
                       onChanged: (val) {
